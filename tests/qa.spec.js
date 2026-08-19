@@ -148,3 +148,46 @@ test('?qa=icon: store product icons resolve to a sprite (no missing backgrounds)
 	expect(report).not.toMatch(/NO BACKGROUND!/);
 	expect(report).not.toMatch(/\(not found\)/);
 });
+
+test('?qa=anim: the CC3 polish (v3.0 animation pass) verified end to end', async ({ page }) => {
+	await boot(page, '&qa=anim&oneCol=1');
+	// Counter sampling (~1s) + the ~2.5s ascend-intro breakpoint wait +
+	// the 1s reincarnate animation.
+	const report = await qaReport(
+		page,
+		/PASS: the CC3 polish \(v3\.0 animation pass\) verified/,
+		90_000
+	);
+	expect(report).not.toMatch(/FAIL/);
+	expect(report).not.toMatch(/ERROR/);
+});
+
+test('reduced-motion: the whole CC3 polish is disabled, the game still runs', async ({ browser }) => {
+	const context = await browser.newContext({ reducedMotion: 'reduce' });
+	const page = await context.newPage();
+	await boot(page, '&oneCol=1');
+	await page.waitForFunction(() => window.__cc3Anim && window.Game.ready === 1, null, BOOT);
+	const state = await page.evaluate(() => ({
+		noMotion: document.body.classList.contains('noMotion'),
+		counter: window.__cc3Anim.counter,
+		wrapperAnim: getComputedStyle(document.getElementById('wrapper')).animationName,
+	}));
+	// the JS opt-out is published for the CSS gates ...
+	expect(state.noMotion).toBe(true);
+	expect(state.counter.active).toBe(false);
+	expect(state.counter.frames).toBe(0);
+	// ... and the CSS gates are quiet
+	expect(state.wrapperAnim).toBe('none');
+	// the engine's own 30Hz render still drives the counter (the display works)
+	await page.evaluate(() => { window.Game.cookies += 1e6; });
+	await page.waitForFunction(() => window.Game.cookiesd >= 999_999, null, BOOT);
+	// notes still appear, just without the slide-in
+	await page.evaluate(() => window.Game.Notify('QA', 'reduced motion', [10, 10], 6));
+	const note = page.locator('#notes .note').first();
+	await expect(note).toBeVisible({ timeout: 5_000 });
+	expect(await note.evaluate((el) => getComputedStyle(el).animationName)).toBe('none');
+	// column switching still works, animationless
+	await page.evaluate(() => document.querySelector('#oneColTabs button[data-col="middle"]').click());
+	expect(await page.locator('#sectionMiddle').evaluate((el) => getComputedStyle(el).animationName)).toBe('none');
+	await context.close();
+});

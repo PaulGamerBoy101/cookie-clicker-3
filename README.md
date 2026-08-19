@@ -14,6 +14,7 @@ A modern, from-scratch rebuild of the tooling around [Cookie Clicker 2.048](http
 | Boot hook | `window.onload = …` + inline `onclick`/`onmouseout` handlers | `addEventListener('load', …)` + listeners attached in the entry module |
 | Legacy DOM bugs | Relied on sloppy-mode behavior (implicit globals, mutating the read-only `DOMRect` returned by `getBoundingClientRect()`) | Fixed for strict mode: implicit globals are declared and republished, `getBounds()` builds a fresh plain object |
 | Offline / PWA | — | Web app manifest + service worker (cache-first, best-effort caching) so the game boots offline |
+| Motion polish | UI rendered at the 30Hz loop rate; hard column/tab switches | The CC3 polish pass (v3.0): display-refresh-rate smooth cookie counter, one-column column slide-in, notification slide-in, ascend-intro flash + shake. Transform/opacity only; respects the in-game "Fancy graphics" toggle and `prefers-reduced-motion` (see "CC3 polish" in `src/styles/main.css` + `src/main.js`, verified by `?qa=anim`) |
 | Ads / tracking / IE shims | AdSense, Facebook pixel, cookieconsent CDN, excanvas, IE conditional comments | Removed |
 
 The engine itself was **not** rewritten line-by-line: it is the authentic 2.048 code, transformed mechanically (see below) so it runs as strict-mode ES modules. Behavior, numbers, puns and all are the original.
@@ -169,7 +170,20 @@ increments, the swallowed cookies are refunded (+10%), and the debuff clears.
   (three tabs, column switching, the active column full-width and stopping
   above the bar, `aria-pressed` tracking), and that the cookie click path
   works in the one-column layout — force the mode with `?oneCol=1` or open a
-  viewport ≤ 640px wide. Never active in a plain load.
+  viewport ≤ 640px wide. `?qa=anim` verifies the CC3 polish (the v3.0
+  animation pass, a presentation layer on the untouched engine): the boot
+  fade, the display-rate smooth cookie counter (it seeds a 5e6 jump and
+  checks the `#cookies` display counts up and converges to the real value,
+  and that the rAF hook re-anchors on every engine tick), the one-column
+  column slide-in (`cc3ColIn`), the notification slide-in (`cc3NoteIn`,
+  including no entrance replay when `UpdateNotes()` rebuilds `#notes`), and
+  the ascend-intro breakpoint flash + `#game` shake (it drives the real
+  `Game.Ascend(1)` flow, forces the intro to its end, then
+  `Game.Reincarnate(1)`); it ends by flipping "Fancy graphics" off and
+  checking the whole pass disables itself (`body.noMotion`, hook stopped,
+  CSS gates quiet). A reduced-motion variant (Playwright
+  `reducedMotion: 'reduce'`) asserts the same opt-out at the OS level. Run
+  it with `&oneCol=1`. Never active in a plain load.
 
 ## Credits
 

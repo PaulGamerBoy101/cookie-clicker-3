@@ -45,7 +45,7 @@ if (debugSurface) {
  *   ?qa=golden    spawn + pop a forced "frenzy" golden cookie, report the buff
  *   ?qa=save      export a save, corrupt state, re-import, verify round-trip
  * Never active in a plain production load. */
-if (debugSurface && params.has('qa') && params.get('qa') !== 'golden' && params.get('qa') !== 'save' && params.get('qa') !== 'perf' && params.get('qa') !== 'ascend' && params.get('qa') !== 'offline' && params.get('qa') !== 'special' && params.get('qa') !== 'a11y' && params.get('qa') !== 'wrinkler' && params.get('qa') !== 'icon' && params.get('qa') !== 'onecol') {
+if (debugSurface && params.has('qa') && params.get('qa') !== 'golden' && params.get('qa') !== 'save' && params.get('qa') !== 'perf' && params.get('qa') !== 'ascend' && params.get('qa') !== 'offline' && params.get('qa') !== 'special' && params.get('qa') !== 'a11y' && params.get('qa') !== 'wrinkler' && params.get('qa') !== 'icon' && params.get('qa') !== 'onecol' && params.get('qa') !== 'anim') {
 	const qaMode = params.get('qa'); // null for bare ?qa, else the value
 	const MINIGAME_BUILDINGS = ['Farm', 'Bank', 'Temple', 'Wizard tower'];
 	const tick = window.setInterval(() => {
@@ -601,6 +601,14 @@ if (debugSurface && params.get('qa') === 'onecol') {
 		// G.T<5 keeps ClickCookie's "game just booted" gate (Game.T<3) out of the picture
 		if (!G || !G.ready || typeof G.resize !== 'function' || G.T < 5) return;
 		if (G.__qaOneCol) return;
+		// CC3 polish: the incoming column has a 180ms entrance animation; wait
+		// for it to settle before measuring column rects (the transform would
+		// skew the gap-to-tab-bar check)
+		const settling = ['sectionLeft', 'sectionMiddle', 'sectionRight'].some((id) => {
+			const el = document.getElementById(id);
+			return el.getAnimations && el.getAnimations().length > 0;
+		});
+		if (settling) return;
 		G.__qaOneCol = 1;
 		const out = document.createElement('div');
 		out.id = '__dbgqa';
@@ -660,6 +668,159 @@ if (debugSurface && params.get('qa') === 'onecol') {
 			out.textContent = lines.join('\n') + '\n[QA-onecol] ERROR: ' + e.constructor.name + ': ' + e.message;
 		}
 		window.clearInterval(tick);
+	}, 250);
+}
+
+// QA: verify the CC3 polish (the v3.0 animation pass) — the presentation-
+// layer motion that sits on top of the untouched engine: the boot fade, the
+// display-rate smooth cookie counter, the one-column column slide-in, the
+// notification slide-in, and the ascend-intro breakpoint flash (+shake).
+// Game state is never touched beyond what the (unmodified) ascend flow does;
+// the probe checks computed CSS, the window.__cc3Anim stats, and that the
+// counter display converges monotonically to the real cookie value. One-
+// column mode is forced with &oneCol=1; assumes an English profile (the
+// Beautify number format the display parsing relies on).
+// Usage: ?debug=1&qa=anim&oneCol=1
+if (debugSurface && params.get('qa') === 'anim') {
+	const out = () => {
+		let d = document.getElementById('__dbgqa');
+		if (!d) { d = document.createElement('div'); d.id = '__dbgqa'; d.style.cssText = 'position:fixed;top:0;left:0;z-index:99999;background:#fff;color:#060;font:12px monospace;white-space:pre-wrap;max-width:640px;'; document.body.appendChild(d); }
+		return d;
+	};
+	// Parse the #cookies display: full digits below 1e6 ("999,999"), word
+	// units at/above it ("4.655 million", per the port's Beautify format).
+	const DISPLAY_UNITS = { million: 1e6, billion: 1e9, trillion: 1e12, quadrillion: 1e15, quintillion: 1e18 };
+	const readDisplay = () => {
+		const el = document.getElementById('cookies');
+		const m = el ? el.textContent.match(/([\d,]+(?:\.\d+)?)\s*(million|billion|trillion|quadrillion|quintillion)?/) : null;
+		return m ? parseFloat(m[1].replace(/,/g, '')) * (DISPLAY_UNITS[m[2]] || 1) : NaN;
+	};
+	const tick = window.setInterval(() => {
+		const G = window.Game;
+		const A = window.__cc3Anim;
+		if (!G || !G.ready || !G.prefs || !A || G.T < 30) return;
+		let st = G.__qaAnim;
+		if (!st) {
+			G.__qaAnim = st = { phase: 0, t0: 0, v: [], all: [] };
+			const ok = (label, pass, extra) => st.all.push('[QA-anim] ' + (pass ? 'PASS' : 'FAIL') + ' ' + label + (extra !== undefined ? ' (' + extra + ')' : ''));
+			// --- boot fade: the 0.35s animation has long finished; the name persists ---
+			const wAnim = getComputedStyle(document.getElementById('wrapper')).animationName;
+			ok('boot fade: #wrapper ran cc3BootIn', wAnim === 'cc3BootIn', wAnim);
+			// --- a fresh profile (fancy=1, no reduced-motion) keeps motion on ---
+			ok('motion on for a fresh profile', A.motion === true && !document.body.classList.contains('noMotion'), 'noMotion=' + document.body.classList.contains('noMotion'));
+			// --- one-column column slide-in (this probe runs with &oneCol=1) ---
+			const body = document.body;
+			if (body.classList.contains('oneColumn')) {
+				const tabs = Array.prototype.slice.call(document.querySelectorAll('#oneColTabs button'));
+				tabs[1].click();
+				ok('tab switch: middle column enters with cc3ColIn', getComputedStyle(document.getElementById('sectionMiddle')).animationName === 'cc3ColIn', getComputedStyle(document.getElementById('sectionMiddle')).animationName);
+				tabs[2].click();
+				ok('tab switch: right column enters with cc3ColIn', getComputedStyle(document.getElementById('sectionRight')).animationName === 'cc3ColIn');
+				tabs[0].click(); // back to the cookie column
+			} else {
+				ok('one-column mode active (run the probe with &oneCol=1)', false);
+			}
+			// --- notification slide-in: the first note (capture its DOM id) ---
+			st.id1 = 'note-' + G.noteId;
+			G.Notify('[QA-anim] note one', 'slide-in test', [10, 10], 6);
+			// --- smooth cookie counter: seed a 5e6 jump, sample the display ---
+			G.cookies += 5e6;
+			st.t0 = Date.now();
+			st.v = [readDisplay()];
+			st.phase = 1;
+			out().textContent = st.all.join('\n') + '\n[QA-anim] phase 1: display at ' + Math.round(st.v[0]) + ' right after the +5e6 jump; sampling...';
+			return;
+		}
+		if (st.phase === 1) {
+			const ok = (label, pass, extra) => st.all.push('[QA-anim] ' + (pass ? 'PASS' : 'FAIL') + ' ' + label + (extra !== undefined ? ' (' + extra + ')' : ''));
+			// t0+250ms: note #1 has landed with its slide-in
+			const n1 = document.getElementById(st.id1);
+			ok('note 1: .note entered with cc3NoteIn', !!n1 && getComputedStyle(n1).animationName === 'cc3NoteIn', n1 ? getComputedStyle(n1).animationName : '(missing)');
+			st.v.push(readDisplay());
+			st.phase = 2;
+			out().textContent = st.all.join('\n') + '\n[QA-anim] phase 2: display at ' + Math.round(st.v[1]) + '...';
+			return;
+		}
+		if (st.phase === 2) {
+			// a second note rebuilds #notes: note 1 must not replay its entrance
+			st.id2 = 'note-' + G.noteId;
+			G.Notify('[QA-anim] note two', 'rebuild test', [10, 10], 6);
+			st.v.push(readDisplay());
+			st.phase = 3;
+			out().textContent = st.all.join('\n') + '\n[QA-anim] phase 3: display at ' + Math.round(st.v[2]) + '...';
+			return;
+		}
+		if (st.phase === 3) {
+			const ok = (label, pass, extra) => st.all.push('[QA-anim] ' + (pass ? 'PASS' : 'FAIL') + ' ' + label + (extra !== undefined ? ' (' + extra + ')' : ''));
+			// DOM order in #notes is oldest-first; look both notes up by id
+			const n1 = document.getElementById(st.id1);
+			const n2 = document.getElementById(st.id2);
+			ok('note 2: new note enters with cc3NoteIn', !!n2 && getComputedStyle(n2).animationName === 'cc3NoteIn');
+			ok('note 1: no entrance replay after the #notes rebuild (.cc3Seen)', !!n1 && n1.classList.contains('cc3Seen'), n1 ? (n1.className || '(no class)') : '(missing)');
+			st.v.push(readDisplay());
+			// --- counter verdict: the display counted up and converged.
+			// (The display quantizes to 3 significant digits at 1e6+, so only
+			// the first jump is asserted strictly; later samples may plateau.)
+			const target = G.cookies;
+			const [v0, v1, v2, v3] = st.v;
+			const midJump = v1 > v0 && v1 >= 0.05 * target && v1 <= 0.999 * target;
+			const nonDec = v2 >= v1 && v3 >= v2;
+			const converged = v3 >= target - Math.max(20, 0.02 * target);
+			ok('smooth counter: display mid-count-up at t0+250ms', midJump, st.v.map((x) => Math.round(x)).join(' -> '));
+			ok('smooth counter: display never decreases', nonDec, st.v.map((x) => Math.round(x)).join(' -> '));
+			ok('smooth counter: display converged to the real cookie value', converged, 'display ' + Math.round(v3) + ' vs cookies ' + Math.round(target));
+			ok('smooth counter: rAF hook ran at display rate (active, re-anchored each tick)', A.counter.active === true && A.counter.anchors >= G.T - 35 && A.counter.frames >= (G.T - 30) * 0.9, 'frames=' + A.counter.frames + ' anchors=' + A.counter.anchors + ' writes=' + A.counter.writes + ' ticks=' + G.T);
+			st.phase = 4;
+			out().textContent = st.all.join('\n') + '\n[QA-anim] phase 4: seeded the ascend, waiting for the intro breakpoint (~2.5s)...';
+			// --- ascend-intro breakpoint flash: drive the real flow ---
+			if (G.Upgrades['Legacy']) G.Upgrades['Legacy'].bought = 1;
+			G.cookies = 1e15; G.cookiesEarned = 1e15;
+			G.Ascend(1);
+			return;
+		}
+		if (st.phase === 4) {
+			// wait for the intro to cross the breakpoint (75 ticks ≈ 2.5s)
+			if (G.AscendTimer < G.AscendBreakpoint) return;
+			const ok = (label, pass, extra) => st.all.push('[QA-anim] ' + (pass ? 'PASS' : 'FAIL') + ' ' + label + (extra !== undefined ? ' (' + extra + ')' : ''));
+			// the flash + shake run 900ms and we are <=250ms past the crossing
+			const flash = document.getElementById('cc3Flash');
+			ok('ascend flash: #cc3Flash fired at the breakpoint', A.ascendFlashes === 1 && !!flash && flash.classList.contains('cc3On'), 'ascendFlashes=' + A.ascendFlashes + ', class=' + (flash ? flash.className : '(missing)'));
+			ok('ascend shake: #game got cc3Shake', document.getElementById('game').classList.contains('cc3Shake'));
+			// fast-forward the intro's end (chips + prestige are granted)
+			G.AscendTimer = G.AscendDuration;
+			st.phase = 5;
+			out().textContent = st.all.join('\n') + '\n[QA-anim] phase 5: intro forced to its end, waiting for the ascend screen...';
+			return;
+		}
+		if (st.phase === 5) {
+			if (G.OnAscend !== 1) return;
+			G.Reincarnate(1);
+			st.phase = 6;
+			st.t0 = Date.now();
+			return;
+		}
+		if (st.phase === 6) {
+			// outlast the 1s reincarnate animation AND the 900ms flash cleanup
+			if (G.OnAscend !== 0 || Date.now() - st.t0 < 1600) return;
+			const ok = (label, pass, extra) => st.all.push('[QA-anim] ' + (pass ? 'PASS' : 'FAIL') + ' ' + label + (extra !== undefined ? ' (' + extra + ')' : ''));
+			ok('ascend flash: the overlay was cleaned up afterwards', !document.getElementById('cc3Flash'));
+			ok('reincarnate: the run reset (Cursor back to 0)', G.Objects['Cursor'].amount === 0);
+			// --- in-game "Fancy graphics" opt-out: flip it off and check the gates ---
+			G.prefs.fancy = 0;
+			G.addClass('noFancy');
+			st.phase = 7;
+			st.t0 = Date.now();
+			return;
+		}
+		if (st.phase === 7) {
+			if (Date.now() - st.t0 < 300) return; // a few frames for the rAF hook to react
+			const ok = (label, pass, extra) => st.all.push('[QA-anim] ' + (pass ? 'PASS' : 'FAIL') + ' ' + label + (extra !== undefined ? ' (' + extra + ')' : ''));
+			ok('fancy off: body.noMotion published', document.body.classList.contains('noMotion') && A.motion === false);
+			ok('fancy off: the smooth counter hook stopped', A.counter.active === false);
+			ok('fancy off: the CSS motion gates went quiet', getComputedStyle(document.getElementById('wrapper')).animationName === 'none');
+			out().textContent = st.all.join('\n') + '\n[QA-anim] ' + (st.all.every((l) => l.indexOf('PASS') !== -1) ? 'PASS: the CC3 polish (v3.0 animation pass) verified' : 'FAIL: see the lines above');
+			window.clearInterval(tick);
+		}
 	}, 250);
 }
 
@@ -796,4 +957,171 @@ if (swEnabled) {
 		};
 		G.resize(); // re-run now: the engine's boot resize already ran with the 800 default
 	}, 25);
+})();
+
+/* --------------------------- CC3 polish: the v3.0 animation pass ---------------------------
+   Presentation-layer motion on top of the untouched 2.048 engine (the CSS
+   side of this pass lives in the "CC3 polish" block of styles/main.css).
+   Everything here is transform/opacity only, never touches game state, and
+   is disabled as a whole by EITHER the OS "reduce motion" setting
+   (prefers-reduced-motion) OR the in-game "Fancy graphics" toggle
+   (Game.prefs.fancy) — both published as body.noMotion for the CSS gates.
+   The effects:
+   1. Smooth cookie counter — the engine eases Game.cookiesd toward
+      Game.cookies by 30% per 30Hz tick (0.7 of the gap remaining) and
+      renders #cookies at loop rate. This re-renders the SAME #cookies at
+      the display's refresh rate, continuing the engine's own easing in its
+      exact closed form (x -> C - (C-x)*0.7^(t/T), which matches the
+      engine's discrete value at every tick boundary). It re-anchors on
+      every engine tick (a Game.T change), so it can never drift from the
+      engine's value; when inactive, the engine's own render stands alone.
+   2. Ascend flash — when the 5s ascend intro passes its breakpoint
+      (Game.AscendBreakpoint — the cookie-"explosion" tick where the engine
+      plays snd/thud.mp3), flash the #cc3Flash overlay and shake #game
+      for ~0.5s.
+   3. Note slide-in — .note elements get a one-shot CSS entrance; since
+      UpdateNotes() rebuilds the #notes innerHTML on every change, already-
+      seen notes are tagged .cc3Seen so the entrance doesn't replay on
+      them.
+   Verify with ?debug=1&qa=anim (and the reduced-motion variant in
+   tests/qa.spec.js). */
+(function () {
+	const motionQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
+	const stats = {
+		motion: true,
+		noMotionClass: false,
+		counter: { active: false, frames: 0, anchors: 0, writes: 0 },
+		ascendFlashes: 0,
+		notesSeen: 0,
+	};
+	window.__cc3Anim = stats;
+
+	/* --- 1. smooth cookie counter ---------------------------------------- */
+	let lastT = -1;
+	let ax = 0, aC = 0, at = 0;
+	let lastStr = '';
+	const renderCookies = (v) => {
+		const G = window.Game;
+		const el = document.getElementById('cookies');
+		if (!el) return;
+		// Ported 1:1 from the engine's own #cookies render (Game.Draw) —
+		// the only difference is that the value comes from the closed-form
+		// continuation instead of the tick-quantized Game.cookiesd.
+		let str = window.Beautify(Math.round(v));
+		if (v >= 1000000)//dirty padding
+		{
+			const spacePos = str.indexOf(' ');
+			const dotPos = str.indexOf('.');
+			let add = '';
+			if (spacePos !== -1)
+			{
+				if (dotPos === -1) add += '.000';
+				else
+				{
+					if (spacePos - dotPos === 2) add += '00';
+					if (spacePos - dotPos === 3) add += '0';
+				}
+			}
+			str = [str.slice(0, spacePos), add, str.slice(spacePos)].join('');
+		}
+		str = window.loc('%1 cookie', { n: Math.round(v), b: str });
+		if (str.length > 14) str = str.replace(' ', '<br>');
+		if (G.prefs.monospace) str = '<span class="monospace">' + str + '</span>';
+		str += '<div id="cookiesPerSecond"' + (G.cpsSucked > 0 ? ' class="wrinkled"' : '') + '>' + window.loc('per second:') + ' ' + window.Beautify(G.cookiesPs * (1 - G.cpsSucked), 1) + '</div>';
+		if (str !== lastStr)
+		{
+			el.innerHTML = str;
+			lastStr = str;
+			stats.counter.writes++;
+		}
+	};
+
+	/* --- 2. ascend flash --------------------------------------------------- */
+	let lastAscendTimer = 0;
+	let flashCleanup = 0;
+	const fireAscendFlash = () => {
+		const flash = document.createElement('div');
+		flash.id = 'cc3Flash';
+		const game = document.getElementById('game');
+		document.body.appendChild(flash);
+		void flash.offsetWidth; // let the element commit before the animation
+		flash.classList.add('cc3On');
+		if (game) game.classList.add('cc3Shake');
+		stats.ascendFlashes++;
+		window.clearTimeout(flashCleanup);
+		flashCleanup = window.setTimeout(() => {
+			flash.classList.remove('cc3On');
+			if (game) game.classList.remove('cc3Shake');
+			flash.remove();
+		}, 900);
+	};
+
+	/* --- 3. one-shot note entrances ---------------------------------------- */
+	const seenNotes = new Set();
+	const notesEl = document.getElementById('notes');
+	if (notesEl) {
+		const markSeen = () => {
+			for (const el of notesEl.children) {
+				const id = el.id && el.id.indexOf('note-') === 0 ? el.id : null;
+				if (!id) continue;
+				if (!seenNotes.has(id)) {
+					seenNotes.add(id);
+					stats.notesSeen++;
+				} else {
+					el.classList.add('cc3Seen'); // innerHTML rebuild: suppress replay
+				}
+			}
+		};
+		new MutationObserver(markSeen).observe(notesEl, { childList: true });
+	}
+
+	/* --- the frame loop ------------------------------------------------------ */
+	let wasOff = null;
+	const frame = (now) => {
+		window.requestAnimationFrame(frame);
+		const G = window.Game;
+		if (!G || !G.ready || !G.prefs) return;
+
+		// Publish the combined opt-out (OS reduce-motion or in-game
+		// "Fancy graphics" off) for the CSS gates.
+		const off = motionQuery.matches || !G.prefs.fancy;
+		stats.motion = !off;
+		if (off !== wasOff) {
+			wasOff = off;
+			document.body.classList.toggle('noMotion', off);
+			if (off) lastStr = ''; // next motion-enabled frame re-renders fresh
+		}
+		stats.noMotionClass = document.body.classList.contains('noMotion');
+		if (off) {
+			stats.counter.active = false;
+			return;
+		}
+
+		// 1. Smooth counter: only while the engine itself is drawing
+		// (Game.visible mirrors document visibility; during OnAscend the
+		// engine skips the #cookies render, so we must too).
+		const active = !!G.visible && !G.OnAscend && !!document.getElementById('cookies');
+		stats.counter.active = active;
+		if (active) {
+			if (G.T !== lastT) {
+				// Engine tick boundary: re-anchor on the engine's own value.
+				lastT = G.T;
+				ax = G.cookiesd;
+				aC = G.cookies;
+				at = now;
+				stats.counter.anchors++;
+			}
+			const frac = Math.min((now - at) / (1000 / G.fps), 1);
+			renderCookies(aC - (aC - ax) * Math.pow(0.7, frac));
+			stats.counter.frames++;
+		}
+
+		// 2. Ascend flash: fire once when the intro crosses the breakpoint.
+		if (G.AscendTimer > 0 && G.AscendBreakpoint > 0 &&
+			lastAscendTimer < G.AscendBreakpoint && G.AscendTimer >= G.AscendBreakpoint) {
+			fireAscendFlash();
+		}
+		lastAscendTimer = G.AscendTimer;
+	};
+	window.requestAnimationFrame(frame);
 })();

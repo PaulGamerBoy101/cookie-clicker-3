@@ -3525,3 +3525,127 @@ body.oneColumn #topBar
 	height:calc(32px + env(safe-area-inset-top,0px) / var(--cc3Scale,1));
 	padding-top:calc(env(safe-area-inset-top,0px) / var(--cc3Scale,1));
 }
+
+/* =====================================================================
+   CC3 polish: the v3.0 animation pass
+   =====================================================================
+   Presentation-layer motion added on top of the untouched 2.048 engine:
+     * a one-time boot fade-in of the whole game
+     * a slide+fade for the incoming column in one-column mode
+     * a slide-in for notification notes (the "toasts" top-right)
+     * a light flash + screen shake at the ascend-intro breakpoint, where
+       the big cookie "explodes" (the engine only plays a thud sound there)
+   The smooth cookie counter (re-rendering #cookies at the display's
+   refresh rate, continuing the engine's own easing curve) and the
+   ascend-flash trigger live in src/main.js ("CC3 polish" module).
+   Every effect here is:
+     * transform/opacity only (compositor-friendly — no layout work, so
+       the 30-tick game loop is untouched; see ?qa=perf)
+     * disabled by the OS "reduce motion" setting (the
+       prefers-reduced-motion media query) and by the in-game
+       "Fancy graphics" toggle, which src/main.js publishes as
+       body.noMotion
+   Verify with ?debug=1&qa=anim (and the reduced-motion variant). */
+
+/* -- boot fade-in: the whole game fades in once, on load. #wrapper is the
+   root the engine scales; an opacity animation does not touch its inline
+   transform, so Game.resize's scale is left alone. -- */
+@keyframes cc3BootIn
+{
+	from {opacity:0;}
+	to {opacity:1;}
+}
+@media (prefers-reduced-motion: no-preference)
+{
+	body:not(.noMotion) #wrapper
+	{
+		animation:cc3BootIn 0.35s ease-out;
+	}
+}
+
+/* -- one-column mode: the incoming column slides up + fades in. It plays
+   every time a column becomes visible (the display:none swap cancels and
+   restarts CSS animations), which is exactly when a tab is switched. -- */
+@keyframes cc3ColIn
+{
+	from {opacity:0;transform:translateY(8px);}
+}
+@media (prefers-reduced-motion: no-preference)
+{
+	body.oneColumn:not(.noMotion)[data-col="left"] #sectionLeft
+	{
+		animation:cc3ColIn 0.18s ease-out;
+	}
+	body.oneColumn:not(.noMotion)[data-col="middle"] #sectionMiddle
+	{
+		animation:cc3ColIn 0.18s ease-out;
+	}
+	body.oneColumn:not(.noMotion)[data-col="right"] #sectionRight
+	{
+		animation:cc3ColIn 0.18s ease-out;
+	}
+}
+
+/* -- notification notes: slide in from the right. UpdateNotes() rebuilds
+   the whole #notes innerHTML whenever a note is added or removed, which
+   would replay the entrance on every existing note; src/main.js marks
+   already-seen notes with .cc3Seen to suppress the replay. -- */
+@keyframes cc3NoteIn
+{
+	from {opacity:0;transform:translateX(24px);}
+}
+@media (prefers-reduced-motion: no-preference)
+{
+	body:not(.noMotion) .note
+	{
+		animation:cc3NoteIn 0.25s ease-out;
+	}
+	body:not(.noMotion) .note.cc3Seen
+	{
+		animation:none;
+	}
+}
+
+/* -- ascend-intro breakpoint: a soft light flash over everything (the
+   cookie "explodes" here: the engine plays snd/thud.mp3 at this tick) and
+   a brief screen shake on #game. The overlay + classes are created/toggled
+   by src/main.js. -- */
+#cc3Flash
+{
+	position:fixed;
+	left:0px;
+	top:0px;
+	right:0px;
+	bottom:0px;
+	pointer-events:none;
+	opacity:0;
+	z-index:2147483646;
+	background:radial-gradient(ellipse at 50% 42%,rgba(255,255,255,0.95) 0%,rgba(255,244,214,0.55) 35%,rgba(255,244,214,0) 70%);
+}
+@keyframes cc3FlashAnim
+{
+	0% {opacity:0;}
+	18% {opacity:1;}
+	100% {opacity:0;}
+}
+@keyframes cc3Shake
+{
+	0% {transform:translate(0,0);}
+	15% {transform:translate(-5px,4px);}
+	30% {transform:translate(4px,-5px);}
+	45% {transform:translate(-4px,-3px);}
+	60% {transform:translate(3px,4px);}
+	75% {transform:translate(-2px,2px);}
+	100% {transform:translate(0,0);}
+}
+@media (prefers-reduced-motion: no-preference)
+{
+	body:not(.noMotion) #cc3Flash.cc3On
+	{
+		animation:cc3FlashAnim 0.6s ease-out;
+	}
+	body:not(.noMotion) #game.cc3Shake
+	{
+		animation:cc3Shake 0.45s ease-out;
+	}
+}
