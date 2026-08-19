@@ -42,8 +42,9 @@ if (debugSurface) {
  * Garden — exercising the minigame dynamic-import path end to end.
  *   ?qa           seed a level-1 minigame building set and open the Garden
  *   ?qa=cookies   seed cookies only (no minigames) for light store-buy tests
+ *   ?qa=golden    spawn + pop a forced "frenzy" golden cookie, report the buff
  * Never active in a plain production load. */
-if (debugSurface && params.has('qa')) {
+if (debugSurface && params.has('qa') && params.get('qa') !== 'golden') {
 	const qaMode = params.get('qa'); // null for bare ?qa, else the value
 	const MINIGAME_BUILDINGS = ['Farm', 'Bank', 'Temple', 'Wizard tower'];
 	const tick = window.setInterval(() => {
@@ -86,6 +87,44 @@ if (debugSurface && params.has('qa')) {
 			}
 			if (farm.onMinigame) window.clearInterval(tick); // Garden open: done
 		}
+	}, 250);
+}
+
+// QA: verify the golden-cookie click path end to end. Spawns a golden cookie
+// with a forced "frenzy" effect, pops it, and reports the resulting buff and
+// CpS change (frenzy is a ×7 CpS buff). Usage: ?debug=1&qa=golden
+if (debugSurface && params.get('qa') === 'golden') {
+	const tick = window.setInterval(() => {
+		const G = window.Game;
+		if (!G || !G.ready || typeof G.shimmer !== 'function' || !G.shimmersL) return;
+		if (G.__qaGolden) return;
+		G.__qaGolden = 1;
+		const out = document.createElement('div');
+		out.id = '__dbgqa';
+		out.style.cssText = 'position:fixed;top:0;left:0;z-index:99999;background:#fff;color:#060;font:12px monospace;white-space:pre-wrap;max-width:640px;';
+		document.body.appendChild(out);
+		try {
+			G.cookies += 1e6;
+			for (let i = 0; i < 10; i++) G.Objects['Cursor'].buy(1);
+			G.recalculateGains = 1;
+			G.CalculateGains();
+			const before = G.cookiesPs;
+			const shimmersBefore = G.shimmers.length;
+			const sh = new G.shimmer('golden');
+			sh.force = 'frenzy';
+			sh.pop();
+			G.CalculateGains();
+			const after = G.cookiesPs;
+			const buff = G.buffs['Frenzy']; // gainBuff keys by display name
+			out.textContent =
+				'[QA-golden] baseline CpS=' + before.toFixed(2) +
+				'\n[QA-golden] after-frenzy CpS=' + after.toFixed(2) + ' (ratio ' + (before > 0 ? (after / before).toFixed(2) : '∞') + '×, expect ~7×)' +
+				'\n[QA-golden] Frenzy buff=' + (buff ? 'ACTIVE (mult ' + buff.arg1 + ')' : 'MISSING') +
+				'\n[QA-golden] shimmers ' + shimmersBefore + ' -> ' + G.shimmers.length + ' (spawn+pop lifecycle)';
+		} catch (e) {
+			out.textContent = '[QA-golden] ERROR: ' + e.constructor.name + ': ' + e.message;
+		}
+		window.clearInterval(tick);
 	}, 250);
 }
 
