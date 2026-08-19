@@ -14,6 +14,11 @@
 import './config.js';
 import './engine/base64.js';
 import './engine/main.js';
+/* CC3 extras: content mods built on the engine's own mod API (no CCSE).
+ * Must be imported after engine/main.js so Game.registerMod exists at module
+ * eval; each self-registers (its content is declared in the 'create' hook
+ * during Game.Load, before LoadSave). */
+import './extras/blackHoleInverter.js';
 import './styles/main.css';
 
 /* Error surface: paint uncaught boot/runtime errors to the DOM so they're
@@ -45,7 +50,7 @@ if (debugSurface) {
  *   ?qa=golden    spawn + pop a forced "frenzy" golden cookie, report the buff
  *   ?qa=save      export a save, corrupt state, re-import, verify round-trip
  * Never active in a plain production load. */
-if (debugSurface && params.has('qa') && params.get('qa') !== 'golden' && params.get('qa') !== 'save' && params.get('qa') !== 'perf' && params.get('qa') !== 'ascend' && params.get('qa') !== 'offline' && params.get('qa') !== 'special' && params.get('qa') !== 'a11y' && params.get('qa') !== 'wrinkler' && params.get('qa') !== 'icon' && params.get('qa') !== 'onecol' && params.get('qa') !== 'anim') {
+if (debugSurface && params.has('qa') && params.get('qa') !== 'golden' && params.get('qa') !== 'save' && params.get('qa') !== 'perf' && params.get('qa') !== 'ascend' && params.get('qa') !== 'offline' && params.get('qa') !== 'special' && params.get('qa') !== 'a11y' && params.get('qa') !== 'wrinkler' && params.get('qa') !== 'icon' && params.get('qa') !== 'onecol' && params.get('qa') !== 'anim' && params.get('qa') !== 'binverter') {
 	const qaMode = params.get('qa'); // null for bare ?qa, else the value
 	const MINIGAME_BUILDINGS = ['Farm', 'Bank', 'Temple', 'Wizard tower'];
 	const tick = window.setInterval(() => {
@@ -177,6 +182,83 @@ if (debugSurface && params.get('qa') === 'save') {
 				'\n[QA-save] ' + (pass ? 'PASS: export->import round-trip restored state' : 'FAIL: state mismatch');
 		} catch (e) {
 			out.textContent = '[QA-save] ERROR: ' + e.constructor.name + ': ' + e.message;
+		}
+		window.clearInterval(tick);
+	}, 250);
+}
+
+// QA: verify the Black Hole Inverter extras mod end to end — the building is
+// declared (id 20) with its store row + display canvas, its 17 upgrades + 18
+// achievements exist, it can be bought (CpS grows, tier-1 achievement wins), and
+// its state survives a save export->import round-trip. Usage: ?debug=1&qa=binverter
+if (debugSurface && params.get('qa') === 'binverter') {
+	const NAME = 'Black hole inverter';
+	const tick = window.setInterval(() => {
+		const G = window.Game;
+		if (!G || !G.ready || !G.Objects || !G.Objects[NAME]) return;
+		if (G.__qaBinverter) return;
+		G.__qaBinverter = 1;
+		const out = document.createElement('div');
+		out.id = '__dbgqa';
+		out.style.cssText = 'position:fixed;top:0;left:0;z-index:99999;background:#fff;color:#060;font:12px monospace;white-space:pre-wrap;max-width:640px;';
+		document.body.appendChild(out);
+		try {
+			const me = G.Objects[NAME];
+			const lines = [];
+			let pass = true;
+			const chk = (label, cond) => { lines.push((cond ? 'PASS: ' : 'FAIL: ') + label); if (!cond) pass = false; };
+
+			// 1. declaration + store/canvas DOM (vanilla has 19 buildings, id 0-18, so the inverter is id 19)
+			chk('building declared as id 19', me.id === 19);
+			chk('store row #product' + me.id + ' present', !!document.getElementById('product' + me.id));
+			chk('store icon #productIcon' + me.id + ' present', !!document.getElementById('productIcon' + me.id));
+			chk('display canvas #rowCanvas' + me.id + ' present', !!document.getElementById('rowCanvas' + me.id));
+			chk('building canvas+ctx wired', !!(me.canvas && me.ctx));
+			const iconEl = document.getElementById('productIcon' + me.id);
+			const iconBg = iconEl ? getComputedStyle(iconEl).backgroundImage : '';
+			chk('store icon shows the inverter sprite (' + iconBg + ')', iconBg.indexOf('blackholeinverter') !== -1);
+			chk('baseCps>0 (' + Math.round(me.baseCps) + ') & basePrice>0 (' + Math.round(me.basePrice) + ')', me.baseCps > 0 && me.basePrice > 0);
+
+			// 2. content counts
+			const upgCount = Object.keys(G.Upgrades).filter((n) => { const u = G.Upgrades[n]; return u.buildingTie === me || u.buildingTie1 === me || u.buildingTie2 === me; }).length;
+			const tieredAch = me.tieredAchievs ? Object.keys(me.tieredAchievs).length : 0;
+			const prodAch = me.productionAchievs ? me.productionAchievs.length : 0;
+			const achCount = tieredAch + prodAch + (me.levelAchiev10 ? 1 : 0);
+			chk('17 building upgrades (14 tiered + grandma + 2 synergy), got ' + upgCount, upgCount === 17);
+			chk('18 building achievements (14 tiered + 3 prod + M87), got ' + achCount, achCount === 18);
+
+			// 3. mechanics: reveal, buy, CpS, tier-1 achievement
+			me.unlocked = 1;
+			const cpsBefore = G.cookiesPs;
+			G.cookies += 1e40;
+			me.buy(1);
+			G.recalculateGains = 1; G.CalculateGains();
+			const cpsAfter = G.cookiesPs;
+			chk('buy(1) -> amount 1', me.amount === 1);
+			chk('CpS grew after buy (' + Math.round(cpsBefore) + ' -> ' + Math.round(cpsAfter) + ')', cpsAfter > cpsBefore);
+			chk('tier-1 achievement "Single singularity" won', !!(G.Achievements['Single singularity'] && G.Achievements['Single singularity'].won === 1));
+
+			// 4. save export->import round-trip
+			me.amount = 7; me.highest = 7; me.level = 3;
+			const up = G.Upgrades['Blacker holes'];
+			if (up) { up.unlocked = 1; up.bought = 1; }
+			G.recalculateGains = 1; G.CalculateGains();
+			const modObj = G.mods && G.mods['Black Hole Inverter'];
+			const directSave = (modObj && typeof modObj.save === 'function') ? modObj.save() : '(no mod.save)';
+			chk('mod.save() captures "Blacker holes"', directSave.indexOf('Blacker holes') !== -1);
+			const saveStr = G.WriteSave(1);
+			me.amount = 0; me.highest = 0; me.level = 0;
+			if (up) { up.bought = 0; up.unlocked = 0; }
+			G.recalculateGains = 1; G.CalculateGains();
+			const ok = G.ImportSaveCode(saveStr);
+			G.recalculateGains = 1; G.CalculateGains();
+			chk('ImportSaveCode returned true', ok === true);
+			chk('building amount restored to 7 (got ' + me.amount + ')', me.amount === 7);
+			chk('upgrade "Blacker holes" restored bought (got ' + (up ? up.bought : 'n/a') + ')', !!(up && up.bought === 1));
+
+			out.textContent = lines.join('\n') + '\n[QA-binverter] ' + (pass ? 'PASS: Black Hole Inverter verified end to end' : 'FAIL: see checks above');
+		} catch (e) {
+			out.textContent = '[QA-binverter] ERROR: ' + e.constructor.name + ': ' + e.message;
 		}
 		window.clearInterval(tick);
 	}, 250);

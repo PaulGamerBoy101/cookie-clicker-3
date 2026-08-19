@@ -149,6 +149,18 @@ test('?qa=icon: store product icons resolve to a sprite (no missing backgrounds)
 	expect(report).not.toMatch(/\(not found\)/);
 });
 
+test('?qa=binverter: the Black Hole Inverter mod (building + content + save) verified', async ({ page }) => {
+	await boot(page, '&qa=binverter');
+	const report = await qaReport(page, /PASS: Black Hole Inverter verified end to end/);
+	expect(report).not.toMatch(/ERROR/);
+	expect(report).not.toMatch(/FAIL:/);
+	expect(report).toMatch(/building declared as id 19/);
+	expect(report).toMatch(/17 building upgrades/);
+	expect(report).toMatch(/18 building achievements/);
+	expect(report).toMatch(/building amount restored to 7/);
+	await assertNoUncaughtErrors(page);
+});
+
 test('?qa=anim: the CC3 polish (v3.0 animation pass) verified end to end', async ({ page }) => {
 	await boot(page, '&qa=anim&oneCol=1');
 	// Counter sampling (~1s) + the ~2.5s ascend-intro breakpoint wait +
