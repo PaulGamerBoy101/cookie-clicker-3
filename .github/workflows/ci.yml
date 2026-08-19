@@ -1,0 +1,70 @@
+# Test the QA probe suite, then deploy the built game to GitHub Pages:
+# giveen.github.io/cookie-clicker-3/
+#
+# test:  drives the in-page ?debug=1&qa=… probes (tests/qa.spec.js) in
+#        headless Chromium against a fresh `npm run build` + `vite preview`
+#        — the same artifacts the deploy publishes.
+# deploy: only runs when the tests pass (and never on PRs). Replaces the
+#        gh-pages branch with the fresh dist/ (peaceiris/actions-gh-pages).
+#        The relocatable build (base './') serves from the repo subpath, and
+#        the per-build service-worker cache stamp (vite.config.js) makes each
+#        deploy self-updating for returning players.
+
+name: Test & Deploy
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: write # the deploy job pushes dist/ to the gh-pages branch
+
+# Deploys are short; never cancel one in flight — a torn gh-pages branch is
+# worse than a queued duplicate.
+concurrency:
+  group: ci
+  cancel-in-progress: false
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      # playwright.config.js webServer builds the production bundle itself
+      - run: npx playwright test
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 14
+
+  deploy:
+    needs: test
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+      # Replaces the branch contents with dist/ (keep_files defaults to false).
+      # The stamp step in the build fails the run if the service-worker cache
+      # placeholder ever goes missing, so a broken deploy can't publish.
+      - name: Publish dist/ to the gh-pages branch
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          # this action does not pick up the default GITHUB_TOKEN env var
+          github_token: ${{ github.token }}
+          publish_dir: ./dist

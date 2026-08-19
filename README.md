@@ -93,6 +93,23 @@ cache name the browser would never see a changed worker and the cache-first
 `index.html` would pin the old build on installed clients forever. An
 identical rebuild produces an identical stamp, so nothing churns needlessly.
 
+## Testing
+
+The in-page `?debug=1&qa=…` probes (see below) are also the regression suite:
+`tests/qa.spec.js` drives each probe in headless Chromium (Playwright) against
+a fresh production build and asserts its PASS report.
+
+```
+npx playwright install chromium   # once, per machine
+npm test                          # builds dist/ itself, serves it, runs all 12 probes
+```
+
+Each test gets a fresh browser profile (the first load picks English, as a new
+player would). The `offline` and `a11y` probes reload the page themselves to
+exercise the persist-then-reboot path; the suite runs serially in one worker
+because the probes are stateful. CI runs the same suite on every push and PR
+and gates the GitHub Pages deploy on it (`.github/workflows/ci.yml`).
+
 ## Security
 
 The game ships a `Content-Security-Policy` (a `<meta>` tag in `index.html`). The port is fully self-contained — every script, style, image, font and sound is same-origin, with no CDN, ads or trackers — and the policy enforces that at the browser level (`default-src 'self'`) while locking down the obvious vectors (`object-src 'none'`, `base-uri 'self'`, `form-action 'self'`).

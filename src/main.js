@@ -364,6 +364,11 @@ if (debugSurface && params.get('qa') === 'offline') {
 			G.WriteSave();
 			localStorage.setItem('__qaOffline', JSON.stringify({ base, cps, expected: (awayMs / 1000) * cps }));
 			out().textContent = '[QA-offline] phase 1: 100 cursors (CpS ' + cps.toFixed(2) + '), saved with lastDate 1h ago, reloading to trigger the offline gain...';
+			// Stop ticking: the marker is now in localStorage, so this page's next
+			// tick would run phase 2 *before* the reload — measuring live CpS
+			// drift instead of the offline gain. Phase 2 may only run on the
+			// reloaded page (fresh document, marker still present).
+			window.clearInterval(tick);
 			setTimeout(() => location.reload(), 400);
 		} catch (e) { out().textContent = '[QA-offline] ERROR: ' + e.message; }
 	}, 250);
@@ -463,6 +468,12 @@ if (debugSurface && params.get('qa') === 'a11y') {
 			G.WriteSave();
 			localStorage.setItem('__qaA11y', JSON.stringify({ on: 1 }));
 			out().textContent = '[QA-a11y] phase 1: enabled screen-reader mode, reloading...';
+			// Same guard as the offline probe: the marker is in localStorage now,
+			// so this page's next tick would run phase 2 before the reload. The
+			// pref flip can be picked up live by a re-render, so phase 2 must run
+			// on the reloaded page to actually verify the persisted pref + boot
+			// render path.
+			window.clearInterval(tick);
 			setTimeout(() => location.reload(), 400);
 		} catch (e) { out().textContent = '[QA-a11y] ERROR: ' + e.message; }
 	}, 250);
