@@ -45,7 +45,7 @@ if (debugSurface) {
  *   ?qa=golden    spawn + pop a forced "frenzy" golden cookie, report the buff
  *   ?qa=save      export a save, corrupt state, re-import, verify round-trip
  * Never active in a plain production load. */
-if (debugSurface && params.has('qa') && params.get('qa') !== 'golden' && params.get('qa') !== 'save' && params.get('qa') !== 'perf' && params.get('qa') !== 'ascend' && params.get('qa') !== 'offline' && params.get('qa') !== 'special' && params.get('qa') !== 'a11y' && params.get('qa') !== 'wrinkler' && params.get('qa') !== 'icon') {
+if (debugSurface && params.has('qa') && params.get('qa') !== 'golden' && params.get('qa') !== 'save' && params.get('qa') !== 'perf' && params.get('qa') !== 'ascend' && params.get('qa') !== 'offline' && params.get('qa') !== 'special' && params.get('qa') !== 'a11y' && params.get('qa') !== 'wrinkler' && params.get('qa') !== 'icon' && params.get('qa') !== 'onecol') {
 	const qaMode = params.get('qa'); // null for bare ?qa, else the value
 	const MINIGAME_BUILDINGS = ['Farm', 'Bank', 'Temple', 'Wizard tower'];
 	const tick = window.setInterval(() => {
@@ -577,6 +577,81 @@ if (debugSurface && params.get('qa') === 'icon') {
 	}, 250);
 }
 
+// QA: verify one-column responsive mode (the Orteil "todo!" CC3 completes).
+// Checks the mode state (body.oneColumn + data-col, Game.minLayoutW 800 -> 400,
+// viewport-meta swap, published --cc3Scale), the bottom tab bar (visible, three
+// tabs, column switching, active column full-width and stopping above the bar,
+// aria-pressed), and that the cookie click path works in the one-column layout.
+// Usage: ?debug=1&qa=onecol (force the mode with &oneCol=1, or open a viewport
+// of 640px or narrower to get it by auto-detection)
+if (debugSurface && params.get('qa') === 'onecol') {
+	const tick = window.setInterval(() => {
+		const G = window.Game;
+		// G.T<5 keeps ClickCookie's "game just booted" gate (Game.T<3) out of the picture
+		if (!G || !G.ready || typeof G.resize !== 'function' || G.T < 5) return;
+		if (G.__qaOneCol) return;
+		G.__qaOneCol = 1;
+		const out = document.createElement('div');
+		out.id = '__dbgqa';
+		out.style.cssText = 'position:fixed;top:0;left:0;z-index:99999;background:#fff;color:#060;font:12px monospace;white-space:pre-wrap;max-width:640px;';
+		document.body.appendChild(out);
+		const lines = [];
+		const ok = (label, pass, extra) => {
+			lines.push('[QA-onecol] ' + (pass ? 'PASS' : 'FAIL') + ' ' + label + (extra !== undefined ? ' (' + extra + ')' : ''));
+		};
+		try {
+			const body = document.body;
+			if (!body.classList.contains('oneColumn')) {
+				out.textContent =
+					'[QA-onecol] one-column mode is NOT active in this viewport (innerWidth=' + window.innerWidth +
+					', screen.width=' + window.screen.width + '; auto-switches at <= 640px)\n' +
+					'[QA-onecol] re-run with ?oneCol=1 to force it, or open a viewport <= 640px wide.';
+				window.clearInterval(tick);
+				return;
+			}
+			// --- mode state ---
+			ok('body.oneColumn + data-col=left at boot', body.dataset.col === 'left', 'data-col=' + body.dataset.col);
+			ok('Game.minLayoutW drops 800 -> 400', G.minLayoutW === 400, 'minLayoutW=' + G.minLayoutW);
+			const vp = document.querySelector('meta[name=viewport]');
+			ok('viewport meta swapped to device-width', !!(vp && vp.content.indexOf('width=device-width') === 0), vp ? vp.content : 'meta missing');
+			ok('Game.scale sane (0.3 .. 1.5)', G.scale >= 0.3 && G.scale <= 1.5, 'scale=' + G.scale);
+			ok('--cc3Scale CSS var published', body.style.getPropertyValue('--cc3Scale') === String(G.scale), 'var=' + body.style.getPropertyValue('--cc3Scale') + ', scale=' + G.scale);
+			// --- tab bar + columns ---
+			const bar = document.getElementById('oneColTabs');
+			const tabs = Array.prototype.slice.call(document.querySelectorAll('#oneColTabs button'));
+			ok('tab bar visible with 3 tabs', !!bar && tabs.length === 3 && getComputedStyle(bar).display === 'flex', 'display=' + (bar ? getComputedStyle(bar).display : 'n/a') + ', tabs=' + tabs.length);
+			const shown = (id) => { const r = document.getElementById(id).getBoundingClientRect(); return r.width >= 100 && r.height >= 100; };
+			const hidden = (id) => getComputedStyle(document.getElementById(id)).display === 'none';
+			const colRect = (id) => document.getElementById(id).getBoundingClientRect();
+			ok('left column shown, middle+right hidden', shown('sectionLeft') && hidden('sectionMiddle') && hidden('sectionRight'));
+			const fullW = window.innerWidth / G.scale;
+			const lw = colRect('sectionLeft').width;
+			ok('active column is full-width', Math.abs(lw - fullW) < 2, 'col=' + lw.toFixed(1) + 'px, expect~' + fullW.toFixed(1) + 'px');
+			const gap = colRect('sectionLeft').bottom - bar.getBoundingClientRect().top;
+			ok('column stops right above the tab bar', Math.abs(gap) < 2, 'gap=' + gap.toFixed(2) + 'px');
+			// --- tab switching ---
+			tabs[1].click();
+			ok('Buildings tab -> middle column', body.dataset.col === 'middle' && tabs[1].getAttribute('aria-pressed') === 'true' && shown('sectionMiddle') && hidden('sectionLeft') && hidden('sectionRight'), 'data-col=' + body.dataset.col);
+			tabs[2].click();
+			ok('Store tab -> right column', body.dataset.col === 'right' && tabs[2].getAttribute('aria-pressed') === 'true' && shown('sectionRight') && hidden('sectionLeft') && hidden('sectionMiddle'), 'data-col=' + body.dataset.col);
+			ok('aria-pressed tracks the active tab', tabs.map((t) => t.getAttribute('aria-pressed')).join(',') === 'false,false,true', tabs.map((t) => t.getAttribute('aria-pressed')).join(','));
+			// --- cookie click path in the one-column layout ---
+			tabs[0].click();
+			const r = document.getElementById('bigCookie').getBoundingClientRect();
+			const cx = (r.left + r.right) / 2;
+			ok('cookie on-screen and horizontally centered', r.top >= 0 && r.bottom <= window.innerHeight && Math.abs(cx - window.innerWidth / 2) < 5, 'center-x=' + cx.toFixed(1) + 'px vs viewport-mid ' + (window.innerWidth / 2).toFixed(1) + 'px');
+			const clicksBefore = G.cookieClicks;
+			const cookiesBefore = G.cookies;
+			G.ClickCookie(null, 5);
+			ok('cookie click earns cookies (ClickCookie path)', G.cookieClicks === clicksBefore + 1 && G.cookies >= cookiesBefore + 5 - 1e-6, cookiesBefore.toFixed(1) + ' -> ' + G.cookies.toFixed(1) + ' cookies, ' + clicksBefore + ' -> ' + G.cookieClicks + ' clicks');
+			out.textContent = lines.join('\n') + '\n[QA-onecol] ' + (lines.every((l) => l.indexOf('PASS') !== -1) ? 'PASS: one-column responsive mode verified' : 'FAIL: see the lines above');
+		} catch (e) {
+			out.textContent = lines.join('\n') + '\n[QA-onecol] ERROR: ' + e.constructor.name + ': ' + e.message;
+		}
+		window.clearInterval(tick);
+	}, 250);
+}
+
 /* ----------------------------------------------------------------- i18n */
 // Language files are ESM modules; Vite code-splits each into its own chunk.
 const langModules = import.meta.glob('./engine/loc/*.js');
@@ -649,7 +724,11 @@ if (swEnabled) {
    Force it for testing with ?oneCol=1 (on) / ?oneCol=0 (off). */
 (function () {
 	const ONE_COL_MAX_W = 640;
-	const VP_DEVICE = 'width=device-width, initial-scale=1';
+	// viewport-fit=cover: when installed as a full-screen PWA, let the content
+	// reach the screen edges so the CSS can place the tab bar / top bar against
+	// the real safe-area insets (env() is 0 without it). In a plain browser the
+	// insets are 0 anyway, so this only changes full-screen PWA behavior.
+	const VP_DEVICE = 'width=device-width, initial-scale=1, viewport-fit=cover';
 	const vp = document.querySelector('meta[name=viewport]');
 	const vpClassic = vp ? vp.content : null;
 	const force =
@@ -698,7 +777,11 @@ if (swEnabled) {
 		const orig = G.resize;
 		G.resize = function () {
 			applyMode(G);
-			return orig.call(G);
+			orig.call(G);
+			// Publish the layout scale (Game.resize set Game.scale) so CSS can convert
+			// viewport-space safe-area insets into the (possibly scaled) wrapper space:
+			// see the "One-column responsive mode" block in styles/main.css.
+			document.body.style.setProperty('--cc3Scale', String(G.scale));
 		};
 		G.resize(); // re-run now: the engine's boot resize already ran with the 800 default
 	}, 25);

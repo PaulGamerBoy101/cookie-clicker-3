@@ -3084,7 +3084,11 @@ p
 }
 
 
-/* todo! */
+/* todo! (2.048) — COMPLETED IN CC3: see the "One-column responsive mode (CC3)"
+   block at the end of this file. The min layout width is parameterized as
+   Game.minLayoutW (800 -> 400; src/engine/main.js), and the resize triggers are
+   handled by wrapping Game.resize (src/main.js). Test with ?oneCol=1 / verify
+   with ?debug=1&qa=onecol. */
 /* note: also change min game size ie. w/Math.max(800,w) to 400 and account for window resizing triggers */
 /*
 #sectionLeft
@@ -3393,7 +3397,8 @@ STOP THE FANCY
    point) so a phone scales at ~1x instead of ~0.5x. The entry point
    (src/main.js) toggles body.oneColumn + body[data-col] and the
    viewport meta; this block only styles the two states.
-   Force it for testing with ?oneCol=1 (on) / ?oneCol=0 (off). */
+   Force it for testing with ?oneCol=1 (on) / ?oneCol=0 (off); verify it with
+   ?debug=1&qa=onecol. */
 #oneColTabs
 {
 	display:none;
@@ -3407,9 +3412,23 @@ STOP THE FANCY
 	border-top:1px solid #000;
 	box-sizing:border-box;
 }
+/* --oneColBarH: the 48px bar, grown by the bottom safe area (iOS home
+   indicator) when the PWA runs full-screen (viewport-fit=cover, set in
+   src/main.js). env() is 0 outside that mode, so in a plain browser the bar
+   stays 48px. The inset is in VIEWPORT pixels but the bar lives inside
+   #wrapper, which Game.resize may scale (Game.scale, published on <body> as
+   --cc3Scale by src/main.js); the division converts it into wrapper pixels.
+   The columns reuse this same length for their bottom offset, so they always
+   stop exactly at the bar's top edge. */
+body.oneColumn
+{
+	--oneColBarH:calc(48px + env(safe-area-inset-bottom,0px) / var(--cc3Scale,1));
+}
 body.oneColumn #oneColTabs
 {
 	display:flex;
+	height:var(--oneColBarH);
+	padding-bottom:calc(env(safe-area-inset-bottom,0px) / var(--cc3Scale,1));
 }
 #oneColTabs button
 {
@@ -3460,7 +3479,7 @@ body.oneColumn[data-col="left"] #sectionLeft
 	width:auto;
 	min-width:0px;
 	top:0px;
-	bottom:48px;
+	bottom:var(--oneColBarH);
 }
 body.oneColumn[data-col="middle"] #sectionMiddle
 {
@@ -3469,7 +3488,7 @@ body.oneColumn[data-col="middle"] #sectionMiddle
 	right:0px;
 	min-width:0px;
 	top:0px;
-	bottom:48px;
+	bottom:var(--oneColBarH);
 }
 body.oneColumn[data-col="right"] #sectionRight
 {
@@ -3480,7 +3499,7 @@ body.oneColumn[data-col="right"] #sectionRight
 	height:auto;
 	min-width:0px;
 	top:0px;
-	bottom:48px;
+	bottom:var(--oneColBarH);
 }
 /* Orteil's note: these treatments assume the narrow 3-column layout. */
 body.oneColumn #cookies,
@@ -3488,11 +3507,15 @@ body.oneColumn #bakeryName
 {
 	background:transparent;
 }
-/* the top bar has more links than fit a phone: let it scroll sideways. */
+/* the top bar has more links than fit a phone: let it scroll sideways. In
+   full-screen PWA mode it also grows down by the top safe area (notch /
+   status bar) so its links stay tappable; env() is 0 outside that mode. */
 body.oneColumn #topBar
 {
 	overflow-x:auto;
 	overflow-y:hidden;
 	white-space:nowrap;
 	-webkit-overflow-scrolling:touch;
+	height:calc(32px + env(safe-area-inset-top,0px) / var(--cc3Scale,1));
+	padding-top:calc(env(safe-area-inset-top,0px) / var(--cc3Scale,1));
 }

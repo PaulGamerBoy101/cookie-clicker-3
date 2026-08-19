@@ -98,6 +98,13 @@ These weaken the CSP's XSS protection. That is an accepted, documented trade-off
 
 - `?debug=1` — paints uncaught errors / unhandled rejections onto the page.
 - `?nosw` — skip service-worker registration.
+- `?oneCol=1` / `?oneCol=0` — force the one-column responsive mode on or off.
+  Auto by default: it switches when `min(innerWidth, screen.width)` ≤ 640px
+  (the phone case), collapses the three columns to one full-width column at a
+  time with a bottom tab bar, drops the min layout width 800→400, and swaps the
+  viewport meta to `width=device-width, initial-scale=1, viewport-fit=cover`
+  (full-screen PWA builds keep the iOS safe areas clear; see
+  "One-column responsive mode" in `src/styles/main.css`).
 - `?qa` (with `?debug=1`) — QA seed: gives a level-1 Farm/Bank/Temple/Wizard
   tower so the engine dynamically imports every minigame, then opens the
   Garden. `?qa=cookies` seeds cookies only (no minigames) for light
@@ -128,8 +135,14 @@ increments, the swallowed cookies are refunded (+10%), and the debuff clears.
   minigame buildings at level `N` (default 1), opens the Garden, and reports the
   actual game-loop rate (`Game.T` ticks/sec) versus the 30-tick `Game.fps`
   target — used to confirm the 4-minigame frame cost (measured 29.9 at level 1
-  and 30.3 at level 15, i.e. the loop holds its target). Never active in a
-  plain load.
+  and 30.3 at level 15, i.e. the loop holds its target). `?qa=onecol`
+  verifies the one-column responsive mode (the "todo!" Orteil left in the
+  2.048 CSS that CC3 completes): the `body.oneColumn`/`data-col` state, the
+  `Game.minLayoutW` 800→400 swap, the viewport-meta swap, the bottom tab bar
+  (three tabs, column switching, the active column full-width and stopping
+  above the bar, `aria-pressed` tracking), and that the cookie click path
+  works in the one-column layout — force the mode with `?oneCol=1` or open a
+  viewport ≤ 640px wide. Never active in a plain load.
 
 ## Credits
 
