@@ -45,7 +45,7 @@ if (debugSurface) {
  *   ?qa=golden    spawn + pop a forced "frenzy" golden cookie, report the buff
  *   ?qa=save      export a save, corrupt state, re-import, verify round-trip
  * Never active in a plain production load. */
-if (debugSurface && params.has('qa') && params.get('qa') !== 'golden' && params.get('qa') !== 'save' && params.get('qa') !== 'perf' && params.get('qa') !== 'ascend' && params.get('qa') !== 'offline' && params.get('qa') !== 'special' && params.get('qa') !== 'a11y') {
+if (debugSurface && params.has('qa') && params.get('qa') !== 'golden' && params.get('qa') !== 'save' && params.get('qa') !== 'perf' && params.get('qa') !== 'ascend' && params.get('qa') !== 'offline' && params.get('qa') !== 'special' && params.get('qa') !== 'a11y' && params.get('qa') !== 'wrinkler') {
 	const qaMode = params.get('qa'); // null for bare ?qa, else the value
 	const MINIGAME_BUILDINGS = ['Farm', 'Bank', 'Temple', 'Wizard tower'];
 	const tick = window.setInterval(() => {
@@ -465,6 +465,78 @@ if (debugSurface && params.get('qa') === 'a11y') {
 			out().textContent = '[QA-a11y] phase 1: enabled screen-reader mode, reloading...';
 			setTimeout(() => location.reload(), 400);
 		} catch (e) { out().textContent = '[QA-a11y] ERROR: ' + e.message; }
+	}, 250);
+}
+
+// QA: verify the wrinklers (Grandmapocalypse critters on the cookie). They spawn
+// while Game.elderWrath > 0; a fully-visible (phase 2) wrinkler sucks 5% of CpS
+// (Game.cpsSucked) and swallows cookies; popping it (hp <= 0.5) removes it, bumps
+// Game.wrinklersPopped, and refunds the swallowed cookies (+10%). The probe forces
+// one to spawn, makes it fully visible, checks the CpS debuff, then pops it — the
+// pop resolves on the next loop tick (UpdateWrinklers), so verification runs one
+// interval later. Usage: ?debug=1&qa=wrinkler
+if (debugSurface && params.get('qa') === 'wrinkler') {
+	const out = () => {
+		let d = document.getElementById('__dbgqa');
+		if (!d) { d = document.createElement('div'); d.id = '__dbgqa'; d.style.cssText = 'position:fixed;top:0;left:0;z-index:99999;background:#fff;color:#060;font:12px monospace;white-space:pre-wrap;max-width:640px;'; document.body.appendChild(d); }
+		return d;
+	};
+	const tick = window.setInterval(() => {
+		const G = window.Game;
+		if (!G || !G.ready || !G.wrinklers || G.T < 90) return;
+		if (G.__qaWrinklerDone) return;
+		if (!G.__qaWrinklerSeeded) {
+			// Seed 1: enable wrath, seed CpS, spawn + fully show a wrinkler, check
+			// the CpS debuff, then pop it (resolves on the next UpdateWrinklers tick).
+			G.__qaWrinklerSeeded = 1;
+			try {
+				const lines = [];
+				G.elderWrath = 1;
+				G.Objects['Cursor'].amount = 100;
+				G.recalculateGains = 1; G.CalculateGains();
+				const cpsBefore = G.cookiesPs;
+				const me = G.wrinklers[0];
+				G.SpawnWrinkler(me);
+				me.phase = 2; me.close = 1;      // fully visible (skip the crawl-in)
+				G.recalculateGains = 1; G.CalculateGains();
+				// The wrinkler does NOT change the raw CpS; it sets Game.cpsSucked
+				// (5% per visible wrinkler), which lowers the DISPLAYED CpS and drains
+				// cookies via Game.Dissolve every tick. So verify cpsSucked > 0.
+				const debuff = G.cpsSucked;
+				const debuffOk = debuff > 0;
+				lines.push('[QA-wrinkler] phase 1 (wrinkler spawned, fully visible)');
+				lines.push('raw CpS ' + cpsBefore.toFixed(2) + ' (unchanged)   cpsSucked = ' + debuff.toFixed(3) + (debuffOk ? '   (PASS: a visible wrinkler sucks 5% of CpS -> displayed CpS + cookie drain)' : '   (FAIL)'));
+				me.sucked = 1000;                // give it swallowed cookies to refund
+				G.__qaWrinkBefore = { popped: G.wrinklersPopped, cookies: G.cookies };
+				me.hp = -10;                     // triggers the pop on the next tick
+				G.__qaWrinkDef = { debuffOk, cpsBefore, debuff };
+				out().textContent = lines.join('\n');
+			} catch (e) { out().textContent = '[QA-wrinkler] ERROR: ' + e.message + '\n' + (e.stack || ''); G.__qaWrinklerDone = 1; window.clearInterval(tick); }
+			return;
+		}
+		// Seed 2: the pop has resolved (a loop tick ran UpdateWrinklers). Verify.
+		G.__qaWrinklerDone = 1;
+		try {
+			const me = G.wrinklers[0];
+			const before = G.__qaWrinkBefore;
+			const d = G.__qaWrinkDef;
+			const poppedOk = G.wrinklersPopped > before.popped && me.phase === 0;
+			const refund = G.cookies - before.cookies;
+			const refundOk = refund >= 550;      // ~1100 refund (1000 x 1.1), well above drift
+			const debuffGone = G.cpsSucked === 0;
+			const lines = [
+				'[QA-wrinkler] phase 2 (pop resolved on a loop tick)',
+				'phase1 raw CpS ' + (d ? d.cpsBefore.toFixed(2) : '?') + '   cpsSucked=' + (d ? d.debuff.toFixed(3) : '?') + (d && d.debuffOk ? '   (PASS: visible wrinkler set cpsSucked, lowering displayed CpS)' : '   (FAIL: debuff not seen)'),
+				'wrinklersPopped ' + before.popped + ' -> ' + G.wrinklersPopped + (poppedOk ? '   (PASS: +1, wrinkler removed phase=0)' : '   (FAIL)'),
+				'cookies ' + Math.round(before.cookies) + ' -> ' + Math.round(G.cookies) + ' (+' + Math.round(refund) + ')' + (refundOk ? '   (PASS: refunded swallowed cookies +10%)' : '   (FAIL)'),
+				'cpsSucked = ' + G.cpsSucked + (debuffGone ? '   (PASS: CpS debuff cleared after the pop)' : '   (FAIL)'),
+				d && d.debuffOk && poppedOk && refundOk && debuffGone
+					? '[QA-wrinkler] PASS: wrinkler spawns, sucks 5% CpS, and pops for a cookie refund'
+					: '[QA-wrinkler] CHECK: see above'
+			];
+			out().textContent = lines.join('\n');
+		} catch (e) { out().textContent = '[QA-wrinkler] verify error: ' + e.message; }
+		window.clearInterval(tick);
 	}, 250);
 }
 
