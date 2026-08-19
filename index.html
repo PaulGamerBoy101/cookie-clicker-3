@@ -2,6 +2,21 @@
 <html lang="en">
 <head>
 	<meta charset="utf-8">
+	<!--
+		Content-Security-Policy. The game is fully self-contained: every script,
+		style, image, font and sound is same-origin (no CDN, no ads, no trackers).
+		This policy enforces that at the browser level and locks down the obvious
+		vectors (object embedding, <base> hijacking, off-origin form submission).
+
+		'script-src' keeps 'unsafe-inline' because the ported 2.048 engine builds
+		its many click handlers as inline onclick/ontouchend attributes
+		(Game.clickStr), and 'unsafe-eval' because the i18n plural-form compiler
+		uses `new Function` on the bundled, trusted language files. Both weaken
+		XSS protection; that is an accepted trade-off for a faithful port of a
+		local offline PWA with no untrusted input. Refactoring the legacy engine
+		off inline handlers / eval is out of scope. See README "Security".
+	-->
+	<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; media-src 'self' data: blob:; connect-src 'self' data: blob:; object-src 'none'; base-uri 'self'; form-action 'self';">
 	<meta name="viewport" content="width=900, initial-scale=1">
 	<title>Cookie Clicker 3</title>
 	<meta name="description" content="Cookie Clicker 3 — a modern port of Cookie Clicker 2.048. ES modules, Vite, zero runtime dependencies.">

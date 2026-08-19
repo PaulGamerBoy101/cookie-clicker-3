@@ -83,6 +83,17 @@ npm run preview    # serve dist/ at http://localhost:4173
 
 The build is relocatable (`base: './'`), so `dist/` can be dropped onto any static host, including a GitHub Pages subpath.
 
+## Security
+
+The game ships a `Content-Security-Policy` (a `<meta>` tag in `index.html`). The port is fully self-contained — every script, style, image, font and sound is same-origin, with no CDN, ads or trackers — and the policy enforces that at the browser level (`default-src 'self'`) while locking down the obvious vectors (`object-src 'none'`, `base-uri 'self'`, `form-action 'self'`).
+
+Two directives are intentionally permissive, and it's worth being explicit about the trade-off:
+
+- `script-src 'self' 'unsafe-inline' 'unsafe-eval'` — the ported 2.048 engine builds its many click handlers as inline `onclick`/`ontouchend` attributes (`Game.clickStr`), and the i18n plural-form compiler uses `new Function()` on the bundled, trusted language files. Both are core to the engine and can't be nonced/hashed (they're generated at runtime).
+- `style-src 'self' 'unsafe-inline'` — the engine sets inline `style` attributes extensively.
+
+These weaken the CSP's XSS protection. That is an accepted, documented trade-off: this is a local offline PWA with no untrusted input and no user-generated HTML, so the residual XSS surface is minimal, and refactoring the legacy engine off inline handlers and `eval` is out of scope for a faithful port. If the engine is ever modernized in that direction, drop the two `'unsafe-*'` keywords.
+
 ## Debugging flags (production)
 
 - `?debug=1` — paints uncaught errors / unhandled rejections onto the page.
