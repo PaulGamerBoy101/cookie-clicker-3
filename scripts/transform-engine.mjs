@@ -135,6 +135,28 @@ if (!code.includes('window.addEventListener(\'load\',')) {
   }
 }
 
+// 4a. LoadMinigames loop: block-scope `me`.
+// The 2.048 original captured `me` by value with an IIFE around the async
+// <script> onload handler. The ES-module import().then() replacement above
+// drops that IIFE, so a function-scoped `var me` would let the .then()/.catch()
+// closures observe the loop's final value — i.e. the wrong building — by the
+// time the dynamic import resolves. Scoping `me` per iteration fixes the
+// capture using the modern idiom.
+{
+  const fnStart = code.indexOf('Game.LoadMinigames=function()');
+  if (fnStart !== -1) {
+    const varMe = code.indexOf('var me=Game.Objects[i];', fnStart);
+    if (varMe !== -1 && varMe - fnStart < 300) {
+      code =
+        code.slice(0, varMe) +
+        'const me=Game.Objects[i];' +
+        code.slice(varMe + 'var me=Game.Objects[i];'.length);
+    } else {
+      throw new Error('LoadMinigames loop `var me` not found near function head');
+    }
+  }
+}
+
 // 4b. CC3 version badge: render the numeric version with a 3-digit tail.
 if (code.includes("'v. '+Game.version+")) {
   code = code.replace("'v. '+Game.version+", "'v. '+Game.version.toFixed(3)+");
@@ -170,6 +192,18 @@ if (code.includes("'v. '+Game.version+")) {
   if (code.includes(old)) code = code.replace(old, neu);
   else if (!code.includes('// CC3: getBoundingClientRect() returns an immutable DOMRect in'))
     throw new Error('getBounds patch anchor not found');
+}
+
+// 4d. Seeded RNG (seedrandom): the top-level IIFE is invoked with `this` as its
+// first argument. In a classic script that is `window`; in an ES module the
+// top-level `this` is `undefined`, so the no-arg `Math.seedrandom()` path
+// (which reads `a.crypto`) crashed. Pass `window` explicitly.
+{
+  const old = 'm(c.random(),b)})(this,[],Math,256,6,52);';
+  const neu = 'm(c.random(),b)})(window,[],Math,256,6,52);';
+  if (code.includes(old)) code = code.replace(old, neu);
+  else if (!code.includes('(window,[],Math,256,6,52)'))
+    throw new Error('seedrandom `this` patch anchor not found');
 }
 
 // 5. Publish the engine globals for cross-module free-variable resolution

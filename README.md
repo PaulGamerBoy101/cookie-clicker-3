@@ -83,6 +83,10 @@ The build is relocatable (`base: './'`), so `dist/` can be dropped onto any stat
 
 - `?debug=1` — paints uncaught errors / unhandled rejections onto the page.
 - `?nosw` — skip service-worker registration.
+- `?qa` (with `?debug=1`) — QA seed: gives a level-1 Farm/Bank/Temple/Wizard
+  tower so the engine dynamically imports every minigame, then opens the
+  Garden. `?qa=cookies` seeds cookies only (no minigames) for light
+  store-buy testing. Never active in a plain load.
 
 ## Credits
 
