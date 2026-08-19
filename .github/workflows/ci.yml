@@ -23,8 +23,13 @@ permissions:
 
 # Deploys are short; never cancel one in flight — a torn gh-pages branch is
 # worse than a queued duplicate.
+# The group is scoped per-branch: one global group let a stuck run on a PR
+# branch (its workflow snapshot still had the apt-stalling --with-deps
+# install) hold master's test-and-deploy in the queue behind it. Per-branch
+# groups still serialize master's deploys against each other (the protection
+# this exists for) while letting PRs run independently of the mainline.
 concurrency:
-  group: ci
+  group: ci-${{ github.ref }}
   cancel-in-progress: false
 
 jobs:
