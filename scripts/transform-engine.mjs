@@ -206,6 +206,29 @@ if (code.includes("'v. '+Game.version+")) {
     throw new Error('seedrandom `this` patch anchor not found');
 }
 
+// 4e. crateTooltip: `mysterious` was assigned without `var` (an implicit
+// global in the original). `Game.crate` has its own local `var mysterious`,
+// so this leaked to window in sloppy mode; in strict-mode ESM the bare
+// assignment is a ReferenceError. Make it local to crateTooltip.
+{
+  const old = 'var tags=[];\n\t\t\tmysterious=0;\n\t\t\tvar neuromancy=0;';
+  const neu = 'var tags=[];\n\t\t\tvar mysterious=0;\n\t\t\tvar neuromancy=0;';
+  if (code.includes(old)) code = code.replace(old, neu);
+  else if (!code.includes('var mysterious=0;'))
+    throw new Error('mysterious patch anchor not found');
+}
+
+// 4f. Stats "Running version": render the version with toFixed(3) so it shows
+// "3.000" (matching the top bar) instead of the bare number "3".
+// (Double-quoted so the literal keeps its `+` concatenation operators intact.)
+{
+  const old = "loc(\"Running version:\")+'</b> '+Game.version+'</div>'+";
+  const neu = "loc(\"Running version:\")+'</b> '+Game.version.toFixed(3)+'</div>'+";
+  if (code.includes(old)) code = code.replace(old, neu);
+  else if (!code.includes(neu))
+    throw new Error('Running version patch anchor not found');
+}
+
 // 5. Publish the engine globals for cross-module free-variable resolution
 //    (minigame modules) and for the legacy mod API (Game.LoadMod scripts).
 {
