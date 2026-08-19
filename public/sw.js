@@ -9,8 +9,18 @@
  *     minigame/language chunks ("error loading dynamically imported module").
  *   - every cache operation is best-effort (try/catch) so a cache failure
  *     can never turn into a failed fetch.
+ *
+ * Deploy updates: CACHE is stamped at build time (the cc3:stamp-service-worker
+ * plugin in vite.config.js) — `__BUILD__` becomes a content hash of the built
+ * dist/, so every changed build gets a new cache name. Returning clients then
+ * see the changed sw.js on their next navigation, install the new SW, and its
+ * activate() drops the old cache. With a static cache name the browser would
+ * never update the SW (byte-identical script) and the cache-first index.html
+ * would pin the previous build on every installed client forever. In dev this
+ * file is served as-is with the literal placeholder; the SW only registers in
+ * production builds, so the placeholder never becomes a live cache name.
  */
-const CACHE = 'cookie-clicker-3-v1';
+const CACHE = 'cookie-clicker-3-__BUILD__';
 const MAX_ENTRIES = 512;
 
 self.addEventListener('install', (event) => {

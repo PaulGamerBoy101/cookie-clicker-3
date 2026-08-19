@@ -83,6 +83,16 @@ npm run preview    # serve dist/ at http://localhost:4173
 
 The build is relocatable (`base: './'`), so `dist/` can be dropped onto any static host, including a GitHub Pages subpath.
 
+Every build also stamps the service worker's cache name with a content hash of
+`dist/` (the `cc3:stamp-service-worker` plugin in `vite.config.js` rewrites the
+`__BUILD__` placeholder in `public/sw.js`). That is what makes a deploy
+self-updating for returning players: when any file changes, the stamped
+`sw.js` differs byte-for-byte, the browser installs the new worker on the next
+visit, and its `activate()` deletes the previous build's cache. With a static
+cache name the browser would never see a changed worker and the cache-first
+`index.html` would pin the old build on installed clients forever. An
+identical rebuild produces an identical stamp, so nothing churns needlessly.
+
 ## Security
 
 The game ships a `Content-Security-Policy` (a `<meta>` tag in `index.html`). The port is fully self-contained — every script, style, image, font and sound is same-origin, with no CDN, ads or trackers — and the policy enforces that at the browser level (`default-src 'self'`) while locking down the obvious vectors (`object-src 'none'`, `base-uri 'self'`, `form-action 'self'`).
