@@ -3383,3 +3383,116 @@ STOP THE FANCY
 
 
 /**{overflow:hidden!important;}*/
+/* =====================================================================
+   One-column responsive mode (CC3)
+   =====================================================================
+   Completes the "todo!" Orteil left in the 2.048 style.css: on a
+   narrow viewport the three side-by-side columns collapse to ONE full-
+   width column at a time, switched with a bottom tab bar, and the min
+   layout width drops 800 -> 400 (Game.minLayoutW, set by the entry
+   point) so a phone scales at ~1x instead of ~0.5x. The entry point
+   (src/main.js) toggles body.oneColumn + body[data-col] and the
+   viewport meta; this block only styles the two states.
+   Force it for testing with ?oneCol=1 (on) / ?oneCol=0 (off). */
+#oneColTabs
+{
+	display:none;
+	position:absolute;
+	left:0px;
+	right:0px;
+	bottom:0px;
+	height:48px;
+	z-index:10000;
+	background:rgba(0,0,0,0.85);
+	border-top:1px solid #000;
+	box-sizing:border-box;
+}
+body.oneColumn #oneColTabs
+{
+	display:flex;
+}
+#oneColTabs button
+{
+	flex:1;
+	appearance:none;
+	-webkit-appearance:none;
+	margin:0;
+	border:none;
+	border-right:1px solid rgba(255,255,255,0.15);
+	background:none;
+	color:#fff;
+	font-family:inherit;
+	font-size:15px;
+	font-weight:bold;
+	text-shadow:0px 1px 2px #000;
+	cursor:pointer;
+	padding:0;
+	height:48px;
+	line-height:48px;
+}
+#oneColTabs button:last-child
+{
+	border-right:none;
+}
+#oneColTabs button:hover
+{
+	background:rgba(255,255,255,0.08);
+}
+#oneColTabs button[aria-pressed="true"]
+{
+	background:rgba(255,255,255,0.14);
+}
+/* hide all columns + the separator beams in one-column mode ... */
+body.oneColumn #sectionLeft,
+body.oneColumn #sectionMiddle,
+body.oneColumn #sectionRight,
+body.oneColumn #leftBeam,
+body.oneColumn #rightBeam
+{
+	display:none;
+}
+/* ... and show the active one full-width, leaving room for the tab bar. */
+body.oneColumn[data-col="left"] #sectionLeft
+{
+	display:block;
+	left:0px;
+	right:0px;
+	width:auto;
+	min-width:0px;
+	top:0px;
+	bottom:48px;
+}
+body.oneColumn[data-col="middle"] #sectionMiddle
+{
+	display:block;
+	left:0px;
+	right:0px;
+	min-width:0px;
+	top:0px;
+	bottom:48px;
+}
+body.oneColumn[data-col="right"] #sectionRight
+{
+	display:block;
+	left:0px;
+	right:0px;
+	width:auto;
+	height:auto;
+	min-width:0px;
+	top:0px;
+	bottom:48px;
+}
+/* Orteil's note: these treatments assume the narrow 3-column layout. */
+body.oneColumn #cookies,
+body.oneColumn #bakeryName
+{
+	background:transparent;
+}
+/* the top bar has more links than fit a phone: let it scroll sideways. */
+body.oneColumn #topBar
+{
+	overflow-x:auto;
+	overflow-y:hidden;
+	white-space:nowrap;
+	-webkit-overflow-scrolling:touch;
+}

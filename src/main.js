@@ -633,3 +633,73 @@ if (swEnabled) {
 		});
 	});
 }
+
+/* --------------------------- one-column responsive mode (CC3) ---------------------------
+   Completes the "todo!" Orteil left in the 2.048 style.css. On a narrow viewport the
+   game collapses to ONE full-width column at a time, switched with a bottom tab bar
+   (Cookie / Buildings / Store), and the min layout width drops 800 -> 400 (the engine reads
+   Game.minLayoutW; the transform parameterized the hard-coded 800). The viewport meta is
+   swapped too: the classic layout uses width=900 (a fixed 900px canvas scaled to fit — on a
+   phone that forces the whole game to ~0.45x), while one-column mode uses width=device-width
+   so the game gets the phone's real pixel width.
+
+   Mode detection uses min(innerWidth, screen.width): under the classic meta a phone's layout
+   viewport reports 900, but screen.width always reports the device width, so detection works
+   in both states; on desktop the window's innerWidth is the meaningful value.
+   Force it for testing with ?oneCol=1 (on) / ?oneCol=0 (off). */
+(function () {
+	const ONE_COL_MAX_W = 640;
+	const VP_DEVICE = 'width=device-width, initial-scale=1';
+	const vp = document.querySelector('meta[name=viewport]');
+	const vpClassic = vp ? vp.content : null;
+	const force =
+		params.get('oneCol') === '1' || params.get('oneCol') === 'on'
+			? true
+			: params.get('oneCol') === '0' || params.get('oneCol') === 'off'
+				? false
+				: null;
+	const COLS = ['left', 'middle', 'right'];
+	const tabs = Array.prototype.slice.call(document.querySelectorAll('#oneColTabs button'));
+	let activeCol = 'left';
+	let currentOneCol = null;
+
+	const setCol = (col) => {
+		activeCol = COLS.indexOf(col) === -1 ? 'left' : col;
+		document.body.dataset.col = activeCol;
+		for (const t of tabs) t.setAttribute('aria-pressed', String(t.dataset.col === activeCol));
+	};
+	setCol('left');
+	for (const t of tabs) t.addEventListener('click', () => setCol(t.dataset.col));
+
+	const desiredOneCol = () =>
+		force === null ? Math.min(window.innerWidth, window.screen.width) <= ONE_COL_MAX_W : force;
+
+	const applyMode = (G) => {
+		const on = desiredOneCol();
+		if (on === currentOneCol) return;
+		currentOneCol = on;
+		document.body.classList.toggle('oneColumn', on);
+		if (G) G.minLayoutW = on ? 400 : 800;
+		if (vp) vp.content = on ? VP_DEVICE : vpClassic;
+	};
+
+	// The engine registers its own window 'resize' listener and calls Game.resize() once at
+	// boot. Wrapping the function (not adding a second listener) guarantees the mode is
+	// resolved BEFORE the engine's scale math runs, so the min width is already correct on
+	// every pass — including the resize events our own viewport-meta swap triggers.
+	const boot = window.setInterval(() => {
+		const G = window.Game;
+		// Game.resize only exists once the engine's constructor has run (after the
+		// player picks a language on a fresh profile), so poll until it does.
+		if (!G || typeof G.resize !== 'function') return;
+		window.clearInterval(boot);
+		if (G.__oneColWrapped) return;
+		G.__oneColWrapped = 1;
+		const orig = G.resize;
+		G.resize = function () {
+			applyMode(G);
+			return orig.call(G);
+		};
+		G.resize(); // re-run now: the engine's boot resize already ran with the 800 default
+	}, 25);
+})();

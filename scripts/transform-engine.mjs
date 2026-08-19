@@ -57,6 +57,17 @@ const applyConcatExt = (s) => {
   return s;
 };
 
+// CC3 one-column responsive mode: parameterize the min layout width (800) so
+// the entry point can drop it to 400 on narrow viewports — the exact sizing
+// change Orteil's "/* todo! */" note in style.css asked for ("change min game
+// size ie. w/Math.max(800,w) to 400"). Wide layouts keep 800 via the fallback.
+const applyMinLayoutW = (s) => {
+  const from = 'w/Math.max(800,w),';
+  const to = 'w/Math.max(Game.minLayoutW||800,w),';
+  if (!s.includes(from)) throw new Error('min-layout-width pattern not found: ' + from);
+  return s.split(from).join(to);
+};
+
 // A third category: bare-filename string literals with no img/ prefix —
 // Pic('icons.png'), bg:'grandmaBackground.png', me.pic=='smallCookies.png'
 // comparisons, Game.Loader.Load(['filler.png']), even 'dragon.png?v='. They
@@ -330,6 +341,7 @@ if (code.includes("'v. '+Game.version+")) {
 // Order matters: applyConcatExt must run before rewriteBareFilenames, which
 // would otherwise rewrite art.base+'Background.png' first and hide the exact
 // concat pattern (the throw in applyConcatExt would then fire).
+code = applyMinLayoutW(code);
 code = toWebP(code);
 code = applyConcatExt(code);
 code = rewriteBareFilenames(code);

@@ -2064,7 +2064,7 @@ Game.Launch=function()
 			var prevH=Game.windowH;
 			
 			var scale=Math.min(
-				w/Math.max(800,w),
+				w/Math.max(Game.minLayoutW||800,w),
 				h/Math.max(200,h)
 			);
 			Game.windowW=Math.floor(w/scale);
