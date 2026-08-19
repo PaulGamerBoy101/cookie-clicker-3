@@ -37,7 +37,10 @@ jobs:
           node-version: 20
           cache: npm
       - run: npm ci
-      - run: npx playwright install --with-deps chromium
+      # GitHub-hosted runners already ship the system libraries Playwright
+      # needs, so no --with-deps (that apt pass can stall minutes on a
+      # dpkg lock held by the runner's background updates).
+      - run: npx playwright install chromium
       # playwright.config.js webServer builds the production bundle itself
       - run: npx playwright test
       - uses: actions/upload-artifact@v4
