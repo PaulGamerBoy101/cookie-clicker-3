@@ -46,8 +46,14 @@
 	unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
 }
 
-/* CC3 right-column branding card (replaces the 2.048 ad slot). */
+/* CC3 right-column branding card (replaces the 2.048 ad slot).
+   #sectionRight has no explicit width (it is right-anchored and sizes to its
+   widest in-flow child — the store column's 300px). This card must therefore
+   be exactly 300px border-box; without border-box its 12px side padding makes
+   it 324px, widening the whole column and shifting the store (and the bar
+   baked into storeTile) 24px left of the original layout. */
 #cc3Card{
+	box-sizing:border-box;
 	width:300px;
 	text-align:center;
 	padding:10px 12px;
