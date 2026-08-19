@@ -704,7 +704,7 @@ function bind(scope,fn)
 var grabProps=function(arr,prop)
 {
 	if (!arr) return [];
-	arr2=[];
+	var arr2=[];
 	for (var i=0;i<arr.length;i++)
 	{
 		arr2.push(arr[i][prop]);
@@ -5130,7 +5130,7 @@ Game.Launch=function()
 			var auraMult=Game.auraMult('Dragon\'s Fortune');
 			for (var i=0;i<n;i++){mult*=1+auraMult*1.23;}
 			
-			name=Game.bakeryName.toLowerCase();
+			var name=Game.bakeryName.toLowerCase();
 			if (name=='orteil') mult*=0.99;
 			else if (name=='ortiel') mult*=0.98;//or so help me
 			
@@ -10652,7 +10652,7 @@ window.loadMinigameModule(me.minigameUrl).then(function(){
 		Game.last.clickFunction=Game.spendLump(1,loc("activate the sugar frenzy"),function()
 		{
 			Game.Upgrades['Sugar frenzy'].buy(1);
-			buff=Game.gainBuff('sugar frenzy',60*60,3);
+			var buff=Game.gainBuff('sugar frenzy',60*60,3);
 			Game.Notify(loc("Sugar frenzy!"),loc("CpS x%1 for 1 hour!",3),[29,14]);
 		});
 		

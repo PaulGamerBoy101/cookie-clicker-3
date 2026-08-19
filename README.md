@@ -42,7 +42,10 @@ public/
   sw.js                 service worker
   legacy/               2.048 files that were dropped (dungeons WIP, excanvas, ajax, showads)
 scripts/
-  transform-engine.mjs  the one-shot port: classic script -> ES module
+  transform-engine.mjs    the one-shot port: classic script -> ES module
+  scan-implicit-globals.mjs  dev utility: flags bare assignments to undeclared
+                             identifiers (the strict-mode bug class the port must
+                             fix) — `node scripts/scan-implicit-globals.mjs <file>`
 ```
 
 ## The port
@@ -62,6 +65,7 @@ What it does:
 5. **`getBounds()` fix** — modern `getBoundingClientRect()` returns an immutable `DOMRect`; the original mutated it in place (a silent no-op in sloppy mode). It now computes a fresh plain object, which also makes `Game.scale` actually work.
 6. **Globals shim** — appends `Object.assign(window, { …all engine top-level bindings… })` so the minigame modules and the legacy mod API (`Game.LoadMod`) keep resolving their free variables against `window`.
 7. **Language files** — each `loc/*.js` (`AddLanguage('XX', …, {…})`) is rewritten to `export default { id, name, strings }`.
+8. **Strict-mode bug fixes** — the original is a sloppy-mode classic script, so it contains bare assignments to undeclared identifiers (implicit globals) that throw `ReferenceError` in strict-mode ESM. The transform fixes the known ones (`mysterious` in `crateTooltip`, `arr2` in `grabProps`, `name` in `CalculateGains`, `buff` in the Sugar-frenzy handler, `icon` in the Market `goodTooltip`); `scripts/scan-implicit-globals.mjs` is a scope-aware checker used to find them — the whole tree currently reports zero.
 
 ## Developing
 

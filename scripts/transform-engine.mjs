@@ -229,6 +229,41 @@ if (code.includes("'v. '+Game.version+")) {
     throw new Error('Running version patch anchor not found');
 }
 
+// 4g. grabProps: `arr2` was assigned without `var` (an implicit global in the
+// original; every other `arr2` in the file is a properly declared local).
+// In strict-mode ESM the bare assignment is a ReferenceError. Make it local.
+{
+  const old = 'if (!arr) return [];\n\tarr2=[];\n\tfor (var i=0;i<arr.length;i++)';
+  const neu = 'if (!arr) return [];\n\tvar arr2=[];\n\tfor (var i=0;i<arr.length;i++)';
+  if (code.includes(old)) code = code.replace(old, neu);
+  else if (!code.includes('var arr2=[];'))
+    throw new Error('grabProps arr2 patch anchor not found');
+}
+
+// 4h. CalculateGains: `name` was assigned without `var` (an implicit global in
+// the original; the parallel bakery-name check elsewhere declares its own local
+// `var name`). Being a built-in (`window.name`) it did not throw but silently
+// set the window name to the bakery name. Make it local.
+{
+  const old = "name=Game.bakeryName.toLowerCase();\n\t\t\tif (name=='orteil') mult*=0.99;";
+  const neu = "var name=Game.bakeryName.toLowerCase();\n\t\t\tif (name=='orteil') mult*=0.99;";
+  if (code.includes(old)) code = code.replace(old, neu);
+  else if (!code.includes(neu))
+    throw new Error('CalculateGains name patch anchor not found');
+}
+
+// 4i. Sugar frenzy clickFunction: `buff` was assigned without `var` (an implicit
+// global in the original; the golden-cookie handler declares its own local
+// `var buff`). In strict-mode ESM the bare assignment is a ReferenceError.
+// Make it local.
+{
+  const old = "Game.Upgrades['Sugar frenzy'].buy(1);\n\t\t\tbuff=Game.gainBuff('sugar frenzy',60*60,3);";
+  const neu = "Game.Upgrades['Sugar frenzy'].buy(1);\n\t\t\tvar buff=Game.gainBuff('sugar frenzy',60*60,3);";
+  if (code.includes(old)) code = code.replace(old, neu);
+  else if (!code.includes("var buff=Game.gainBuff('sugar frenzy',60*60,3);"))
+    throw new Error('Sugar frenzy buff patch anchor not found');
+}
+
 // 5. Publish the engine globals for cross-module free-variable resolution
 //    (minigame modules) and for the legacy mod API (Game.LoadMod scripts).
 {
@@ -255,6 +290,16 @@ console.log('wrote', mainPath);
 for (const file of readdirSync(SRC)) {
   if (!/^minigame.*\.js$/.test(file)) continue;
   let m = stripBom(readFileSync(join(SRC, file), 'utf8'));
+  // Market goodTooltip: `icon` was assigned without `var` (an implicit global in
+  // the original; the sibling tradeTooltip and other tooltips declare `var icon`).
+  // In strict-mode ESM the bare assignment is a ReferenceError. Make it local.
+  if (file === 'minigameMarket.js') {
+    const old = 'var val=M.getGoodPrice(me)\n\t\t\t\ticon=me.icon||[0,0];';
+    const neu = 'var val=M.getGoodPrice(me)\n\t\t\t\tvar icon=me.icon||[0,0];';
+    if (m.includes(old)) m = m.replace(old, neu);
+    else if (!m.includes(neu))
+      throw new Error('minigameMarket icon patch anchor not found');
+  }
   const imp = implicitGlobals(m);
   const header =
     imp.length > 0
