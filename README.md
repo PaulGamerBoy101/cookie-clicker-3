@@ -112,7 +112,11 @@ These weaken the CSP's XSS protection. That is an accepted, documented trade-off
   known CpS, persists a save whose `lastDate` is one hour in the past, and
   reloads; on the reloaded page it checks the engine computed and granted the
   offline gain on load (cookies rise by ~ `timeOffline × CpS`, with the
-  "Welcome back!" notification). `?qa=perf&qlvl=N` seeds all four
+  "Welcome back!" notification). `?qa=special` unlocks the seasonal specials
+  (the "A festive hat" + "A crumbly egg" upgrades), drives `Game.UpdateSpecial()`
+  to add the Santa/Dragon tabs, then exercises `Game.UpgradeSanta()` (bumps
+  santaLevel, drops a present) and `Game.UpgradeDragon()` (chips the egg).
+  `?qa=perf&qlvl=N` seeds all four
   minigame buildings at level `N` (default 1), opens the Garden, and reports the
   actual game-loop rate (`Game.T` ticks/sec) versus the 30-tick `Game.fps`
   target — used to confirm the 4-minigame frame cost (measured 29.9 at level 1

@@ -45,7 +45,7 @@ if (debugSurface) {
  *   ?qa=golden    spawn + pop a forced "frenzy" golden cookie, report the buff
  *   ?qa=save      export a save, corrupt state, re-import, verify round-trip
  * Never active in a plain production load. */
-if (debugSurface && params.has('qa') && params.get('qa') !== 'golden' && params.get('qa') !== 'save' && params.get('qa') !== 'perf' && params.get('qa') !== 'ascend' && params.get('qa') !== 'offline') {
+if (debugSurface && params.has('qa') && params.get('qa') !== 'golden' && params.get('qa') !== 'save' && params.get('qa') !== 'perf' && params.get('qa') !== 'ascend' && params.get('qa') !== 'offline' && params.get('qa') !== 'special') {
 	const qaMode = params.get('qa'); // null for bare ?qa, else the value
 	const MINIGAME_BUILDINGS = ['Farm', 'Bank', 'Temple', 'Wizard tower'];
 	const tick = window.setInterval(() => {
@@ -366,6 +366,55 @@ if (debugSurface && params.get('qa') === 'offline') {
 			out().textContent = '[QA-offline] phase 1: 100 cursors (CpS ' + cps.toFixed(2) + '), saved with lastDate 1h ago, reloading to trigger the offline gain...';
 			setTimeout(() => location.reload(), 400);
 		} catch (e) { out().textContent = '[QA-offline] ERROR: ' + e.message; }
+	}, 250);
+}
+
+// QA: verify the seasonal specials (Santa + Dragon tabs). Unlocked by the
+// "A festive hat" (Santa) and "A crumbly egg" (Dragon) upgrades, after which
+// Game.UpdateSpecial() pushes 'santa'/'dragon' onto Game.specialTabs. The tabs are
+// canvas-drawn (not DOM), so the probe drives the underlying actions directly:
+// Game.UpgradeSanta() (spends cookies, bumps santaLevel, drops a Santa present)
+// and Game.UpgradeDragon() (chips the egg: spends 1e6, bumps dragonLevel).
+// Usage: ?debug=1&qa=special
+if (debugSurface && params.get('qa') === 'special') {
+	const out = () => {
+		let d = document.getElementById('__dbgqa');
+		if (!d) { d = document.createElement('div'); d.id = '__dbgqa'; d.style.cssText = 'position:fixed;top:0;left:0;z-index:99999;background:#fff;color:#060;font:12px monospace;white-space:pre-wrap;max-width:640px;'; document.body.appendChild(d); }
+		return d;
+	};
+	const tick = window.setInterval(() => {
+		const G = window.Game;
+		if (!G || !G.ready || !G.Upgrades || G.T < 90) return;
+		if (G.__qaSpecialDone) return;
+		G.__qaSpecialDone = 1;
+		try {
+			const lines = [];
+			// Unlock both specials.
+			G.Upgrades['A festive hat'].bought = 1;
+			G.Upgrades['A crumbly egg'].bought = 1;
+			G.UpdateSpecial();
+			const hasSanta = G.specialTabs.indexOf('santa') >= 0;
+			const hasDragon = G.specialTabs.indexOf('dragon') >= 0;
+			lines.push('specialTabs = [' + G.specialTabs.join(', ') + ']');
+			lines.push((hasSanta ? 'PASS' : 'FAIL') + ': Santa tab present   ' + (hasDragon ? 'PASS' : 'FAIL') + ': Dragon tab present');
+			// Seed cookies (Dragon egg chip costs 1e6).
+			G.cookies = 1e7;
+			// Santa: bump santaLevel + drop a present.
+			const santaBefore = G.santaLevel;
+			G.UpgradeSanta();
+			const santaOk = G.santaLevel === santaBefore + 1;
+			lines.push('santaLevel ' + santaBefore + ' -> ' + G.santaLevel + (santaOk ? '   (PASS: +1, present dropped)' : '   (FAIL)'));
+			// Dragon: chip the egg.
+			const dragonBefore = G.dragonLevel;
+			G.UpgradeDragon();
+			const dragonOk = G.dragonLevel === dragonBefore + 1;
+			lines.push('dragonLevel ' + dragonBefore + ' -> ' + G.dragonLevel + (dragonOk ? '   (PASS: +1, egg chipped)' : '   (FAIL)'));
+			lines.push(hasSanta && hasDragon && santaOk && dragonOk
+				? '[QA-special] PASS: seasonal specials (Santa + Dragon) unlock and act'
+				: '[QA-special] CHECK: see above');
+			out().textContent = '[QA-special] seasonal specials (Santa + Dragon tabs)\n' + lines.join('\n');
+		} catch (e) { out().textContent = '[QA-special] ERROR: ' + e.message + '\n' + (e.stack || ''); }
+		window.clearInterval(tick);
 	}, 250);
 }
 
