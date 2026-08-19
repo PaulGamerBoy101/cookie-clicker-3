@@ -2524,7 +2524,7 @@ from {background-position:0px 0px;}
 	position:absolute;
 	left:0px;
 	top:0px;
-	background:url(img/buildings.png?v=6);
+	background:url(img/buildings.png?v=7);
 	background-repeat:no-repeat;
 	margin:0px;
 }
@@ -2545,7 +2545,7 @@ from {background-position:0px 0px;}
 	height:64px;
 	left:0px;
 	top:0px;
-	background:url(img/buildings.png?v=6);
+	background:url(img/buildings.png?v=7);
 	background-repeat:no-repeat;
 	margin:-16px;
 	transform:scale(0.5);
@@ -2586,7 +2586,7 @@ from {background-position:0px 0px;}
 {
 	z-index:100;
 	opacity:1;
-	background:url(img/buildings.png?v=6);
+	background:url(img/buildings.png?v=7);
 	background-repeat:no-repeat;
 	-webkit-transition: opacity 2s ease-out;
 	-moz-transition: opacity 2s ease-out;

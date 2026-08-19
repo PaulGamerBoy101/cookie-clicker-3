@@ -45,7 +45,7 @@ if (debugSurface) {
  *   ?qa=golden    spawn + pop a forced "frenzy" golden cookie, report the buff
  *   ?qa=save      export a save, corrupt state, re-import, verify round-trip
  * Never active in a plain production load. */
-if (debugSurface && params.has('qa') && params.get('qa') !== 'golden' && params.get('qa') !== 'save' && params.get('qa') !== 'perf' && params.get('qa') !== 'ascend' && params.get('qa') !== 'offline' && params.get('qa') !== 'special' && params.get('qa') !== 'a11y' && params.get('qa') !== 'wrinkler') {
+if (debugSurface && params.has('qa') && params.get('qa') !== 'golden' && params.get('qa') !== 'save' && params.get('qa') !== 'perf' && params.get('qa') !== 'ascend' && params.get('qa') !== 'offline' && params.get('qa') !== 'special' && params.get('qa') !== 'a11y' && params.get('qa') !== 'wrinkler' && params.get('qa') !== 'icon') {
 	const qaMode = params.get('qa'); // null for bare ?qa, else the value
 	const MINIGAME_BUILDINGS = ['Farm', 'Bank', 'Temple', 'Wizard tower'];
 	const tick = window.setInterval(() => {
@@ -536,6 +536,43 @@ if (debugSurface && params.get('qa') === 'wrinkler') {
 			];
 			out().textContent = lines.join('\n');
 		} catch (e) { out().textContent = '[QA-wrinkler] verify error: ' + e.message; }
+		window.clearInterval(tick);
+	}, 250);
+}
+
+// QA: diagnose missing store icons — report the computed style of a store product
+// .icon element (width/height/background-image/position) so we can see why the
+// sprite isn't showing. Usage: ?debug=1&qa=icon
+if (debugSurface && params.get('qa') === 'icon') {
+	const out = () => {
+		let d = document.getElementById('__dbgqa');
+		if (!d) { d = document.createElement('div'); d.id = '__dbgqa'; d.style.cssText = 'position:fixed;top:0;left:0;z-index:99999;background:#fff;color:#060;font:12px monospace;white-space:pre-wrap;max-width:640px;'; document.body.appendChild(d); }
+		return d;
+	};
+	const tick = window.setInterval(() => {
+		const G = window.Game;
+		if (!G || !G.ready || G.T < 60) return;
+		if (G.__qaIconDone) return;
+		G.__qaIconDone = 1;
+		try {
+			const rows = ['[QA-icon] store icon diagnostics'];
+			const inspect = (id) => {
+				const el = document.getElementById(id);
+				if (!el) { rows.push(id + ': (not found)'); return; }
+				const cs = getComputedStyle(el);
+				const bi = cs.backgroundImage;
+				const m = bi.match(/url\(([^)]+)\)/);
+				let file = '(none)';
+				if (m) { const u = m[1].replace(/['"]/g, ''); const mm = u.match(/img\/([a-zA-Z0-9_.-]+)\.png/); if (mm) file = mm[1] + '.png'; }
+				rows.push(id + ' [' + el.className + ']');
+				rows.push('  size: ' + cs.width + ' x ' + cs.height + ' | opacity: ' + cs.opacity + ' | visibility: ' + cs.visibility + ' | display: ' + cs.display);
+				rows.push('  bg-image file: ' + file + (bi === 'none' ? '  <-- NO BACKGROUND!' : '') + ' | position: ' + cs.backgroundPosition);
+			};
+			inspect('productIcon1');      // "on" layer (Grandma)
+			inspect('productIconOff1');   // "off" layer (Grandma, the dimmed one)
+			inspect('productIcon0');      // "on" layer (Cursor)
+			out().textContent = rows.join('\n');
+		} catch (e) { out().textContent = '[QA-icon] ERROR: ' + e.message + '\n' + (e.stack || ''); }
 		window.clearInterval(tick);
 	}, 250);
 }
