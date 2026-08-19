@@ -2944,7 +2944,7 @@ export default { id: "CS", name: "czech", strings: {
 	"[Achievement name 227]Are you gonna eat all that?": "Budete to všechno jíst?",
 	"[Achievement name 228]We're gonna need a bigger bakery": "Budeme potřebovat větší pekárnu",
 	"[Achievement name 229]In the mouth of madness": "Ve spárech šílenství",
-	"[Achievement name 230]Brought to you by the letter <div style=\"display:inline-block;background:url(img/money.png);width:16px;height:16px;\"></div>": "Napsáno v dopisu <div style=\"display:inline-block;background:url(img/money.png);width:16px;height:16px;\"></div>",
+	"[Achievement name 230]Brought to you by the letter <div style=\"display:inline-block;background:url(img/money.webp);width:16px;height:16px;\"></div>": "Napsáno v dopisu <div style=\"display:inline-block;background:url(img/money.webp);width:16px;height:16px;\"></div>",
 	"[Achievement name 231]A world filled with cookies": "Svět plný sušenek",
 	"[Achievement name 232]When this baby hits 36 quadrillion cookies per hour": "Když toto dítě dosáhne úrovně 36 kvadrilionů sušenek za hodinu",
 	"[Achievement name 233]Fast and delicious": "Rychlé a chutné",

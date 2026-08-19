@@ -2819,7 +2819,7 @@ export default { id: "KO", name: "korean", strings: {
 	"[Achievement name 227]Are you gonna eat all that?": "전부 다 먹을 거야?",
 	"[Achievement name 228]We're gonna need a bigger bakery": "더 큰 제과점이 필요하겠구나",
 	"[Achievement name 229]In the mouth of madness": "광기의 입 속",
-	"[Achievement name 230]Brought to you by the letter <div style=\"display:inline-block;background:url(img/money.png);width:16px;height:16px;\"></div>": "글자가 보냅니다 <div style=\"display:inline-block;background:url(img/money.png);width:16px;height:16px;\"></div>",
+	"[Achievement name 230]Brought to you by the letter <div style=\"display:inline-block;background:url(img/money.webp);width:16px;height:16px;\"></div>": "글자가 보냅니다 <div style=\"display:inline-block;background:url(img/money.webp);width:16px;height:16px;\"></div>",
 	"[Achievement name 231]A world filled with cookies": "쿠키로 가득한 세상",
 	"[Achievement name 232]When this baby hits 36 quadrillion cookies per hour": "이 아기가 한 시간에 3경6천조 개의 쿠키를 만들 때",
 	"[Achievement name 233]Fast and delicious": "빠르고 맛있다",

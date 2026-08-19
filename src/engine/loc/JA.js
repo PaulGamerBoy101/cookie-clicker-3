@@ -2944,7 +2944,7 @@ export default { id: "JA", name: "japanese", strings: {
 	"[Achievement name 227]Are you gonna eat all that?": "それ、全部食べるつもり？",
 	"[Achievement name 228]We're gonna need a bigger bakery": "もっと大きなベーカリーが必要だ",
 	"[Achievement name 229]In the mouth of madness": "マウス・オブ・マッドネス",
-	"[Achievement name 230]Brought to you by the letter <div style=\"display:inline-block;background:url(img/money.png);width:16px;height:16px;\"></div>": "クッキーの提供でお届けしました <div style=\"display:inline-block;background:url(img/money.png);width:16px;height:16px;\"></div>",
+	"[Achievement name 230]Brought to you by the letter <div style=\"display:inline-block;background:url(img/money.webp);width:16px;height:16px;\"></div>": "クッキーの提供でお届けしました <div style=\"display:inline-block;background:url(img/money.webp);width:16px;height:16px;\"></div>",
 	"[Achievement name 231]A world filled with cookies": "クッキーで満たされた世界",
 	"[Achievement name 232]When this baby hits 36 quadrillion cookies per hour": "こいつが毎時三万六千兆クッキーに到達したら",
 	"[Achievement name 233]Fast and delicious": "早くてうまい",

@@ -1200,7 +1200,7 @@ var Game={};
 		});
 	}
 	
-	//replacing an existing canvas picture with a new one at runtime : Game.Loader.Replace('perfectCookie.png','imperfectCookie.png');
+	//replacing an existing canvas picture with a new one at runtime : Game.Loader.Replace('perfectCookie.webp','imperfectCookie.webp');
 	//upgrades and achievements can use other pictures than icons.png; declare their icon with [posX,posY,'http://example.com/myIcons.png']
 	//check out the "UNLOCKING STUFF" section to see how unlocking achievs and upgrades is done
 })();
@@ -1226,11 +1226,11 @@ Game.Launch=function()
 	
 	var css=document.createElement('style');
 	css.type='text/css';
-	css.innerHTML='body .icon,body .crate,body .usesIcon{background-image:url(img/icons.png?v='+Game.version+');}';
+	css.innerHTML='body .icon,body .crate,body .usesIcon{background-image:url(img/icons.webp?v='+Game.version+');}';
 	document.head.appendChild(css);
 	
 	//this is so shimmers can still appear even if you lose connection after the game is loaded
-	var preloadImages=['img/goldCookie.png','img/wrathCookie.png','img/spookyCookie.png','img/hearts.png','img/contract.png','img/wrathContract.png','img/bunnies.png','img/frostedReindeer.png'];
+	var preloadImages=['img/goldCookie.webp','img/wrathCookie.webp','img/spookyCookie.webp','img/hearts.webp','img/contract.webp','img/wrathContract.webp','img/bunnies.webp','img/frostedReindeer.webp'];
 	var preloadImagesL=l('preloadImages');
 	for (var i=0;i<preloadImages.length;i++)
 	{
@@ -1878,7 +1878,7 @@ Game.Launch=function()
 		Game.Loader.domain='img/';
 		if (typeof PRELOAD!=='undefined') Game.Loader.loaded=PRELOAD(Game.Init);
 		else Game.Loader.loaded=Game.Init;
-		Game.Loader.Load(['filler.png']);
+		Game.Loader.Load(['filler.webp']);
 	}
 	Game.ErrorFrame=function()
 	{
@@ -1941,7 +1941,7 @@ Game.Launch=function()
 		}
 		Game.clickStr=Game.touchEvents?'ontouchend':'onclick';
 		
-		l('versionNumber').innerHTML='v. '+Game.version.toFixed(3)+(!App?('<div id="httpsSwitch" style="cursor:pointer;display:inline-block;background:url(img/'+(Game.https?'lockOn':'lockOff')+'.png);width:16px;height:16px;position:relative;top:4px;left:0px;margin:0px -2px;"></div>'):'')+(Game.beta?' <span style="color:#ff0;">beta</span>':'');
+		l('versionNumber').innerHTML='v. '+Game.version.toFixed(3)+(!App?('<div id="httpsSwitch" style="cursor:pointer;display:inline-block;background:url(img/'+(Game.https?'lockOn':'lockOff')+'.webp);width:16px;height:16px;position:relative;top:4px;left:0px;margin:0px -2px;"></div>'):'')+(Game.beta?' <span style="color:#ff0;">beta</span>':'');
 		
 		if (!App)
 		{
@@ -2521,7 +2521,7 @@ Game.Launch=function()
 				if (!App && Game.heralds==0) str+=loc("There are no heralds at the moment. Please consider <b style=\"color:#bc3aff;\">donating to our Patreon</b>!");
 				else
 				{
-					str+='<b style="color:#bc3aff;text-shadow:0px 1px 0px #6d0096;">'+loc("%1 herald",Game.heralds)+'</b> '+loc("selflessly inspiring a boost in production for everyone, resulting in %1.",'<br><b style="color:#cdaa89;text-shadow:0px 1px 0px #7c4532,0px 0px 6px #7c4532;"><div style="width:16px;height:16px;display:inline-block;vertical-align:middle;background:url(img/money.png);"></div>'+loc("+%1% cookies per second",Game.heralds)+'</b>');
+					str+='<b style="color:#bc3aff;text-shadow:0px 1px 0px #6d0096;">'+loc("%1 herald",Game.heralds)+'</b> '+loc("selflessly inspiring a boost in production for everyone, resulting in %1.",'<br><b style="color:#cdaa89;text-shadow:0px 1px 0px #7c4532,0px 0px 6px #7c4532;"><div style="width:16px;height:16px;display:inline-block;vertical-align:middle;background:url(img/money.webp);"></div>'+loc("+%1% cookies per second",Game.heralds)+'</b>');
 					str+='<div class="line"></div>';
 					if (Game.ascensionMode==1) str+=loc("You are in a <b>Born again</b> run, and are not currently benefiting from heralds.");
 					else if (Game.Has('Heralds')) str+=loc("You own the <b>Heralds</b> upgrade, and therefore benefit from the production boost.");
@@ -2530,7 +2530,7 @@ Game.Launch=function()
 			}
 			str+='<div class="line"></div><span style="font-size:90%;opacity:0.6;">'+(!App?loc("<b>Heralds</b> are people who have donated to our highest Patreon tier, and are limited to 100.<br>Each herald gives everyone +1% CpS.<br>Heralds benefit everyone playing the game, regardless of whether you donated."):loc("Every %1 current players on Steam generates <b>1 herald</b>, up to %2 heralds.<br>Each herald gives everyone +1% CpS.",[100,100]))+'</span><div class="line"></div>'+tinyIcon([21,29]);
 			
-			str+='<div style="width:31px;height:39px;background:url(img/heraldFlag.png);position:absolute;top:0px;left:8px;"></div><div style="width:31px;height:39px;background:url(img/heraldFlag.png);position:absolute;top:0px;right:8px;"></div>';
+			str+='<div style="width:31px;height:39px;background:url(img/heraldFlag.webp);position:absolute;top:0px;left:8px;"></div><div style="width:31px;height:39px;background:url(img/heraldFlag.webp);position:absolute;top:0px;right:8px;"></div>';
 			
 			return '<div style="padding:8px;width:300px;text-align:center;" class="prompt" id="tooltipHeralds"><h3>'+loc("Heralds")+'</h3><div class="block">'+str+'</div></div>';
 		},'this');
@@ -4601,7 +4601,7 @@ Game.Launch=function()
 				{
 					PlaySound('snd/tick.mp3');
 					Game.promptConfirmFunc=func;//bit dumb
-					Game.Prompt('<id SpendLump><div class="icon" style="background:url(img/icons.png?v='+Game.version+');float:left;margin-left:-8px;margin-top:-8px;background-position:'+(-29*48)+'px '+(-14*48)+'px;"></div><div style="margin:16px 8px;">'+loc("Do you want to spend %1 to %2?",['<b>'+loc("%1 sugar lump",LBeautify(n))+'</b>',str])+'</div>',[[loc("Yes"),'Game.lumps-='+n+';Game.promptConfirmFunc();Game.promptConfirmFunc=0;Game.recalculateGains=1;Game.ClosePrompt();'],loc("No")]);
+					Game.Prompt('<id SpendLump><div class="icon" style="background:url(img/icons.webp?v='+Game.version+');float:left;margin-left:-8px;margin-top:-8px;background-position:'+(-29*48)+'px '+(-14*48)+'px;"></div><div style="margin:16px 8px;">'+loc("Do you want to spend %1 to %2?",['<b>'+loc("%1 sugar lump",LBeautify(n))+'</b>',str])+'</div>',[[loc("Yes"),'Game.lumps-='+n+';Game.promptConfirmFunc();Game.promptConfirmFunc=0;Game.recalculateGains=1;Game.ClosePrompt();'],loc("No")]);
 					return false;
 				}
 				else
@@ -5338,15 +5338,15 @@ Game.Launch=function()
 					if (!this.spawned && me.force!='cookie storm drop' && Game.chimeType!=0 && Game.ascensionMode!=1) Game.playGoldenCookieChime();
 					
 					//set image
-					var bgPic='img/goldCookie.png';
+					var bgPic='img/goldCookie.webp';
 					var picX=0;var picY=0;
 					
 					
 					if ((!me.forceObj || !me.forceObj.noWrath) && ((me.forceObj && me.forceObj.wrath) || (Game.elderWrath==1 && Math.random()<1/3) || (Game.elderWrath==2 && Math.random()<2/3) || (Game.elderWrath==3) || (Game.hasGod && Game.hasGod('scorn'))))
 					{
 						me.wrath=1;
-						if (Game.season=='halloween') bgPic='img/spookyCookie.png';
-						else bgPic='img/wrathCookie.png';
+						if (Game.season=='halloween') bgPic='img/spookyCookie.webp';
+						else bgPic='img/wrathCookie.webp';
 					}
 					else
 					{
@@ -5355,17 +5355,17 @@ Game.Launch=function()
 					
 					if (Game.season=='valentines')
 					{
-						bgPic='img/hearts.png';
+						bgPic='img/hearts.webp';
 						picX=Math.floor(Math.random()*8);
 					}
 					else if (Game.season=='fools')
 					{
-						bgPic='img/contract.png';
-						if (me.wrath) bgPic='img/wrathContract.png';
+						bgPic='img/contract.webp';
+						if (me.wrath) bgPic='img/wrathContract.webp';
 					}
 					else if (Game.season=='easter')
 					{
-						bgPic='img/bunnies.png';
+						bgPic='img/bunnies.webp';
 						picX=Math.floor(Math.random()*4);
 						picY=0;
 						if (me.wrath) picY=1;
@@ -5746,7 +5746,7 @@ Game.Launch=function()
 					//me.l.style.top=me.y+'px';
 					me.l.style.width='167px';
 					me.l.style.height='212px';
-					me.l.style.backgroundImage='url(img/frostedReindeer.png)';
+					me.l.style.backgroundImage='url(img/frostedReindeer.webp)';
 					me.l.style.opacity='0';
 					//me.l.style.transform='rotate('+(Math.random()*60-30)+'deg) scale('+(Math.random()*1+0.25)+')';
 					me.l.style.display='block';
@@ -5908,7 +5908,7 @@ Game.Launch=function()
 		Game.particlesN=50;
 		for (var i=0;i<Game.particlesN;i++)
 		{
-			Game.particles[i]={x:0,y:0,xd:0,yd:0,w:64,h:64,z:0,size:1,dur:2,life:-1,r:0,pic:'smallCookies.png',picId:0,picPos:[0,0]};
+			Game.particles[i]={x:0,y:0,xd:0,yd:0,w:64,h:64,z:0,size:1,dur:2,life:-1,r:0,pic:'smallCookies.webp',picId:0,picPos:[0,0]};
 		}
 		
 		Game.particlesUpdate=function()
@@ -5966,7 +5966,7 @@ Game.Launch=function()
 				me.picId=Math.floor(Math.random()*10000);
 				if (!pic)
 				{
-					if (Game.season=='fools') pic='smallDollars.png';
+					if (Game.season=='fools') pic='smallDollars.webp';
 					else
 					{
 						var cookies=[[10,0]];
@@ -5977,11 +5977,11 @@ Game.Launch=function()
 						}
 						me.picPos=choose(cookies);
 						if (Game.bakeryName.toLowerCase()=='ortiel' || Math.random()<1/10000) me.picPos=[17,5];
-						pic='icons.png';
+						pic='icons.webp';
 					}
 				}
-				else if (typeof pic!=='string'){me.picPos=pic;pic='icons.png';}
-				me.pic=pic||'smallCookies.png';
+				else if (typeof pic!=='string'){me.picPos=pic;pic='icons.webp';}
+				me.pic=pic||'smallCookies.webp';
 				me.text=text||0;
 				return me;
 			}
@@ -6014,7 +6014,7 @@ Game.Launch=function()
 							ctx.rotate((me.r/360)*Math.PI*2);
 							var w=64;
 							var h=64;
-							if (me.pic=='icons.png')
+							if (me.pic=='icons.webp')
 							{
 								w=48;
 								h=48;
@@ -6022,7 +6022,7 @@ Game.Launch=function()
 							}
 							else
 							{
-								if (me.pic=='wrinklerBits.png' || me.pic=='shinyWrinklerBits.png') {w=100;h=200;}
+								if (me.pic=='wrinklerBits.webp' || me.pic=='shinyWrinklerBits.webp') {w=100;h=200;}
 								ctx.drawImage(Pic(me.pic),(me.picId%8)*w,0,w,h,-w/2*me.size,-h/2*me.size,w*me.size,h*me.size);
 							}
 							ctx.restore();
@@ -6761,7 +6761,7 @@ Game.Launch=function()
 						var milk=Game.Milks[i];
 						milkStr+='<div '+Game.getTooltip(
 						'<div class="prompt" style="text-align:center;padding-bottom:6px;white-space:nowrap;margin:0px;padding-bottom:96px;" id="tooltipMilk"><h3 style="margin:6px 32px 0px 32px;">'+(loc("Rank %1",romanize(i+1))+' - '+milk.name)+'</h3><div style="opacity:0.75;font-size:9px;">('+(i==0?loc("starter milk"):loc("for %1 achievements",Beautify(i*25)))+')</div><div class="line"></div><div style="width:100%;height:96px;position:absolute;left:0px;bottom:0px;background:url(img/'+milk.pic+');"></div></div>'
-						,'top')+' style="background:url(img/icons.png?v='+Game.version+') '+(-milk.icon[0]*48)+'px '+(-milk.icon[1]*48)+'px;margin:2px 0px;" class="trophy"></div>';
+						,'top')+' style="background:url(img/icons.webp?v='+Game.version+') '+(-milk.icon[0]*48)+'px '+(-milk.icon[1]*48)+'px;margin:2px 0px;" class="trophy"></div>';
 					}
 				}
 				milkStr+='<div style="clear:both;"></div>';
@@ -6773,8 +6773,8 @@ Game.Launch=function()
 					for (var i=0;i<=Game.santaLevel;i++)
 					{
 						santaStr+='<div '+Game.getTooltip(
-						'<div class="prompt" style="text-align:center;padding-bottom:6px;white-space:nowrap;margin:0px 32px;"><div style="width:96px;height:96px;margin:4px auto;background:url(img/santa.png) '+(-i*96)+'px 0px;filter:drop-shadow(0px 3px 2px #000);-webkit-filter:drop-shadow(0px 3px 2px #000);" id="tooltipSanta"></div><div class="line"></div><h3>'+Game.santaLevels[i]+'</h3></div>'
-						,'top')+' style="background:url(img/santa.png) '+(-i*48)+'px 0px;background-size:'+(frames*48)+'px 48px;" class="trophy"></div>';
+						'<div class="prompt" style="text-align:center;padding-bottom:6px;white-space:nowrap;margin:0px 32px;"><div style="width:96px;height:96px;margin:4px auto;background:url(img/santa.webp) '+(-i*96)+'px 0px;filter:drop-shadow(0px 3px 2px #000);-webkit-filter:drop-shadow(0px 3px 2px #000);" id="tooltipSanta"></div><div class="line"></div><h3>'+Game.santaLevels[i]+'</h3></div>'
+						,'top')+' style="background:url(img/santa.webp) '+(-i*48)+'px 0px;background-size:'+(frames*48)+'px 48px;" class="trophy"></div>';
 					}
 					santaStr+='<div style="clear:both;"></div>';
 				}
@@ -6789,9 +6789,9 @@ Game.Launch=function()
 						{
 							var level=Game.dragonLevels[mainLevels[i]];
 							dragonStr+='<div '+Game.getTooltip(
-							//'<div style="width:96px;height:96px;margin:4px auto;background:url(img/dragon.png?v='+Game.version+') '+(-level.pic*96)+'px 0px;"></div><div class="line"></div><div style="min-width:200px;text-align:center;margin-bottom:6px;">'+level.name+'</div>'
-							'<div class="prompt" style="text-align:center;padding-bottom:6px;white-space:nowrap;margin:0px 32px;" id="tooltipDragon"><div style="width:96px;height:96px;margin:4px auto;background:url(img/dragon.png?v='+Game.version+') '+(-level.pic*96)+'px 0px;filter:drop-shadow(0px 3px 2px #000);-webkit-filter:drop-shadow(0px 3px 2px #000);"></div><div class="line"></div><h3>'+level.name+'</h3></div>'
-							,'top')+' style="background:url(img/dragon.png?v='+Game.version+') '+(-level.pic*48)+'px 0px;background-size:'+(frames*48)+'px 48px;" class="trophy"></div>';
+							//'<div style="width:96px;height:96px;margin:4px auto;background:url(img/dragon.webp?v='+Game.version+') '+(-level.pic*96)+'px 0px;"></div><div class="line"></div><div style="min-width:200px;text-align:center;margin-bottom:6px;">'+level.name+'</div>'
+							'<div class="prompt" style="text-align:center;padding-bottom:6px;white-space:nowrap;margin:0px 32px;" id="tooltipDragon"><div style="width:96px;height:96px;margin:4px auto;background:url(img/dragon.webp?v='+Game.version+') '+(-level.pic*96)+'px 0px;filter:drop-shadow(0px 3px 2px #000);-webkit-filter:drop-shadow(0px 3px 2px #000);"></div><div class="line"></div><h3>'+level.name+'</h3></div>'
+							,'top')+' style="background:url(img/dragon.webp?v='+Game.version+') '+(-level.pic*48)+'px 0px;background-size:'+(frames*48)+'px 48px;" class="trophy"></div>';
 						}
 					}
 					dragonStr+='<div style="clear:both;"></div>';
@@ -7705,7 +7705,7 @@ Game.Launch=function()
 			this.iconColumn=iconColumn;
 			this.art=art;
 			if (art.base)
-			{art.pic=art.base+'.png';art.bg=art.base+'Background.png';}
+			{art.pic=art.base+'.webp';art.bg=art.base+'Background.webp';}
 			this.buyFunction=buyFunction;
 			this.locked=1;
 			this.level=0;
@@ -8300,7 +8300,7 @@ Game.Launch=function()
 							{
 								var pic=this.pics[i];
 								if (this.mousePos[0]>=pic.x-marginW && this.mousePos[0]<pic.x+64+marginW && this.mousePos[1]>=pic.y-marginH && this.mousePos[1]<pic.y+64+marginH) selected=i;
-								if (selected==i && pic.pic=='elfGrandma.png' && Game.mouseDown) Game.Win('Baby it\'s old outside');
+								if (selected==i && pic.pic=='elfGrandma.webp' && Game.mouseDown) Game.Win('Baby it\'s old outside');
 							}
 							if (Game.prefs.customGrandmas && Game.customGrandmaNames.length>0)
 							{
@@ -8373,7 +8373,7 @@ Game.Launch=function()
 					var h=Math.abs(Math.sin(Game.T*0.2+this.id*2))*0.3+0.7;
 					var x=64+Math.cos(Game.T*0.19+this.id*2)*8-24*w;
 					var y=128-Math.abs(Math.pow(Math.sin(Game.T*0.2+this.id*2),5)*16)-48*h;
-					ctx.drawImage(Pic('icons.png'),picX*48,picY*48,48,48,Math.floor(x),Math.floor(y),48*w,48*h);
+					ctx.drawImage(Pic('icons.webp'),picX*48,picY*48,48,48,Math.floor(x),Math.floor(y),48*w,48*h);
 					*/
 				}
 			}
@@ -8653,8 +8653,8 @@ window.loadMinigameModule(me.minigameUrl).then(function(){
 			if (Game.Has('Brainy grandmas')) list.push('brainyGrandma');
 			if (Game.season=='christmas') list.push('elfGrandma');
 			if (Game.season=='easter') list.push('bunnyGrandma');
-			return choose(list)+'.png';
-		},bg:'grandmaBackground.png',xV:8,yV:8,w:32,rows:3,x:0,y:16},100,function(me){
+			return choose(list)+'.webp';
+		},bg:'grandmaBackground.webp',xV:8,yV:8,w:32,rows:3,x:0,y:16},100,function(me){
 			var mult=1;
 			for (var i in Game.GrandmaSynergies)
 			{
@@ -9982,7 +9982,7 @@ window.loadMinigameModule(me.minigameUrl).then(function(){
 		Game.NewUpgradeCookie({name:'Violet macarons',desc:'It\'s like spraying perfume into your mouth!',icon:[24,4],require:'Box of macarons',							power:3,price: 9999999999999999999});
 		
 		order=40000;
-		new Game.Upgrade('Magic shenanigans',loc("Cookie production <b>multiplied by 1,000</b>.")+'<q>It\'s magic. I ain\'t gotta explain sh<div style="display:inline-block;background:url(img/money.png);width:16px;height:16px;position:relative;top:4px;left:0px;margin:0px -2px;"></div>t.</q>',7,[17,5]);//debug purposes only
+		new Game.Upgrade('Magic shenanigans',loc("Cookie production <b>multiplied by 1,000</b>.")+'<q>It\'s magic. I ain\'t gotta explain sh<div style="display:inline-block;background:url(img/money.webp);width:16px;height:16px;position:relative;top:4px;left:0px;margin:0px -2px;"></div>t.</q>',7,[17,5]);//debug purposes only
 		Game.last.pool='debug';
 		
 		
@@ -12271,7 +12271,7 @@ window.loadMinigameModule(me.minigameUrl).then(function(){
 		Game.BankAchievement('Are you gonna eat all that?');
 		Game.BankAchievement('We\'re gonna need a bigger bakery');
 		Game.BankAchievement('In the mouth of madness','A cookie is just what we tell each other it is.');
-		Game.BankAchievement('Brought to you by the letter <div style="display:inline-block;background:url(img/money.png);width:16px;height:16px;"></div>');
+		Game.BankAchievement('Brought to you by the letter <div style="display:inline-block;background:url(img/money.webp);width:16px;height:16px;"></div>');
 		
 		
 		Game.CpsAchievement('A world filled with cookies');
@@ -13502,8 +13502,8 @@ window.loadMinigameModule(me.minigameUrl).then(function(){
 									var y=me.y+(Math.cos(me.r*Math.PI/180)*90);
 									for (var ii=0;ii<3;ii++)
 									{
-										//Game.particleAdd(x+Math.random()*50-25,y+Math.random()*50-25,Math.random()*4-2,Math.random()*-2-2,1,1,2,'wrinklerBits.png');
-										var part=Game.particleAdd(x,y,Math.random()*4-2,Math.random()*-2-2,1,1,2,me.type==1?'shinyWrinklerBits.png':'wrinklerBits.png');
+										//Game.particleAdd(x+Math.random()*50-25,y+Math.random()*50-25,Math.random()*4-2,Math.random()*-2-2,1,1,2,'wrinklerBits.webp');
+										var part=Game.particleAdd(x,y,Math.random()*4-2,Math.random()*-2-2,1,1,2,me.type==1?'shinyWrinklerBits.webp':'wrinklerBits.webp');
 										part.r=-me.r;
 									}
 								}
@@ -13584,7 +13584,7 @@ window.loadMinigameModule(me.minigameUrl).then(function(){
 						var y=me.y+(Math.cos(me.r*Math.PI/180)*100);
 						for (var ii=0;ii<6;ii++)
 						{
-							Game.particleAdd(x+Math.random()*50-25,y+Math.random()*50-25,Math.random()*4-2,Math.random()*-2-2,1,1,2,'wrinklerBits.png');
+							Game.particleAdd(x+Math.random()*50-25,y+Math.random()*50-25,Math.random()*4-2,Math.random()*-2-2,1,1,2,'wrinklerBits.webp');
 						}
 					}*/
 					if (Game.prefs.particles)
@@ -13602,7 +13602,7 @@ window.loadMinigameModule(me.minigameUrl).then(function(){
 						{
 							for (var ii=0;ii<8;ii++)
 							{
-								var part=Game.particleAdd(x,y,Math.random()*4-2,Math.random()*-2-2,1,1,2,me.type==1?'shinyWrinklerBits.png':'wrinklerBits.png');
+								var part=Game.particleAdd(x,y,Math.random()*4-2,Math.random()*-2-2,1,1,2,me.type==1?'shinyWrinklerBits.webp':'wrinklerBits.webp');
 								part.r=-me.r;
 							}
 						}
@@ -13633,7 +13633,7 @@ window.loadMinigameModule(me.minigameUrl).then(function(){
 					{
 						ctx.translate(0,30);
 						ctx.rotate(-(me.r)*Math.PI/180);
-						ctx.drawImage(Pic('wrinklerShadow.png'),-sw/2,-10,sw,sh);
+						ctx.drawImage(Pic('wrinklerShadow.webp'),-sw/2,-10,sw,sh);
 						ctx.rotate((me.r)*Math.PI/180);
 						ctx.translate(0,-30);
 					}
@@ -13641,11 +13641,11 @@ window.loadMinigameModule(me.minigameUrl).then(function(){
 					//var s=Math.min(1,me.sucked/(Game.cookiesPs*60))*0.75+0.25;//scale wrinklers as they eat
 					//ctx.scale(Math.pow(s,1.5)*1.25,s);
 					//ctx.fillRect(-50,-10,100,200);
-					var pic=Game.WINKLERS?'winkler.png':'wrinkler.png';
-					if (me.type==1) pic=Game.WINKLERS?'shinyWinkler.png':'shinyWrinkler.png';
-					else if (Game.season=='christmas') pic=Game.WINKLERS?'winterWinkler.png':'winterWrinkler.png';
+					var pic=Game.WINKLERS?'winkler.webp':'wrinkler.webp';
+					if (me.type==1) pic=Game.WINKLERS?'shinyWinkler.webp':'shinyWrinkler.webp';
+					else if (Game.season=='christmas') pic=Game.WINKLERS?'winterWinkler.webp':'winterWrinkler.webp';
 					ctx.drawImage(Pic(pic),-sw/2,-10,sw,sh);
-					if (!Game.WINKLERS && Game.prefs.notScary) ctx.drawImage(Pic(Math.sin(Game.T*0.003+i*11+137+Math.sin(Game.T*0.017+i*13))>0.9997?'wrinklerBlink.png':'wrinklerGooglies.png'),-sw/2,-10+1*Math.sin(Game.T*0.2+i*3+1.2),sw,sh);
+					if (!Game.WINKLERS && Game.prefs.notScary) ctx.drawImage(Pic(Math.sin(Game.T*0.003+i*11+137+Math.sin(Game.T*0.017+i*13))>0.9997?'wrinklerBlink.webp':'wrinklerGooglies.webp'),-sw/2,-10+1*Math.sin(Game.T*0.2+i*3+1.2),sw,sh);
 					//ctx.drawImage(Pic(pic),-50,-10);
 					//ctx.fillText(me.id+' : '+me.sucked,0,0);
 					if (me.type==1 && Math.random()<0.3 && Game.prefs.particles)//sparkle
@@ -13653,7 +13653,7 @@ window.loadMinigameModule(me.minigameUrl).then(function(){
 						ctx.globalAlpha=Math.random()*0.65+0.1;
 						var s=Math.random()*30+5;
 						ctx.globalCompositeOperation='lighter';
-						ctx.drawImage(Pic('glint.jpg'),-s/2+Math.random()*50-25,-s/2+Math.random()*200,s,s);
+						ctx.drawImage(Pic('glint.webp'),-s/2+Math.random()*50-25,-s/2+Math.random()*200,s,s);
 					}
 					ctx.restore();
 					
@@ -13705,7 +13705,7 @@ window.loadMinigameModule(me.minigameUrl).then(function(){
 				ctx.fillText(text,x+14,y-8);
 				ctx.fillText(Beautify(selected.sucked),x+10,y+8);
 				var s=54+2*Math.sin(Game.T*0.4);
-				ctx.drawImage(Pic('icons.png'),27*48,26*48,48,48,x-width/2-16-s/2,y-4-s/2,s,s);
+				ctx.drawImage(Pic('icons.webp'),27*48,26*48,48,48,x-width/2-16-s/2,y-4-s/2,s,s);
 			}
 		}
 		Game.SaveWrinklers=function()
@@ -14041,9 +14041,9 @@ window.loadMinigameModule(me.minigameUrl).then(function(){
 			{
 				var pic='';
 				var frame=0;
-				if (Game.specialTab=='santa') {pic='santa.png';frame=Game.santaLevel;}
-				else if (Game.specialTab=='dragon') {pic='dragon.png?v='+Game.version;frame=Game.dragonLevels[Game.dragonLevel].pic;}
-				else {pic='dragon.png?v='+Game.version;frame=4;}
+				if (Game.specialTab=='santa') {pic='santa.webp';frame=Game.santaLevel;}
+				else if (Game.specialTab=='dragon') {pic='dragon.webp?v='+Game.version;frame=Game.dragonLevels[Game.dragonLevel].pic;}
+				else {pic='dragon.webp?v='+Game.version;frame=4;}
 				
 				var str='<div id="specialPic" '+Game.clickStr+'="Game.ClickSpecialPic();" style="'+((Game.specialTab=='dragon' && Game.dragonLevel>=4 && Game.Has('Pet the dragon'))?'cursor:pointer;':'')+'position:absolute;left:-16px;top:-64px;width:96px;height:96px;background:url(img/'+pic+');background-position:'+(-frame*96)+'px 0px;filter:drop-shadow(0px 3px 2px #000);-webkit-filter:drop-shadow(0px 3px 2px #000);"></div>';
 				str+='<div class="close" onclick="PlaySound(\'snd/press.mp3\');Game.ToggleSpecialMenu(0);">x</div>';
@@ -14143,9 +14143,9 @@ window.loadMinigameModule(me.minigameUrl).then(function(){
 				if (hovered) {s=1;x=24;}
 				if (selected) {s=1;x=48;}
 				
-				if (Game.specialTabs[i]=='santa') {pic='santa.png';frame=Game.santaLevel;}
-				else if (Game.specialTabs[i]=='dragon') {pic='dragon.png?v='+Game.version;frame=Game.dragonLevels[Game.dragonLevel].pic;}
-				else {pic='dragon.png?v='+Game.version;frame=4;}
+				if (Game.specialTabs[i]=='santa') {pic='santa.webp';frame=Game.santaLevel;}
+				else if (Game.specialTabs[i]=='dragon') {pic='dragon.webp?v='+Game.version;frame=Game.dragonLevels[Game.dragonLevel].pic;}
+				else {pic='dragon.webp?v='+Game.version;frame=4;}
 				
 				if (hovered || selected)
 				{
@@ -14155,7 +14155,7 @@ window.loadMinigameModule(me.minigameUrl).then(function(){
 					Game.LeftBackground.translate(x,y);
 					if (Game.prefs.fancy) Game.LeftBackground.rotate((r/360)*Math.PI*2);
 					Game.LeftBackground.globalAlpha=0.75;
-					Game.LeftBackground.drawImage(Pic('shine.png'),-ss/2,-ss/2,ss,ss);
+					Game.LeftBackground.drawImage(Pic('shine.webp'),-ss/2,-ss/2,ss,ss);
 					Game.LeftBackground.restore();
 				}
 				
@@ -14213,7 +14213,7 @@ window.loadMinigameModule(me.minigameUrl).then(function(){
 		{
 			Game.AllMilks[i].bname=Game.AllMilks[i].name;
 			Game.AllMilks[i].name=loc(Game.AllMilks[i].name);
-			Game.AllMilks[i].pic+='.png';
+			Game.AllMilks[i].pic+='.webp';
 			if (Game.AllMilks[i].type==0)
 			{
 				Game.AllMilks[i].rank=Game.Milks.length;
@@ -14241,9 +14241,9 @@ window.loadMinigameModule(me.minigameUrl).then(function(){
 				Game.LeftBackground.canvas.height=Game.LeftBackground.canvas.parentNode.offsetHeight;
 					//preload ascend animation bits so they show up instantly
 					Game.LeftBackground.globalAlpha=0;
-					Game.LeftBackground.drawImage(Pic('brokenCookie.png'),0,0);
-					Game.LeftBackground.drawImage(Pic('brokenCookieHalo.png'),0,0);
-					Game.LeftBackground.drawImage(Pic('starbg.jpg'),0,0);
+					Game.LeftBackground.drawImage(Pic('brokenCookie.webp'),0,0);
+					Game.LeftBackground.drawImage(Pic('brokenCookieHalo.webp'),0,0);
+					Game.LeftBackground.drawImage(Pic('starbg.webp'),0,0);
 				
 				window.addEventListener('resize',function(event)
 				{
@@ -14267,7 +14267,7 @@ window.loadMinigameModule(me.minigameUrl).then(function(){
 				var y=(b.top+b.bottom)/2;
 				Game.Background.globalAlpha=0.5;
 				var s=1*Game.AscendZoom*(1+Math.cos(Game.T*0.0027)*0.05);
-				Game.Background.fillPattern(Pic('starbg.jpg'),0,0,w,h,1024*s,1024*s,x+Game.AscendOffX*0.25*s,y+Game.AscendOffY*0.25*s);
+				Game.Background.fillPattern(Pic('starbg.webp'),0,0,w,h,1024*s,1024*s,x+Game.AscendOffX*0.25*s,y+Game.AscendOffY*0.25*s);
 				Timer.track('star layer 1');
 				if (Game.prefs.fancy)
 				{
@@ -14275,7 +14275,7 @@ window.loadMinigameModule(me.minigameUrl).then(function(){
 					Game.Background.globalAlpha=0.5*(0.5+Math.sin(Game.T*0.02)*0.3);
 					var s=2*Game.AscendZoom*(1+Math.sin(Game.T*0.002)*0.07);
 					//Game.Background.globalCompositeOperation='lighter';
-					Game.Background.fillPattern(Pic('starbg.jpg'),0,0,w,h,1024*s,1024*s,x+Game.AscendOffX*0.25*s,y+Game.AscendOffY*0.25*s);
+					Game.Background.fillPattern(Pic('starbg.webp'),0,0,w,h,1024*s,1024*s,x+Game.AscendOffX*0.25*s,y+Game.AscendOffY*0.25*s);
 					//Game.Background.globalCompositeOperation='source-over';
 					Timer.track('star layer 2');
 					
@@ -14288,14 +14288,14 @@ window.loadMinigameModule(me.minigameUrl).then(function(){
 					Game.Background.globalCompositeOperation='lighter';
 					Game.Background.rotate(Game.T*0.001);
 					s=(600+150*Math.sin(Game.T*0.007))*Game.AscendZoom;
-					Game.Background.drawImage(Pic('heavenRing1.jpg'),-s/2,-s/2,s,s);
+					Game.Background.drawImage(Pic('heavenRing1.webp'),-s/2,-s/2,s,s);
 					Game.Background.rotate(-Game.T*0.0017);
 					s=(600+150*Math.sin(Game.T*0.0037))*Game.AscendZoom;
-					Game.Background.drawImage(Pic('heavenRing2.jpg'),-s/2,-s/2,s,s);
+					Game.Background.drawImage(Pic('heavenRing2.webp'),-s/2,-s/2,s,s);
 					Game.Background.restore();
 					Timer.track('nebula');
 					
-					//Game.Background.drawImage(Pic('shadedBorders.png'),0,0,w,h);
+					//Game.Background.drawImage(Pic('shadedBorders.webp'),0,0,w,h);
 					//Timer.track('border');
 				}
 			}
@@ -14314,7 +14314,7 @@ window.loadMinigameModule(me.minigameUrl).then(function(){
 				{
 					if (false && Game.bgType!=0 && Game.ascensionMode!=1)
 					{
-						//l('backgroundCanvas').style.background='url(img/shadedBordersSoft.png) 0px 0px,url(img/bgWheat.jpg) 50% 50%';
+						//l('backgroundCanvas').style.background='url(img/shadedBordersSoft.webp) 0px 0px,url(img/bgWheat.webp) 50% 50%';
 						//l('backgroundCanvas').style.backgroundSize='100% 100%,cover';
 					}
 					else
@@ -14356,14 +14356,14 @@ window.loadMinigameModule(me.minigameUrl).then(function(){
 							Game.bgFade=Game.bg;
 						}
 						
-						Game.Background.fillPattern(Pic(Game.bg+'.jpg'),0,0,Game.Background.canvas.width,Game.Background.canvas.height,512,512,0,0);
+						Game.Background.fillPattern(Pic(Game.bg+'.webp'),0,0,Game.Background.canvas.width,Game.Background.canvas.height,512,512,0,0);
 						if (Game.bgR>0)
 						{
 							Game.Background.globalAlpha=Game.bgR;
-							Game.Background.fillPattern(Pic(Game.bgFade+'.jpg'),0,0,Game.Background.canvas.width,Game.Background.canvas.height,512,512,0,0);
+							Game.Background.fillPattern(Pic(Game.bgFade+'.webp'),0,0,Game.Background.canvas.width,Game.Background.canvas.height,512,512,0,0);
 						}
 						Game.Background.globalAlpha=1;
-						Game.Background.drawImage(Pic('shadedBordersSoft.png'),0,0,Game.Background.canvas.width,Game.Background.canvas.height);
+						Game.Background.drawImage(Pic('shadedBordersSoft.webp'),0,0,Game.Background.canvas.width,Game.Background.canvas.height);
 					}
 					
 				}
@@ -14398,9 +14398,9 @@ window.loadMinigameModule(me.minigameUrl).then(function(){
 						var opacity=1;
 						if (Game.elderWrathD<=1.5 || Game.prefs.notScary)
 						{
-							if (Game.cookiesPs>=1000) pic='cookieShower3.png';
-							else if (Game.cookiesPs>=500) pic='cookieShower2.png';
-							else if (Game.cookiesPs>=50) pic='cookieShower1.png';
+							if (Game.cookiesPs>=1000) pic='cookieShower3.webp';
+							else if (Game.cookiesPs>=500) pic='cookieShower2.webp';
+							else if (Game.cookiesPs>=50) pic='cookieShower1.webp';
 							else pic='';
 						}
 						if (pic!='')
@@ -14417,7 +14417,7 @@ window.loadMinigameModule(me.minigameUrl).then(function(){
 							var y=(Math.floor(Game.T*2.5)%512);
 							ctx.globalAlpha=0.75;
 							ctx.globalCompositeOperation='lighter';
-							ctx.fillPattern(Pic('snow2.jpg'),0,0,ctx.canvas.width,ctx.canvas.height+512,512,512,0,y);
+							ctx.fillPattern(Pic('snow2.webp'),0,0,ctx.canvas.width,ctx.canvas.height+512,512,512,0,y);
 							ctx.globalCompositeOperation='source-over';
 							ctx.globalAlpha=1;
 						}
@@ -14426,7 +14426,7 @@ window.loadMinigameModule(me.minigameUrl).then(function(){
 						{
 							var y=(Math.floor(Game.T*2.5)%512);
 							ctx.globalAlpha=1;
-							ctx.fillPattern(Pic('heartStorm.png'),0,0,ctx.canvas.width,ctx.canvas.height+512,512,512,0,y);
+							ctx.fillPattern(Pic('heartStorm.webp'),0,0,ctx.canvas.width,ctx.canvas.height+512,512,512,0,y);
 							ctx.globalAlpha=1;
 						}
 						Timer.track('left background');
@@ -14447,9 +14447,9 @@ window.loadMinigameModule(me.minigameUrl).then(function(){
 						ctx.rotate((r/360)*Math.PI*2);
 						var alphaMult=1;
 						if (Game.bgType==2 || Game.bgType==4) alphaMult=0.5;
-						var pic='shine.png';
-						if (goodBuff) {pic='shineGold.png';alphaMult=1;}
-						else if (badBuff) {pic='shineRed.png';alphaMult=1;}
+						var pic='shine.webp';
+						if (goodBuff) {pic='shineGold.webp';alphaMult=1;}
+						else if (badBuff) {pic='shineRed.webp';alphaMult=1;}
 						if (goodBuff && Game.prefs.fancy) ctx.globalCompositeOperation='lighter';
 						ctx.globalAlpha=0.5*alphaMult;
 						ctx.drawImage(Pic(pic),-s/2,-s/2,s,s);
@@ -14473,7 +14473,7 @@ window.loadMinigameModule(me.minigameUrl).then(function(){
 							var s=300*2*(1+Math.sin(Game.T*0.013)*0.1);
 							var x=Game.cookieOriginX-s/2;
 							var y=Game.cookieOriginY-s/(1.4+0.2*Math.sin(Game.T*0.01));
-							ctx.drawImage(Pic('dragonBG.png'),x,y,s,s);
+							ctx.drawImage(Pic('dragonBG.webp'),x,y,s,s);
 						}
 						
 						//big cookie
@@ -14496,7 +14496,7 @@ window.loadMinigameModule(me.minigameUrl).then(function(){
 									var spin=Game.T*(0.005+i*0.001)+i+(ii/num)*Math.PI*2;
 									x+=Math.sin(spin)*space;
 									y+=Math.cos(spin)*space;
-									ctx.drawImage(Pic('perfectCookie.png'),x-s/2,y-s/2,s,s);
+									ctx.drawImage(Pic('perfectCookie.webp'),x-s/2,y-s/2,s,s);
 								}
 								space+=s/2;
 							}
@@ -14508,16 +14508,16 @@ window.loadMinigameModule(me.minigameUrl).then(function(){
 							var x=Game.cookieOriginX;
 							var y=Game.cookieOriginY;
 							ctx.save();
-							if (Game.prefs.fancy) ctx.drawImage(Pic('cookieShadow.png'),x-s/2,y-s/2+20,s,s);
+							if (Game.prefs.fancy) ctx.drawImage(Pic('cookieShadow.webp'),x-s/2,y-s/2+20,s,s);
 							ctx.translate(x,y);
 							if (Game.season=='easter')
 							{
 								var nestW=304*0.98*Game.BigCookieSize;
 								var nestH=161*0.98*Game.BigCookieSize;
-								ctx.drawImage(Pic('nest.png'),-nestW/2,-nestH/2+130,nestW,nestH);
+								ctx.drawImage(Pic('nest.webp'),-nestW/2,-nestH/2+130,nestW,nestH);
 							}
 							//ctx.rotate(((Game.startDate%360)/360)*Math.PI*2);
-							ctx.drawImage(Pic('perfectCookie.png'),-s/2,-s/2,s,s);
+							ctx.drawImage(Pic('perfectCookie.webp'),-s/2,-s/2,s,s);
 							
 							if (goodBuff && Game.prefs.particles)//sparkle
 							{
@@ -14528,7 +14528,7 @@ window.loadMinigameModule(me.minigameUrl).then(function(){
 									var size=Math.random()*30+5;
 									var a=Math.random()*Math.PI*2;
 									var d=s*0.9*Math.random()/2;
-									ctx.drawImage(Pic('glint.jpg'),-size/2+Math.sin(a)*d,-size/2+Math.cos(a)*d,size,size);
+									ctx.drawImage(Pic('glint.webp'),-size/2+Math.sin(a)*d,-size/2+Math.cos(a)*d,size,size);
 								}
 							}
 							
@@ -14543,7 +14543,7 @@ window.loadMinigameModule(me.minigameUrl).then(function(){
 						var x=Game.cookieOriginX-s/2;
 						var y=Game.cookieOriginY-s/2;
 						ctx.globalAlpha=0.5;
-						ctx.drawImage(Pic('shine.png'),x,y,s,s);
+						ctx.drawImage(Pic('shine.webp'),x,y,s,s);
 						
 						if (showDragon)
 						{
@@ -14551,7 +14551,7 @@ window.loadMinigameModule(me.minigameUrl).then(function(){
 							var s=300*2*(1+Math.sin(Game.T*0.013)*0.1);
 							var x=Game.cookieOriginX-s/2;
 							var y=Game.cookieOriginY-s/(1.4+0.2*Math.sin(Game.T*0.01));
-							ctx.drawImage(Pic('dragonBG.png'),x,y,s,s);
+							ctx.drawImage(Pic('dragonBG.webp'),x,y,s,s);
 						}
 					
 						//big cookie
@@ -14559,8 +14559,8 @@ window.loadMinigameModule(me.minigameUrl).then(function(){
 						var s=256*Game.BigCookieSize;
 						var x=Game.cookieOriginX-s/2;
 						var y=Game.cookieOriginY-s/2;
-						if (Game.prefs.fancy) ctx.drawImage(Pic('cookieShadow.png'),x,y+20,s,s);
-						ctx.drawImage(Pic('perfectCookie.png'),x,y,s,s);
+						if (Game.prefs.fancy) ctx.drawImage(Pic('cookieShadow.webp'),x,y+20,s,s);
+						ctx.drawImage(Pic('perfectCookie.webp'),x,y,s,s);
 					}
 					
 					//cursors
@@ -14568,7 +14568,7 @@ window.loadMinigameModule(me.minigameUrl).then(function(){
 					{
 						ctx.save();
 						ctx.translate(Game.cookieOriginX,Game.cookieOriginY);
-						var pic=Pic('cursor.png');
+						var pic=Pic('cursor.webp');
 						var fancy=Game.prefs.fancy;
 						
 						if (showDragon) ctx.globalAlpha=0.25;
@@ -14636,11 +14636,11 @@ window.loadMinigameModule(me.minigameUrl).then(function(){
 						ctx.rotate(Game.T*0.007);
 						s=0.5+Math.pow(tBase,0.6)*1;
 						var s2=(600)*s;
-						ctx.drawImage(Pic('heavenRing1.jpg'),-s2/2,-s2/2,s2,s2);
+						ctx.drawImage(Pic('heavenRing1.webp'),-s2/2,-s2/2,s2,s2);
 						ctx.rotate(-Game.T*0.002);
 						s=0.5+Math.pow(1-tBase,0.4)*1;
 						s2=(600)*s;
-						ctx.drawImage(Pic('heavenRing2.jpg'),-s2/2,-s2/2,s2,s2);
+						ctx.drawImage(Pic('heavenRing2.webp'),-s2/2,-s2/2,s2,s2);
 						ctx.restore();
 					}
 					
@@ -14656,13 +14656,13 @@ window.loadMinigameModule(me.minigameUrl).then(function(){
 					for (var i=0;i<10;i++)
 					{
 						var d=(t-0.2)*(80+((i+2)%3)*40);
-						ctx.drawImage(Pic('brokenCookie.png'),256*(chunks[i]),0,256,256,-s/2+Math.sin(-(((chunks[i]+4)%10)/10)*Math.PI*2)*d,-s/2+Math.cos(-(((chunks[i]+4)%10)/10)*Math.PI*2)*d,s,s);
+						ctx.drawImage(Pic('brokenCookie.webp'),256*(chunks[i]),0,256,256,-s/2+Math.sin(-(((chunks[i]+4)%10)/10)*Math.PI*2)*d,-s/2+Math.cos(-(((chunks[i]+4)%10)/10)*Math.PI*2)*d,s,s);
 					}
 					ctx.globalAlpha=(1-t)*0.66;
 					for (var i=0;i<10;i++)
 					{
 						var d=(t-0.1)*(80+((i+2)%3)*40);
-						ctx.drawImage(Pic('brokenCookie.png'),256*(chunks[i]),0,256,256,-s/2+Math.sin(-(((chunks[i]+4)%10)/10)*Math.PI*2)*d,-s/2+Math.cos(-(((chunks[i]+4)%10)/10)*Math.PI*2)*d,s,s);
+						ctx.drawImage(Pic('brokenCookie.webp'),256*(chunks[i]),0,256,256,-s/2+Math.sin(-(((chunks[i]+4)%10)/10)*Math.PI*2)*d,-s/2+Math.cos(-(((chunks[i]+4)%10)/10)*Math.PI*2)*d,s,s);
 					}*/
 					ctx.globalAlpha=1-t;
 					for (var i=0;i<10;i++)
@@ -14670,12 +14670,12 @@ window.loadMinigameModule(me.minigameUrl).then(function(){
 						var d=(t)*(80+((i+2)%3)*40);
 						var x2=(Math.random()*2-1)*5*shake;
 						var y2=(Math.random()*2-1)*5*shake;
-						ctx.drawImage(Pic('brokenCookie.png'),256*(chunks[i]),0,256,256,-s/2+Math.sin(-(((chunks[i]+4)%10)/10)*Math.PI*2)*d+x2,-s/2+Math.cos(-(((chunks[i]+4)%10)/10)*Math.PI*2)*d+y2,s,s);
+						ctx.drawImage(Pic('brokenCookie.webp'),256*(chunks[i]),0,256,256,-s/2+Math.sin(-(((chunks[i]+4)%10)/10)*Math.PI*2)*d+x2,-s/2+Math.cos(-(((chunks[i]+4)%10)/10)*Math.PI*2)*d+y2,s,s);
 					}
 					var brokenHalo=1-Math.min(t/(1/3),1/3)*3;
 					if (Game.AscendTimer<Game.AscendBreakpoint) brokenHalo=Game.AscendTimer/Game.AscendBreakpoint;
 					ctx.globalAlpha=brokenHalo;
-					ctx.drawImage(Pic('brokenCookieHalo.png'),-s/1.3333,-s/1.3333,s*1.5,s*1.5);
+					ctx.drawImage(Pic('brokenCookieHalo.webp'),-s/1.3333,-s/1.3333,s*1.5,s*1.5);
 					
 					ctx.restore();
 					
@@ -14694,7 +14694,7 @@ window.loadMinigameModule(me.minigameUrl).then(function(){
 								ctx.globalAlpha=(1-t)*(Game.drawT%2==0?0.5:1);
 								var sw=(1-t2*0.5)*96;
 								var sh=(0.5+t2*1.5)*96;
-								ctx.drawImage(Pic('shineSpoke.png'),-sw/2,-sh-32-(1-t2)*256,sw,sh);
+								ctx.drawImage(Pic('shineSpoke.webp'),-sw/2,-sh-32-(1-t2)*256,sw,sh);
 							}
 							ctx.rotate(Math.PI*2/n);
 						}
@@ -14788,8 +14788,8 @@ window.loadMinigameModule(me.minigameUrl).then(function(){
 							ctx.save();
 							ctx.translate(me.x,me.y);
 							ctx.rotate(me.r);
-							if (Game.toysType==1) ctx.drawImage(Pic('smallCookies.png'),(me.id%8)*64,0,64,64,-me.s/2,-me.s/2,me.s,me.s);
-							else ctx.drawImage(Pic('icons.png'),me.icon[0]*48,me.icon[1]*48,48,48,-me.s/2,-me.s/2,me.s,me.s);
+							if (Game.toysType==1) ctx.drawImage(Pic('smallCookies.webp'),(me.id%8)*64,0,64,64,-me.s/2,-me.s/2,me.s,me.s);
+							else ctx.drawImage(Pic('icons.webp'),me.icon[0]*48,me.icon[1]*48,48,48,-me.s/2,-me.s/2,me.s,me.s);
 							ctx.restore();
 						}
 						ctx.globalAlpha=1;
@@ -14868,8 +14868,8 @@ window.loadMinigameModule(me.minigameUrl).then(function(){
 							ctx.save();
 							ctx.translate(me.x,me.y);
 							ctx.rotate(me.r);
-							if (Game.toysType==1) ctx.drawImage(Pic('smallCookies.png'),(me.id%8)*64,0,64,64,-me.s/2,-me.s/2,me.s,me.s);
-							else ctx.drawImage(Pic('icons.png'),me.icon[0]*48,me.icon[1]*48,48,48,-me.s/2,-me.s/2,me.s,me.s);
+							if (Game.toysType==1) ctx.drawImage(Pic('smallCookies.webp'),(me.id%8)*64,0,64,64,-me.s/2,-me.s/2,me.s,me.s);
+							else ctx.drawImage(Pic('icons.webp'),me.icon[0]*48,me.icon[1]*48,48,48,-me.s/2,-me.s/2,me.s,me.s);
 							ctx.restore();
 						}
 					}
@@ -14888,7 +14888,7 @@ window.loadMinigameModule(me.minigameUrl).then(function(){
 				
 				if (Game.AscendTimer>0)
 				{
-					ctx.drawImage(Pic('shadedBordersSoft.png'),0,0,ctx.canvas.width,ctx.canvas.height);
+					ctx.drawImage(Pic('shadedBordersSoft.webp'),0,0,ctx.canvas.width,ctx.canvas.height);
 				}
 				
 				if (Game.AscendTimer==0)
@@ -14900,9 +14900,9 @@ window.loadMinigameModule(me.minigameUrl).then(function(){
 					
 					//shiny border during frenzies etc
 					ctx.globalAlpha=1;
-					var borders='shadedBordersSoft.png';
-					if (goodBuff) borders='shadedBordersGold.png';
-					else if (badBuff) borders='shadedBordersRed.png';
+					var borders='shadedBordersSoft.webp';
+					if (goodBuff) borders='shadedBordersGold.webp';
+					else if (badBuff) borders='shadedBordersRed.webp';
 					if (goodBuff && Game.prefs.fancy) ctx.globalCompositeOperation='lighter';
 					ctx.drawImage(Pic(borders),0,0,ctx.canvas.width,ctx.canvas.height);
 					if (goodBuff && Game.prefs.fancy) ctx.globalCompositeOperation='source-over';

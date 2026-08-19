@@ -2944,7 +2944,7 @@ export default { id: "ZH-CN", name: "chinese", strings: {
 	"[Achievement name 227]Are you gonna eat all that?": "你要全吃了吗？",
 	"[Achievement name 228]We're gonna need a bigger bakery": "我需要一间更大的烘焙坊",
 	"[Achievement name 229]In the mouth of madness": "陷入疯狂",
-	"[Achievement name 230]Brought to you by the letter <div style=\"display:inline-block;background:url(img/money.png);width:16px;height:16px;\"></div>": "由字母呈现 <div style=\"display:inline-block;background:url(img/money.png);width:16px;height:16px;\"></div>",
+	"[Achievement name 230]Brought to you by the letter <div style=\"display:inline-block;background:url(img/money.webp);width:16px;height:16px;\"></div>": "由字母呈现 <div style=\"display:inline-block;background:url(img/money.webp);width:16px;height:16px;\"></div>",
 	"[Achievement name 231]A world filled with cookies": "一个充满饼干的世界",
 	"[Achievement name 232]When this baby hits 36 quadrillion cookies per hour": "这宝贝每小时产出 3.6 京饼干",
 	"[Achievement name 233]Fast and delicious": "快捷，美味",

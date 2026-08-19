@@ -26,6 +26,47 @@ const ENG = join(root, 'src', 'engine');
 
 const stripBom = (s) => (s.charCodeAt(0) === 0xfeff ? s.slice(1) : s).replace(/\r\n?/g, '\n');
 
+// CC3: images ship as WebP. The 2.048 engine references them as img/….png /
+// img/….jpg string literals (store icons, backgrounds, minigame art, the
+// preload list, dynamic icon[2] filenames). Rewrite those extensions to
+// .webp so the engine loads the converted assets from public/img. CSS and
+// index.html refs are rewritten separately (they're not engine source).
+// The negative lookahead keeps the match to a real file extension (not a
+// substring of a longer token), and any trailing ?v= cache-buster is preserved.
+const toWebP = (s) => s.replace(/(img\/[A-Za-z0-9_./-]*?)\.(png|jpe?g)(?![A-Za-z0-9])/g, '$1.webp');
+
+// A few engine refs build the image path by concatenating a quoted extension
+// onto a variable, so the full-literal pass above can't see them (lock icons,
+// building art, grandma variants, background tiles). Rewrite each known
+// pattern exactly; throw if one is missing so an upstream drift fails the
+// port loudly instead of silently 404ing an asset at runtime.
+const concatExtFixes = [
+  ["(Game.https?'lockOn':'lockOff')+'.png)", "(Game.https?'lockOn':'lockOff')+'.webp)"],
+  ["art.base+'.png'", "art.base+'.webp'"],
+  ["art.base+'Background.png'", "art.base+'Background.webp'"],
+  ["choose(list)+'.png'", "choose(list)+'.webp'"],
+  ["Game.bg+'.jpg'", "Game.bg+'.webp'"],
+  ["Game.bgFade+'.jpg'", "Game.bgFade+'.webp'"],
+  ["Game.AllMilks[i].pic+='.png'", "Game.AllMilks[i].pic+='.webp'"],
+];
+const applyConcatExt = (s) => {
+  for (const [from, to] of concatExtFixes) {
+    if (!s.includes(from)) throw new Error('concat-ext pattern not found: ' + from);
+    s = s.split(from).join(to);
+  }
+  return s;
+};
+
+// A third category: bare-filename string literals with no img/ prefix —
+// Pic('icons.png'), bg:'grandmaBackground.png', me.pic=='smallCookies.png'
+// comparisons, Game.Loader.Load(['filler.png']), even 'dragon.png?v='. They
+// resolve against Game.Loader.domain ('img/') at runtime. Rewrite any quoted
+// literal of the form '<name>.png|jpg' to .webp; the leading-quote anchor
+// keeps this from touching non-literal text, and it's safe to re-run because
+// a rewritten .webp literal no longer matches.
+const rewriteBareFilenames = (s) =>
+  s.replace(/(['"])([A-Za-z0-9_-]+)\.(png|jpe?g)(?![A-Za-z0-9])/g, '$1$2.webp');
+
 /**
  * Top-level bindings of a classic-script file (for the window shim).
  * These become module-scope bindings under ESM and must be republished on
@@ -283,6 +324,15 @@ if (code.includes("'v. '+Game.version+")) {
   ].join('\n');
   code = code + shim;
 }
+// Images ship as WebP: rewrite the engine's img/….png / img/….jpg string
+// literal refs to .webp (converted assets live in public/img), plus the
+// variable+quoted-extension refs (concatExtFixes).
+// Order matters: applyConcatExt must run before rewriteBareFilenames, which
+// would otherwise rewrite art.base+'Background.png' first and hide the exact
+// concat pattern (the throw in applyConcatExt would then fire).
+code = toWebP(code);
+code = applyConcatExt(code);
+code = rewriteBareFilenames(code);
 writeFileSync(mainPath, code);
 console.log('wrote', mainPath);
 
@@ -306,6 +356,8 @@ for (const file of readdirSync(SRC)) {
       ? `/* CC3: the original relied on implicit globals; declare them for module strict mode. */\nvar ${imp.join(', ')};\n\n`
       : '';
   if (imp.length) m = header + m;
+  m = toWebP(m); // images ship as WebP (see toWebP above)
+  m = rewriteBareFilenames(m);
   writeFileSync(join(ENG, file), m);
   console.log(`wrote ${file} (implicit: ${imp.join(', ') || 'none'})`);
 }
@@ -328,7 +380,7 @@ for (const file of readdirSync(join(SRC, 'loc'))) {
     body,
     '}\n};',
   ].join('\n');
-  writeFileSync(join(locDir, file), out);
+  writeFileSync(join(locDir, file), toWebP(out));
   console.log('wrote loc/' + file);
 }
 

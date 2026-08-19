@@ -402,7 +402,7 @@ M.launch=function()
 		
 		var str='';
 		str+='<style>'+
-		'#bankBG{background:url(img/shadedBorders.png),url(img/BGmarket.jpg);background-size:100% 100%,auto;position:absolute;left:0px;right:0px;top:0px;bottom:16px;}'+
+		'#bankBG{background:url(img/shadedBorders.webp),url(img/BGmarket.webp);background-size:100% 100%,auto;position:absolute;left:0px;right:0px;top:0px;bottom:16px;}'+
 		'#bankContent{position:relative;box-sizing:border-box;padding:4px;text-align:center;}'+
 		
 		'.bankGood{margin:2px;display:inline-block;width:156px;text-align:center;position:relative;left:0px;top:0px;right:0px;box-sizing:border-box;box-shadow:0px 0px 0px 1px rgba(255,255,255,0.1), 2px 2px 4px rgba(0,0,0,0.5) inset;background:rgba(0,0,0,0.9);color:rgba(255,255,255,0.7);}'+

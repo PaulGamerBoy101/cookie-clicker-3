@@ -2965,7 +2965,7 @@ export default { id: "DE", name: "german", strings: {
 	"[Achievement name 227]Are you gonna eat all that?": "Wirst du das alles essen?",
 	"[Achievement name 228]We're gonna need a bigger bakery": "Wir werden eine größere Bäckerei brauchen",
 	"[Achievement name 229]In the mouth of madness": "Im Maul des Wahnsinns",
-	"[Achievement name 230]Brought to you by the letter <div style=\"display:inline-block;background:url(img/money.png);width:16px;height:16px;\"></div>": "Präsentiert von dem Brief <div style=\"display:inline-block;background:url(img/money.png);width:16px;height:16px;\"></div>",
+	"[Achievement name 230]Brought to you by the letter <div style=\"display:inline-block;background:url(img/money.webp);width:16px;height:16px;\"></div>": "Präsentiert von dem Brief <div style=\"display:inline-block;background:url(img/money.webp);width:16px;height:16px;\"></div>",
 	"[Achievement name 231]A world filled with cookies": "Eine Welt gefüllt mit Keksen",
 	"[Achievement name 232]When this baby hits 36 quadrillion cookies per hour": "Wenn dieses Baby 36 Quadrillionen Kekse pro Stunde erreicht",
 	"[Achievement name 233]Fast and delicious": "Schnell und lecker",

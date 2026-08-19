@@ -2944,7 +2944,7 @@ export default { id: "PL", name: "polish", strings: {
 	"[Achievement name 227]Are you gonna eat all that?": "Zjesz to wszystko sam?",
 	"[Achievement name 228]We're gonna need a bigger bakery": "Przyda nam się większa piekarnia",
 	"[Achievement name 229]In the mouth of madness": "W ustach szaleństwa",
-	"[Achievement name 230]Brought to you by the letter <div style=\"display:inline-block;background:url(img/money.png);width:16px;height:16px;\"></div>": "Jest list do ciebie <div style=\"display:inline-block;background:url(img/money.png);width:16px;height:16px;\"></div>",
+	"[Achievement name 230]Brought to you by the letter <div style=\"display:inline-block;background:url(img/money.webp);width:16px;height:16px;\"></div>": "Jest list do ciebie <div style=\"display:inline-block;background:url(img/money.webp);width:16px;height:16px;\"></div>",
 	"[Achievement name 231]A world filled with cookies": "Świat wypełniony ciastkami",
 	"[Achievement name 232]When this baby hits 36 quadrillion cookies per hour": "Ten moment, gdy dziecina wyciska 36 kwadrylionów ciastek na sekundę",
 	"[Achievement name 233]Fast and delicious": "Szybcy i smaczni",

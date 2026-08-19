@@ -2944,7 +2944,7 @@ export default { id: "IT", name: "italian", strings: {
 	"[Achievement name 227]Are you gonna eat all that?": "Hai intenzione di mangiarti tutto?",
 	"[Achievement name 228]We're gonna need a bigger bakery": "Ci serve una pasticceria più grossa",
 	"[Achievement name 229]In the mouth of madness": "Alle pasticcerie della follia",
-	"[Achievement name 230]Brought to you by the letter <div style=\"display:inline-block;background:url(img/money.png);width:16px;height:16px;\"></div>": "Comincia con la lettera <div style=\"display:inline-block;background:url(img/money.png);width:16px;height:16px;\"></div>",
+	"[Achievement name 230]Brought to you by the letter <div style=\"display:inline-block;background:url(img/money.webp);width:16px;height:16px;\"></div>": "Comincia con la lettera <div style=\"display:inline-block;background:url(img/money.webp);width:16px;height:16px;\"></div>",
 	"[Achievement name 231]A world filled with cookies": "Girotondo di biscotti",
 	"[Achievement name 232]When this baby hits 36 quadrillion cookies per hour": "Quando questo aggeggio toccherà i 36 biliardi di biscotti oraribiscotto",
 	"[Achievement name 233]Fast and delicious": "Solo ingredienti originali",

@@ -563,7 +563,7 @@ if (debugSurface && params.get('qa') === 'icon') {
 				const bi = cs.backgroundImage;
 				const m = bi.match(/url\(([^)]+)\)/);
 				let file = '(none)';
-				if (m) { const u = m[1].replace(/['"]/g, ''); const mm = u.match(/img\/([a-zA-Z0-9_.-]+)\.png/); if (mm) file = mm[1] + '.png'; }
+				if (m) { const u = m[1].replace(/['"]/g, ''); const mm = u.match(/img\/([a-zA-Z0-9_.-]+)\.webp/); if (mm) file = mm[1] + '.webp'; }
 				rows.push(id + ' [' + el.className + ']');
 				rows.push('  size: ' + cs.width + ' x ' + cs.height + ' | opacity: ' + cs.opacity + ' | visibility: ' + cs.visibility + ' | display: ' + cs.display);
 				rows.push('  bg-image file: ' + file + (bi === 'none' ? '  <-- NO BACKGROUND!' : '') + ' | position: ' + cs.backgroundPosition);

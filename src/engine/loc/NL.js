@@ -2944,7 +2944,7 @@ export default { id: "NL", name: "dutch", strings: {
 	"[Achievement name 227]Are you gonna eat all that?": "Ga je dat allemaal opeten?",
 	"[Achievement name 228]We're gonna need a bigger bakery": "We hebben een grotere bakkerij nodig",
 	"[Achievement name 229]In the mouth of madness": "Dit is gekkenwerk",
-	"[Achievement name 230]Brought to you by the letter <div style=\"display:inline-block;background:url(img/money.png);width:16px;height:16px;\"></div>": "Vooral de allerlekkerste koekjes <div style=\"display:inline-block;background:url(img/money.png);width:16px;height:16px;\"></div>",
+	"[Achievement name 230]Brought to you by the letter <div style=\"display:inline-block;background:url(img/money.webp);width:16px;height:16px;\"></div>": "Vooral de allerlekkerste koekjes <div style=\"display:inline-block;background:url(img/money.webp);width:16px;height:16px;\"></div>",
 	"[Achievement name 231]A world filled with cookies": "Een wereld vol koekjes",
 	"[Achievement name 232]When this baby hits 36 quadrillion cookies per hour": "Als je 36 kwartiljoen koekjes per uur aantikt",
 	"[Achievement name 233]Fast and delicious": "Snel en lekker",
