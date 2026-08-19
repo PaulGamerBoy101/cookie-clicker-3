@@ -1,0 +1,47 @@
+# Deploy the built game to GitHub Pages: giveen.github.io/cookie-clicker-3/
+#
+# The build is relocatable (vite `base: './'`), so it works from the repo's
+# subpath as-is. Each build replaces the gh-pages branch with the fresh
+# dist/ contents; GitHub Pages serves that branch (repo Settings -> Pages:
+# "Deploy from a branch", gh-pages, / — enabled once via the API, see the
+# release notes).
+#
+# The service worker cache name is stamped with a per-build content hash
+# (cc3:stamp-service-worker in vite.config.js), so each deploy self-updates
+# returning players: the new sw.js installs on their next visit and its
+# activate() drops the previous build's cache.
+
+name: Deploy to GitHub Pages
+
+on:
+  push:
+    branches: [master]
+  workflow_dispatch:
+
+permissions:
+  contents: write # push the built dist/ to the gh-pages branch
+
+# Deploys are short; never cancel one in flight — a torn gh-pages branch is
+# worse than a queued duplicate.
+concurrency:
+  group: gh-pages
+  cancel-in-progress: false
+
+jobs:
+  build-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+      # Replaces the branch contents with dist/ (keep_files defaults to false).
+      # The stamp step in the build fails the run if the service-worker cache
+      # placeholder ever goes missing, so a broken deploy can't publish.
+      - name: Publish dist/ to the gh-pages branch
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          publish_dir: ./dist
