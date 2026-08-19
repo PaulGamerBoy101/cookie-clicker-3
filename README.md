@@ -116,7 +116,10 @@ These weaken the CSP's XSS protection. That is an accepted, documented trade-off
   (the "A festive hat" + "A crumbly egg" upgrades), drives `Game.UpdateSpecial()`
   to add the Santa/Dragon tabs, then exercises `Game.UpgradeSanta()` (bumps
   santaLevel, drops a present) and `Game.UpgradeDragon()` (chips the egg).
-  `?qa=perf&qlvl=N` seeds all four
+  `?qa=a11y` exercises the accessibility (screen reader) mode: it enables
+  `Game.prefs.screenreader`, persists it, and reloads; on the reloaded page the
+  store products / buildings render as `<button aria-labelledby=...>` (with
+  srOnly labels) instead of plain `<div>`s. `?qa=perf&qlvl=N` seeds all four
   minigame buildings at level `N` (default 1), opens the Garden, and reports the
   actual game-loop rate (`Game.T` ticks/sec) versus the 30-tick `Game.fps`
   target — used to confirm the 4-minigame frame cost (measured 29.9 at level 1

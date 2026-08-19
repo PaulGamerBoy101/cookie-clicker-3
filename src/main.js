@@ -45,7 +45,7 @@ if (debugSurface) {
  *   ?qa=golden    spawn + pop a forced "frenzy" golden cookie, report the buff
  *   ?qa=save      export a save, corrupt state, re-import, verify round-trip
  * Never active in a plain production load. */
-if (debugSurface && params.has('qa') && params.get('qa') !== 'golden' && params.get('qa') !== 'save' && params.get('qa') !== 'perf' && params.get('qa') !== 'ascend' && params.get('qa') !== 'offline' && params.get('qa') !== 'special') {
+if (debugSurface && params.has('qa') && params.get('qa') !== 'golden' && params.get('qa') !== 'save' && params.get('qa') !== 'perf' && params.get('qa') !== 'ascend' && params.get('qa') !== 'offline' && params.get('qa') !== 'special' && params.get('qa') !== 'a11y') {
 	const qaMode = params.get('qa'); // null for bare ?qa, else the value
 	const MINIGAME_BUILDINGS = ['Farm', 'Bank', 'Temple', 'Wizard tower'];
 	const tick = window.setInterval(() => {
@@ -415,6 +415,56 @@ if (debugSurface && params.get('qa') === 'special') {
 			out().textContent = '[QA-special] seasonal specials (Santa + Dragon tabs)\n' + lines.join('\n');
 		} catch (e) { out().textContent = '[QA-special] ERROR: ' + e.message + '\n' + (e.stack || ''); }
 		window.clearInterval(tick);
+	}, 250);
+}
+
+// QA: verify the accessibility (screen reader) mode. It's a preference
+// (Game.prefs.screenreader) that, when on, renders store products / buildings as
+// <button aria-labelledby=...> with srOnly labels instead of plain <div>s (it
+// requires a reload to take effect). Two-phase: phase 1 enables the pref,
+// persists it (WriteSave) and reloads; phase 2 checks a store product is now a
+// <button> with aria-labelledby. Usage: ?debug=1&qa=a11y
+if (debugSurface && params.get('qa') === 'a11y') {
+	const out = () => {
+		let d = document.getElementById('__dbgqa');
+		if (!d) { d = document.createElement('div'); d.id = '__dbgqa'; d.style.cssText = 'position:fixed;top:0;left:0;z-index:99999;background:#fff;color:#060;font:12px monospace;white-space:pre-wrap;max-width:640px;'; document.body.appendChild(d); }
+		return d;
+	};
+	const tick = window.setInterval(() => {
+		const G = window.Game;
+		if (!G || !G.ready || !G.prefs || G.T < 90) return;
+		let marker = null;
+		try { marker = JSON.parse(localStorage.getItem('__qaA11y') || 'null'); } catch (e) { /* ignore */ }
+		if (marker) {
+			// Phase 2: screen-reader mode should be active (products are <button>s).
+			if (G.__qaA11yDone) return;
+			G.__qaA11yDone = 1;
+			try {
+				const p0 = document.getElementById('product0');
+				const tag = p0 ? p0.tagName.toLowerCase() : '(missing)';
+				const aria = p0 ? p0.getAttribute('aria-labelledby') : null;
+				const ok = !!p0 && tag === 'button' && !!aria;
+				out().textContent =
+					'[QA-a11y] phase 2 (screen-reader mode active after reload)\n' +
+					'[QA-a11y] prefs.screenreader = ' + G.prefs.screenreader +
+					'\n[QA-a11y] #product0 tag          = ' + tag +
+					'\n[QA-a11y] #product0 aria-labelledby = ' + (aria || '(none)') +
+					'\n[QA-a11y] ' + (ok ? 'PASS: screen-reader mode renders store products as accessible <button aria-labelledby=...>' : 'CHECK: expected a <button> with aria-labelledby');
+				try { localStorage.removeItem('__qaA11y'); } catch (e) { /* ignore */ }
+			} catch (e) { out().textContent = '[QA-a11y] verify error: ' + e.message; }
+			window.clearInterval(tick);
+			return;
+		}
+		// Phase 1: enable the pref, persist it, then reload.
+		if (G.__qaA11ySeeded) return;
+		G.__qaA11ySeeded = 1;
+		try {
+			G.prefs.screenreader = 1;
+			G.WriteSave();
+			localStorage.setItem('__qaA11y', JSON.stringify({ on: 1 }));
+			out().textContent = '[QA-a11y] phase 1: enabled screen-reader mode, reloading...';
+			setTimeout(() => location.reload(), 400);
+		} catch (e) { out().textContent = '[QA-a11y] ERROR: ' + e.message; }
 	}, 250);
 }
 
