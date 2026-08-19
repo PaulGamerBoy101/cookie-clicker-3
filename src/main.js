@@ -45,7 +45,7 @@ if (debugSurface) {
  *   ?qa=golden    spawn + pop a forced "frenzy" golden cookie, report the buff
  *   ?qa=save      export a save, corrupt state, re-import, verify round-trip
  * Never active in a plain production load. */
-if (debugSurface && params.has('qa') && params.get('qa') !== 'golden' && params.get('qa') !== 'save' && params.get('qa') !== 'perf') {
+if (debugSurface && params.has('qa') && params.get('qa') !== 'golden' && params.get('qa') !== 'save' && params.get('qa') !== 'perf' && params.get('qa') !== 'ascend') {
 	const qaMode = params.get('qa'); // null for bare ?qa, else the value
 	const MINIGAME_BUILDINGS = ['Farm', 'Bank', 'Temple', 'Wizard tower'];
 	const tick = window.setInterval(() => {
@@ -241,6 +241,68 @@ if (debugSurface && params.get('qa') === 'perf') {
 					'\n[QA-perf] verdict: ' + (actual >= G.fps * 0.9 ? 'OK — holding ~target' : 'BELOW target by ' + (G.fps - actual).toFixed(1) + ' ticks/s');
 				window.clearInterval(tick);
 			}, 500);
+		}
+	}, 250);
+}
+
+// QA: verify the ascension (Legacy/prestige) flow end to end. Seeds a run with a
+// large cookiesEarned (1e15 -> floor((1e15/1e12)^(1/3)) = 10 prestige), drives
+// Game.Ascend(1) (5s intro that grants heavenly chips + prestige at its
+// breakpoint), then Game.Reincarnate(1) (the actual reset), and checks:
+// chips+prestige were granted, the run was reset (buildings cleared), and the
+// prestige state (chips, prestige, resets) was kept. Usage: ?debug=1&qa=ascend
+if (debugSurface && params.get('qa') === 'ascend') {
+	const tick = window.setInterval(() => {
+		const G = window.Game;
+		if (!G || !G.ready || !G.Objects || typeof G.Ascend !== 'function' || typeof G.Reincarnate !== 'function') return;
+		if (!G.__qaAscend) {
+			const out = document.createElement('div');
+			out.id = '__dbgqa';
+			out.style.cssText = 'position:fixed;top:0;left:0;z-index:99999;background:#fff;color:#060;font:12px monospace;white-space:pre-wrap;max-width:640px;';
+			document.body.appendChild(out);
+			try {
+				const E = 1e15;
+				if (G.Upgrades['Legacy']) G.Upgrades['Legacy'].bought = 1;
+				G.cookies = E; G.cookiesEarned = E;
+				G.Objects['Cursor'].amount = 50; G.Objects['Grandma'].amount = 20;
+				G.recalculateGains = 1; G.CalculateGains();
+				G.__qaAscend = { phase: 1, out, hc0: G.heavenlyChips, prestige0: G.prestige, resets0: G.resets, cursor0: G.Objects['Cursor'].amount, t: Date.now() };
+				out.textContent = '[QA-ascend] seeded cookiesEarned=1e15, calling Game.Ascend(1)... (wait for the ~5s intro)';
+				G.Ascend(1);
+			} catch (e) {
+				out.textContent = '[QA-ascend] ERROR seed: ' + e.message;
+				window.clearInterval(tick);
+			}
+			return;
+		}
+		const a = G.__qaAscend;
+		if (a.phase === 1) {
+			if (G.OnAscend === 1 || Date.now() - a.t > 8000) {
+				a.phase = 2;
+				a.hc1 = G.heavenlyChips; a.prestige1 = G.prestige;
+				a.out.textContent = '[QA-ascend] intro done (OnAscend=' + G.OnAscend + ') — chips ' + a.hc0 + '->' + a.hc1 + ', prestige ' + a.prestige0 + '->' + a.prestige1 + '. Calling Game.Reincarnate(1)...';
+				G.Reincarnate(1);
+				a.t = Date.now();
+			}
+		} else if (a.phase === 2) {
+			if (Date.now() - a.t > 2000) {
+				const cursorAfter = G.Objects['Cursor'].amount;
+				const chipsOk = a.hc1 > a.hc0 && G.heavenlyChips === a.hc1;
+				const prestigeOk = a.prestige1 > a.prestige0 && G.prestige === a.prestige1;
+				const resetsOk = G.resets > a.resets0;
+				const resetOk = cursorAfter === 0;
+				const backOk = G.OnAscend === 0;
+				const pass = chipsOk && prestigeOk && resetsOk && resetOk && backOk;
+				a.out.textContent =
+					'[QA-ascend] after Reincarnate\n' +
+					'[QA-ascend] heavenlyChips: ' + a.hc0 + ' -> ' + a.hc1 + ' (now ' + G.heavenlyChips + ') ' + (chipsOk ? 'OK' : 'FAIL') +
+					'\n[QA-ascend] prestige: ' + a.prestige0 + ' -> ' + a.prestige1 + ' (now ' + G.prestige + ') ' + (prestigeOk ? 'OK' : 'FAIL') +
+					'\n[QA-ascend] resets: ' + a.resets0 + ' -> ' + G.resets + ' ' + (resetsOk ? 'OK' : 'FAIL') +
+					'\n[QA-ascend] Cursor: ' + a.cursor0 + ' -> ' + cursorAfter + ' (expect 0) ' + (resetOk ? 'OK' : 'FAIL') +
+					'\n[QA-ascend] OnAscend back to 0 ' + (backOk ? 'OK' : 'FAIL') +
+					'\n[QA-ascend] ' + (pass ? 'PASS: ascend granted chips+prestige, reincarnate reset the run and kept prestige state' : 'FAIL');
+				window.clearInterval(tick);
+			}
 		}
 	}, 250);
 }

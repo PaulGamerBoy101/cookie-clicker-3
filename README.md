@@ -104,7 +104,11 @@ These weaken the CSP's XSS protection. That is an accepted, documented trade-off
   store-buy testing. `?qa=golden` spawns and pops a forced "frenzy" golden
   cookie and reports the resulting buff/CpS (verifies the golden-cookie click
   path). `?qa=save` exports a save, corrupts the live state, re-imports it, and
-  verifies the round-trip restores the state. `?qa=perf&qlvl=N` seeds all four
+  verifies the round-trip restores the state. `?qa=ascend` drives the full
+  ascension (Legacy/prestige) flow — `Game.Ascend(1)` intro (grants heavenly
+  chips + prestige) then `Game.Reincarnate(1)` (the reset) — and verifies the
+  run is reset while the prestige state (chips, prestige, resets) is kept.
+  `?qa=perf&qlvl=N` seeds all four
   minigame buildings at level `N` (default 1), opens the Garden, and reports the
   actual game-loop rate (`Game.T` ticks/sec) versus the 30-tick `Game.fps`
   target — used to confirm the 4-minigame frame cost (measured 29.9 at level 1
