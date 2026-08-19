@@ -43,8 +43,9 @@ if (debugSurface) {
  *   ?qa           seed a level-1 minigame building set and open the Garden
  *   ?qa=cookies   seed cookies only (no minigames) for light store-buy tests
  *   ?qa=golden    spawn + pop a forced "frenzy" golden cookie, report the buff
+ *   ?qa=save      export a save, corrupt state, re-import, verify round-trip
  * Never active in a plain production load. */
-if (debugSurface && params.has('qa') && params.get('qa') !== 'golden') {
+if (debugSurface && params.has('qa') && params.get('qa') !== 'golden' && params.get('qa') !== 'save') {
 	const qaMode = params.get('qa'); // null for bare ?qa, else the value
 	const MINIGAME_BUILDINGS = ['Farm', 'Bank', 'Temple', 'Wizard tower'];
 	const tick = window.setInterval(() => {
@@ -123,6 +124,59 @@ if (debugSurface && params.get('qa') === 'golden') {
 				'\n[QA-golden] shimmers ' + shimmersBefore + ' -> ' + G.shimmers.length + ' (spawn+pop lifecycle)';
 		} catch (e) {
 			out.textContent = '[QA-golden] ERROR: ' + e.constructor.name + ': ' + e.message;
+		}
+		window.clearInterval(tick);
+	}, 250);
+}
+
+// QA: verify the save export -> import round-trip. Seeds a known state, exports
+// it (Game.WriteSave), corrupts the live state, re-imports the export
+// (Game.ImportSaveCode), and checks the state is restored. Usage: ?debug=1&qa=save
+if (debugSurface && params.get('qa') === 'save') {
+	const tick = window.setInterval(() => {
+		const G = window.Game;
+		if (!G || !G.ready || typeof G.WriteSave !== 'function' || typeof G.ImportSaveCode !== 'function') return;
+		if (G.__qaSave) return;
+		G.__qaSave = 1;
+		const out = document.createElement('div');
+		out.id = '__dbgqa';
+		out.style.cssText = 'position:fixed;top:0;left:0;z-index:99999;background:#fff;color:#060;font:12px monospace;white-space:pre-wrap;max-width:640px;';
+		document.body.appendChild(out);
+		try {
+			const COOKIES = 12345.678, CURSORS = 10, GRANDMAS = 5;
+			// 1. seed state A
+			G.cookies = COOKIES;
+			G.Objects['Cursor'].amount = CURSORS; G.Objects['Cursor'].unlocked = 1; G.Objects['Cursor'].bought = 1;
+			G.Objects['Grandma'].amount = GRANDMAS; G.Objects['Grandma'].unlocked = 1; G.Objects['Grandma'].bought = 1;
+			G.recalculateGains = 1; G.CalculateGains();
+			const cpsA = G.cookiesPs;
+			// 2. export the save string
+			const saveStr = G.WriteSave(1);
+			// 3. corrupt the live state (so the import must do real work)
+			G.cookies = 7;
+			G.Objects['Cursor'].amount = 0;
+			G.Objects['Grandma'].amount = 0;
+			G.recalculateGains = 1; G.CalculateGains();
+			const cpsCorrupt = G.cookiesPs;
+			// 4. re-import the export
+			const ok = G.ImportSaveCode(saveStr);
+			G.recalculateGains = 1; G.CalculateGains();
+			// 5. verify the state was restored
+			const cookiesOk = Math.abs(G.cookies - COOKIES) < 0.01;
+			const cursorsOk = G.Objects['Cursor'].amount === CURSORS;
+			const grandmasOk = G.Objects['Grandma'].amount === GRANDMAS;
+			const cpsOk = Math.abs(G.cookiesPs - cpsA) < 0.01;
+			const pass = ok && cookiesOk && cursorsOk && grandmasOk && cpsOk;
+			out.textContent =
+				'[QA-save] export length=' + saveStr.length +
+				'\n[QA-save] ImportSaveCode returned=' + ok +
+				'\n[QA-save] state A: cookies=' + COOKIES + ' cursors=' + CURSORS + ' grandmas=' + GRANDMAS + ' cps=' + cpsA.toFixed(2) +
+				'\n[QA-save] corrupted: cookies=7 cursors=0 grandmas=0 cps=' + cpsCorrupt.toFixed(2) +
+				'\n[QA-save] after import: cookies=' + G.cookies.toFixed(3) + ' cursors=' + G.Objects['Cursor'].amount + ' grandmas=' + G.Objects['Grandma'].amount + ' cps=' + G.cookiesPs.toFixed(2) +
+				'\n[QA-save] checks: cookies=' + cookiesOk + ' cursors=' + cursorsOk + ' grandmas=' + grandmasOk + ' cps=' + cpsOk +
+				'\n[QA-save] ' + (pass ? 'PASS: export->import round-trip restored state' : 'FAIL: state mismatch');
+		} catch (e) {
+			out.textContent = '[QA-save] ERROR: ' + e.constructor.name + ': ' + e.message;
 		}
 		window.clearInterval(tick);
 	}, 250);

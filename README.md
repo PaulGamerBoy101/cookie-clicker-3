@@ -92,7 +92,8 @@ The build is relocatable (`base: './'`), so `dist/` can be dropped onto any stat
   Garden. `?qa=cookies` seeds cookies only (no minigames) for light
   store-buy testing. `?qa=golden` spawns and pops a forced "frenzy" golden
   cookie and reports the resulting buff/CpS (verifies the golden-cookie click
-  path). Never active in a plain load.
+  path). `?qa=save` exports a save, corrupts the live state, re-imports it, and
+  verifies the round-trip restores the state. Never active in a plain load.
 
 ## Credits
 
