@@ -45,7 +45,7 @@ if (debugSurface) {
  *   ?qa=golden    spawn + pop a forced "frenzy" golden cookie, report the buff
  *   ?qa=save      export a save, corrupt state, re-import, verify round-trip
  * Never active in a plain production load. */
-if (debugSurface && params.has('qa') && params.get('qa') !== 'golden' && params.get('qa') !== 'save' && params.get('qa') !== 'perf' && params.get('qa') !== 'ascend') {
+if (debugSurface && params.has('qa') && params.get('qa') !== 'golden' && params.get('qa') !== 'save' && params.get('qa') !== 'perf' && params.get('qa') !== 'ascend' && params.get('qa') !== 'offline') {
 	const qaMode = params.get('qa'); // null for bare ?qa, else the value
 	const MINIGAME_BUILDINGS = ['Farm', 'Bank', 'Temple', 'Wizard tower'];
 	const tick = window.setInterval(() => {
@@ -304,6 +304,68 @@ if (debugSurface && params.get('qa') === 'ascend') {
 				window.clearInterval(tick);
 			}
 		}
+	}, 250);
+}
+
+// QA: verify offline gains (cookies earned while the game was closed). Desktop
+// offline CpS only runs with the "Perfect idling" upgrade (100%, no cap), so the
+// probe grants it, seeds a known CpS (100 cursors = 10 CpS), persists a save whose
+// lastDate is one hour in the past (WriteSave uses Game.time, which we set in a
+// synchronous block so the 30Hz loop can't advance it first), then reloads. On the
+// reloaded page the engine computes and grants the offline gain during boot; phase 2
+// checks that cookies rose by ~ (timeOffline * CpS). Usage: ?debug=1&qa=offline
+if (debugSurface && params.get('qa') === 'offline') {
+	const out = () => {
+		let d = document.getElementById('__dbgqa');
+		if (!d) { d = document.createElement('div'); d.id = '__dbgqa'; d.style.cssText = 'position:fixed;top:0;left:0;z-index:99999;background:#fff;color:#060;font:12px monospace;white-space:pre-wrap;max-width:640px;'; document.body.appendChild(d); }
+		return d;
+	};
+	const tick = window.setInterval(() => {
+		const G = window.Game;
+		// G.ready is set in the constructor, before the async load finishes; wait
+		// for a few seconds of game time (G.T) so the save has fully loaded and the
+		// offline gain (computed during load) has been applied before we touch state.
+		if (!G || !G.ready || !G.Objects || G.T < 90) return;
+		let marker = null;
+		try { marker = JSON.parse(localStorage.getItem('__qaOffline') || 'null'); } catch (e) { /* ignore */ }
+		if (marker) {
+			// Phase 2: the engine already computed + granted the offline gain on boot.
+			if (G.__qaOfflineDone) return;
+			G.__qaOfflineDone = 1;
+			try {
+				const earned = G.cookies - marker.base;
+				const ok = earned >= marker.expected * 0.5 && earned <= marker.expected * 1.5;
+				out().textContent =
+					'[QA-offline] phase 2 (after reload; offline gain applied during boot)\n' +
+					'[QA-offline] saved base cookies = ' + Math.round(marker.base) +
+					'\n[QA-offline] current cookies    = ' + Math.round(G.cookies) +
+					'\n[QA-offline] gained while away  = ' + Math.round(earned) + '   (expected ~' + Math.round(marker.expected) + ' = 3600s x ' + marker.cps.toFixed(2) + ' CpS)' +
+					'\n[QA-offline] ' + (ok ? 'PASS: offline gain granted on load (timeOffline x CpS; Perfect idling = 100% no-cap)' : 'CHECK: gain outside expected band');
+				try { localStorage.removeItem('__qaOffline'); } catch (e) { /* ignore */ }
+			} catch (e) { out().textContent = '[QA-offline] verify error: ' + e.message; }
+			window.clearInterval(tick);
+			return;
+		}
+		// Phase 1: seed, persist a save with a past lastDate, then reload.
+		if (G.__qaOfflineSeeded) return;
+		G.__qaOfflineSeeded = 1;
+		try {
+			if (G.Upgrades['Perfect idling']) G.Upgrades['Perfect idling'].bought = 1;
+			G.cookies = 1e6;
+			G.Objects['Cursor'].amount = 100;
+			G.recalculateGains = 1; G.CalculateGains();
+			const cps = G.cookiesPs;
+			const awayMs = 3600 * 1000;
+			const base = G.cookies;
+			// Synchronous block: the 30Hz loop cannot interrupt it, so WriteSave's
+			// lastDate=Game.time stays at the (past) value we just set.
+			const past = Date.now() - awayMs;
+			Game.time = past; Game.lastDate = past; Game.toSave = false;
+			G.WriteSave();
+			localStorage.setItem('__qaOffline', JSON.stringify({ base, cps, expected: (awayMs / 1000) * cps }));
+			out().textContent = '[QA-offline] phase 1: 100 cursors (CpS ' + cps.toFixed(2) + '), saved with lastDate 1h ago, reloading to trigger the offline gain...';
+			setTimeout(() => location.reload(), 400);
+		} catch (e) { out().textContent = '[QA-offline] ERROR: ' + e.message; }
 	}, 250);
 }
 
