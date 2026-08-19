@@ -45,7 +45,7 @@ if (debugSurface) {
  *   ?qa=golden    spawn + pop a forced "frenzy" golden cookie, report the buff
  *   ?qa=save      export a save, corrupt state, re-import, verify round-trip
  * Never active in a plain production load. */
-if (debugSurface && params.has('qa') && params.get('qa') !== 'golden' && params.get('qa') !== 'save') {
+if (debugSurface && params.has('qa') && params.get('qa') !== 'golden' && params.get('qa') !== 'save' && params.get('qa') !== 'perf') {
 	const qaMode = params.get('qa'); // null for bare ?qa, else the value
 	const MINIGAME_BUILDINGS = ['Farm', 'Bank', 'Temple', 'Wizard tower'];
 	const tick = window.setInterval(() => {
@@ -179,6 +179,69 @@ if (debugSurface && params.get('qa') === 'save') {
 			out.textContent = '[QA-save] ERROR: ' + e.constructor.name + ': ' + e.message;
 		}
 		window.clearInterval(tick);
+	}, 250);
+}
+
+// QA: measure the 4-minigame frame cost. Seeds the four minigame buildings
+// (Garden/Market/Pantheon/Grimoire) so all four minigame logic() functions run
+// every tick, opens the Garden (the realistic "one minigame open" draw cost),
+// and reports the actual game-loop rate (Game.T ticks/sec) over ~3s versus the
+// 30-tick target (the loop is setTimeout(1000/Game.fps); a heavy minigame
+// logic() would push the achieved rate below target). Usage: ?debug=1&qa=perf
+if (debugSurface && params.get('qa') === 'perf') {
+	const BUILDINGS = ['Farm', 'Bank', 'Temple', 'Wizard tower'];
+	const LVL = Math.max(1, parseInt(params.get('qlvl') || '1', 10) || 1);
+	const tick = window.setInterval(() => {
+		const G = window.Game;
+		if (!G || !G.ready || !G.Objects) return;
+		if (!G.__qaPerfSeeded) {
+			G.__qaPerfSeeded = 1;
+			try {
+				G.cookies += 1e15;
+				G.lumps += 100;
+				for (const name of BUILDINGS) {
+					const b = G.Objects[name];
+					if (!b) continue;
+					b.amount = LVL; b.unlocked = 1; b.bought = 1; b.highest = LVL; b.level = LVL;
+				}
+				G.recalculateGains = 1;
+				if (G.LoadMinigames) G.LoadMinigames();
+			} catch (e) {
+				console.error('QA perf seed failed:', e);
+			}
+		}
+		if (!G.__qaPerfStarted) {
+			const allLoaded = BUILDINGS.every((n) => G.Objects[n] && G.Objects[n].minigameLoaded);
+			if (!allLoaded) return;
+			G.__qaPerfStarted = 1;
+			const farm = G.Objects['Farm'];
+			if (farm && !farm.onMinigame && farm.switchMinigame) {
+				try { farm.switchMinigame(1); if (farm.refresh) farm.refresh(); } catch (e) { console.error('QA perf open failed:', e); }
+			}
+			const out = document.createElement('div');
+			out.id = '__dbgqa';
+			out.style.cssText = 'position:fixed;top:0;left:0;z-index:99999;background:#fff;color:#060;font:12px monospace;white-space:pre-wrap;max-width:640px;';
+			document.body.appendChild(out);
+			const t0 = performance.now(), t0Game = G.T;
+			out.textContent = '[QA-perf] 4 minigames active, sampling loop rate...';
+			const wait = window.setInterval(() => {
+				const now = performance.now();
+				const elapsed = (now - t0) / 1000;
+				const actual = (G.T - t0Game) / elapsed;
+				if (elapsed < 3) {
+					out.textContent = '[QA-perf] 4 minigames active, sampling loop rate... (' + actual.toFixed(1) + ' ticks/s so far, ' + elapsed.toFixed(1) + 's)';
+					return;
+				}
+				window.clearInterval(wait);
+				out.textContent =
+					'[QA-perf] 4 minigames active (Farm/Bank/Temple/Wizard tower, level ' + LVL + ') + Garden open\n' +
+					'[QA-perf] target Game.fps = ' + G.fps +
+					'\n[QA-perf] actual loop rate = ' + actual.toFixed(1) + ' ticks/s over ' + elapsed.toFixed(1) + 's' +
+					'\n[QA-perf] (loop is setTimeout(1000/Game.fps); heavy minigame logic() would drop this below target)' +
+					'\n[QA-perf] verdict: ' + (actual >= G.fps * 0.9 ? 'OK — holding ~target' : 'BELOW target by ' + (G.fps - actual).toFixed(1) + ' ticks/s');
+				window.clearInterval(tick);
+			}, 500);
+		}
 	}, 250);
 }
 
