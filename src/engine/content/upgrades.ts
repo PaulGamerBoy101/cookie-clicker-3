@@ -42,8 +42,10 @@ export function declareVanillaUpgrades(Game: EngineGame) {
 		
 		Game.NewUpgradeCookie=function(obj: any)
 		{
-			var upgrade=new Game.Upgrade(obj.name,getStrCookieProductionMultiplierPlus(Beautify((typeof(obj.power)==='function'?obj.power(obj):obj.power),1))+(EN?'<q>'+obj.desc+'</q>':''),obj.price,obj.icon);
+			var effectDesc=obj.clickPower?getStrClickingGains(obj.clickPower):getStrCookieProductionMultiplierPlus(Beautify((typeof(obj.power)==='function'?obj.power(obj):obj.power),1));
+			var upgrade=new Game.Upgrade(obj.name,effectDesc+(EN?'<q>'+obj.desc+'</q>':''),obj.price,obj.icon);
 			upgrade.power=obj.power;
+			if (obj.clickPower) upgrade.clickPower=obj.clickPower;
 			upgrade.pool='cookie';
 			var toPush: any={cookies:obj.price/20,name:obj.name};
 			if (obj.require) toPush.require=obj.require;
@@ -1910,6 +1912,44 @@ export function declareVanillaUpgrades(Game: EngineGame) {
 		order=10050;
 		Game.NewUpgradeCookie({name:'Deep-fried cookie dough',desc:'They\'ll fry anything these days. Drizzled in hot chocolate syrup, just like in state fairs. Spikes up your blood sugar AND your cholesterol!',icon:[23,35],require:'Box of maybe cookies',power:						5,price: Math.pow(10,47)});
 		
+		// CC3 cookie collection: 48 cookie upgrades from eight rows in the
+		// six-step families. The first four families improve CpS; the last
+		// four add a percentage of CpS to each manual click.
+		var newCookieStyles=[
+			{name:'Checkerboard',file:'cookie_checkerboard',effect:'cps',flavor:'A sharply patterned cookie for bakers who believe every square should be delicious.'},
+			{name:'Crisscross',file:'cookie_crisscross',effect:'cps',flavor:'A woven cookie whose intersecting lines hold an unreasonable amount of flavor.'},
+			{name:'Flower',file:'cookie_flower',effect:'cps',flavor:'A cheerful flower-shaped cookie, cultivated in the finest decorative ovens.'},
+			{name:'Jam round',file:'cookie_jam_round',effect:'cps',flavor:'A round jam-filled cookie with a center of concentrated sweetness.'},
+			{name:'Finger',file:'cookie_finger',effect:'click',flavor:'A slim cookie made for nimble fingers and suspiciously efficient clicking.'},
+			{name:'Heart',file:'cookie_heart',effect:'click',flavor:'A heart-shaped cookie baked with enough affection to power another click.'},
+			{name:'Round',file:'cookie_round',effect:'click',flavor:'A perfectly ordinary round cookie refined into an extraordinary clicking tool.'},
+			{name:'Swirl',file:'cookie_swirl',effect:'click',flavor:'A hypnotically swirled cookie that makes every click feel a little more deliberate.'}
+		];
+		var newCookieRoman=['I','II','III','IV','V','VI'];
+		var newCookieLevel=53;
+		order=10020;
+		// Interleave the families by tier so each group arrives as a natural
+		// progression alongside the other families instead of as one 6-item block.
+		for (var variant=0;variant<newCookieRoman.length;variant++)
+		{
+			for (var styleIndex=0;styleIndex<newCookieStyles.length;styleIndex++)
+			{
+				var style=newCookieStyles[styleIndex];
+				var strength=variant+1;
+				var isClick=style.effect=='click';
+				var name=style.name+' cookies '+newCookieRoman[variant];
+				Game.NewUpgradeCookie({
+					name:name,
+					desc:style.flavor+' Batch '+newCookieRoman[variant]+' represents a further refinement of the recipe.',
+					icon:[variant,styleIndex,'img/cookie-upgrades/cookie_spritesheet.png',32],
+					require:variant>0?style.name+' cookies '+newCookieRoman[variant-1]:undefined,
+					power:isClick?0:strength,
+					clickPower:isClick?strength:0,
+					price:getCookiePrice(newCookieLevel++)
+				});
+			}
+		}
+
 		//end of upgrades
 		
 		Game.seasons={

@@ -58,7 +58,13 @@ export function writeIcon(icon: any)
 {
 	//returns CSS for an icon's background image
 	//for use in CSS strings
-	return (icon[2]?'background-image:url(\''+icon[2].replace(/'/g,"\\'")+'\');':'')+'background-position:'+(-icon[0]*48)+'px '+(-icon[1]*48)+'px;';
+	if (icon[2])
+	{
+		var cell=icon[3]||48;
+		var inset=(48-cell)/2;
+		return 'background-image:url(\''+icon[2].replace(/'/g,"\\'")+'\');background-position:'+(inset-icon[0]*cell)+'px '+(inset-icon[1]*cell)+'px;background-repeat:no-repeat;';
+	}
+	return 'background-position:'+(-icon[0]*48)+'px '+(-icon[1]*48)+'px;';
 }
 export function tinyIcon(icon: any, css?: any)
 {

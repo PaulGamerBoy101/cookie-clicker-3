@@ -1404,6 +1404,14 @@ Game.Launch=function()
 			if (Game.Has('Aetherice mouse')) add+=Game.cookiesPs*0.01;
 			
 			if (Game.Has('Fortune #104')) add+=Game.cookiesPs*0.01;
+			if (Game.cookieUpgrades)
+			{
+				for (var iCookie in Game.cookieUpgrades)
+				{
+					var cookieUpgrade=Game.cookieUpgrades[iCookie];
+					if (cookieUpgrade.clickPower && Game.Has(cookieUpgrade.name)) add+=Game.cookiesPs*cookieUpgrade.clickPower*0.01;
+				}
+			}
 			var mult=1;
 			
 			

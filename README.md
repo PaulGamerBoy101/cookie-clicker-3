@@ -2,6 +2,8 @@
 
 Cookie Clicker 3 is a modern Cookie Clicker experience based on [Cookie Clicker 2.048](https://github.com/DiSCooooo/Cookie-Clicker-2.048) (itself a port of Orteil's [Cookie Clicker](http://orteil.dashnet.org/cookieclicker/)). The project preserves the original game's behavior in a strictly typed TypeScript ES-module web app, built with a zero-runtime-dependency Vite pipeline (see [REWRITE.md](REWRITE.md) for the full rewrite log) — no jQuery, no IE polyfills, no CDN requests, no ads, no trackers.
 
+## [PLAY ME HERE](https://giveen.github.io/cookie-clicker-3/)
+
 ## What "modernized" means here
 
 | Area | 2.048 (2022) | Cookie Clicker 3 |
