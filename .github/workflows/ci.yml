@@ -7,7 +7,7 @@
 # deploy: only runs when the tests pass (and never on PRs). Replaces the
 #        gh-pages branch with the fresh dist/ (peaceiris/actions-gh-pages).
 #        The relocatable build (base './') serves from the repo subpath, and
-#        the per-build service-worker cache stamp (vite.config.js) makes each
+#        the per-build service-worker cache stamp (vite.config.ts) makes each
 #        deploy self-updating for returning players.
 
 name: Test & Deploy
@@ -46,8 +46,11 @@ jobs:
       # needs, so no --with-deps (that apt pass can stall minutes on a
       # dpkg lock held by the runner's background updates).
       - run: npx playwright install chromium
-      # playwright.config.js webServer builds the production bundle itself
-      - run: npx playwright test
+      # playwright.config.js webServer builds the production bundle itself.
+      # Scoped to tests/qa.spec.js: the save-compat and playthrough specs are
+      # explicit extras (they need extra servers / are timing-sensitive) and
+      # must not gate the deploy.
+      - run: npx playwright test tests/qa.spec.js
       - uses: actions/upload-artifact@v4
         if: failure()
         with:

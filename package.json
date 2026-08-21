@@ -2,19 +2,19 @@
   "name": "cookie-clicker-3",
   "private": true,
   "version": "3.0.0",
-  "description": "Cookie Clicker 3 — a modern port of Cookie Clicker 2.048. ES modules, Vite, zero runtime dependencies.",
+  "description": "Cookie Clicker 3 — a modern port of Cookie Clicker 2.048. TypeScript ES modules, Vite, zero runtime dependencies.",
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vite build",
+    "typecheck": "tsc --noEmit",
+    "build": "tsc --noEmit && vite build",
     "preview": "vite preview",
-    "port": "node scripts/transform-engine.mjs",
-    "test": "playwright test"
+    "test": "playwright test tests/qa.spec.js"
   },
   "devDependencies": {
     "@playwright/test": "^1.62.1",
-    "acorn": "^8.15.0",
-    "acorn-walk": "^8.3.5",
+    "@types/node": "^26.2.0",
+    "typescript": "^7.0.2",
     "vite": "^6.4.3"
   }
 }

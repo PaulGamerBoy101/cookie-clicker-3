@@ -30,7 +30,7 @@ downloadable edition of the 2.048 release).
 ## Tooling
 
 - [Vite](https://vite.dev) (MIT) — build pipeline (dev dependency only).
-- [acorn](https://github.com/acornjs/acorn) + [acorn-walk](https://github.com/acornjs/acorn/tree/main/acorn-walk) (MIT) — used at port time by `scripts/transform-engine.mjs` (dev dependencies only).
+- [acorn](https://github.com/acornjs/acorn) + [acorn-walk](https://github.com/acornjs/acorn/tree/main/acorn-walk) (MIT) — used at port time by the (now-retired) `scripts/transform-engine.mjs`; the one-shot 2.048 → ES-module conversion it powered is checked in, so the packages are no longer dev dependencies.
 
 Cookie Clicker 3 itself ships **zero runtime dependencies**: the browser gets
 plain ES modules, CSS, fonts and static assets.

@@ -11,7 +11,7 @@
  *     can never turn into a failed fetch.
  *
  * Deploy updates: CACHE is stamped at build time (the cc3:stamp-service-worker
- * plugin in vite.config.js) — `__BUILD__` becomes a content hash of the built
+ * plugin in vite.config.ts) — `__BUILD__` becomes a content hash of the built
  * dist/, so every changed build gets a new cache name. Returning clients then
  * see the changed sw.js on their next navigation, install the new SW, and its
  * activate() drops the old cache. With a static cache name the browser would

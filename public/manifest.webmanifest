@@ -1,7 +1,7 @@
 {
 	"name": "Cookie Clicker 3",
 	"short_name": "Cookie 3",
-	"description": "Cookie Clicker 3 — a modern port of Cookie Clicker 2.048.",
+	"description": "Cookie Clicker 3 — a modern Cookie Clicker experience.",
 	"start_url": ".",
 	"display": "standalone",
 	"orientation": "any",

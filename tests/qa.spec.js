@@ -1,4 +1,4 @@
-// QA probe suite — drives the in-page `?debug=1&qa=…` probes (src/main.js)
+// QA probe suite — drives the in-page `?debug=1&qa=…` probes (src/main.ts)
 // in headless Chromium against the production build and asserts each probe's
 // PASS report. Each test gets a fresh browser context (no localStorage), so
 // every load starts from a fresh profile and must pass the language prompt
