@@ -171,23 +171,27 @@ export function declareVanillaBuildings(Game: EngineGame) {
 			ctx.globalAlpha=1;
 			if (typeof(this.art.bg)=='string') ctx.fillPattern(Pic(this.art.bg),0,0,this.canvas.width,this.canvas.height,128,128);
 			var sheet=Pic(this.art.pic);
-			// Overlapping barn layout: barns overlap heavily and fill the full canvas.
+			// Mine-like barn layout: a neat grid on the canvas — columns spaced
+			// just past the barn width (barely touching, like the mines' 64px
+			// column grid) and as many rows as fit the box height, instead of
+			// the old hStep=20 layout where barns overlapped by ~two-thirds.
 			var canvasW=this.canvas.width;
 			var canvasH=this.canvas.height;
 			// Keep barns at a nice visible size
 			var barnW=55;
 			var barnH=Math.floor(barnW*barnCellH/barnCellW); // ~69px
-			// Horizontal step: much less than barnW so barns overlap
-			var hStep=20;
+			// Horizontal step: barn width + small gap (mine-like column spacing)
+			var hStep=barnW+6;
 			// How many fit in one row across the full canvas width
-			var perRow=Math.floor((canvasW+barnW)/hStep);
-			var numRows=Math.ceil(this.amount/perRow);
-			// Vertical spacing between rows (tight, overlapping)
-			var vStep=Math.floor((canvasH-barnH)/(Math.max(numRows-1,1)));
-			if (vStep<barnH*0.4) vStep=Math.floor(barnH*0.4);
+			var perRow=Math.max(1,Math.floor((canvasW-barnW)/hStep)+1);
+			// Vertical step between rows: ~30px, mine-like depth overlap
+			var vStep=30;
+			// Only rows that fit the canvas are drawn (extra purchases cycle the
+			// barn colors across the same visible grid, exactly like the mines)
+			var numRows=Math.max(1,Math.floor((canvasH-barnH-4)/vStep)+1);
 			// Bottom-anchored: front row at bottom, back rows higher
 			var yBase=canvasH-barnH-2;
-			var iT=this.amount;
+			var iT=Math.min(this.amount,perRow*numRows);
 			var i=this.pics.length;
 			if (i!=iT)
 			{
@@ -199,11 +203,17 @@ export function declareVanillaBuildings(Game: EngineGame) {
 					var sx=(i%barnSheetCols)*barnCellW;
 					var sy=(Math.floor(i/barnSheetCols)%barnSheetRows)*barnCellH;
 					// X spans the full canvas width; back rows shift slightly for depth
-					var x=col*hStep-barnW+Math.floor((Math.random()-0.5)*8);
+					var x=col*hStep+Math.floor((Math.random()-0.5)*12);
 					// Back rows are higher (smaller y); z = y so back barns draw first
-					var y=yBase-row*vStep+Math.floor((Math.random()-0.5)*4);
+					var y=yBase-row*vStep+Math.floor((Math.random()-0.5)*6);
 					this.pics.push({x:x,y:y,z:y,pic:this.art.pic,id:i,frame:0,sx:sx,sy:sy,born:Game.T});
 					i++;
+				}
+				while (i>iT)//sold farms leave the box, like the vanilla draw
+				{
+					this.pics.sort(Game.sortSpritesById);
+					this.pics.pop();
+					i--;
 				}
 				this.pics.sort(Game.sortSprites);
 			}

@@ -327,6 +327,44 @@ test('Cats: compact multi-lane renderer caps visible cats at 50 without attack s
 	await assertNoUncaughtErrors(page);
 });
 
+test('Farms: barns render in a mine-like grid without heavy overlap', async ({ page }) => {
+	await boot(page, '');
+	await page.waitForFunction(() => window.Game.Objects && window.Game.Objects.Farm && window.Game.Objects.Farm.canvas, null, BOOT);
+	const state = await page.evaluate(async () => {
+		const farm = window.Game.Objects.Farm;
+		farm.amount = 43;
+		farm.unlocked = 1;
+		farm.refresh();
+		await new Promise((resolve) => setTimeout(resolve, 300));
+		const pics = farm.pics.map((p) => ({ x: p.x, y: p.y }));
+		// group pics into rows by y proximity (rows are ~30px apart)
+		const rows = [];
+		for (const p of pics) {
+			const row = rows.find((r) => Math.abs(r[0].y - p.y) < 10);
+			if (row) row.push(p);
+			else rows.push([p]);
+		}
+		let minGap = Infinity;
+		for (const row of rows) {
+			const xs = row.map((p) => p.x).sort((a, b) => a - b);
+			for (let i = 1; i < xs.length; i++) minGap = Math.min(minGap, xs[i] - xs[i - 1]);
+		}
+		// the renderer's visible-grid cap: perRow columns past the barn width, rows that fit the height
+		const perRow = Math.max(1, Math.floor((farm.canvas.width - 55) / 61) + 1);
+		const numRows = Math.max(1, Math.floor((farm.canvas.height - 69 - 4) / 30) + 1);
+		const cap = perRow * numRows;
+		return { count: pics.length, rows: rows.length, minGap, cap, canvas: [farm.canvas.width, farm.canvas.height] };
+	});
+	// 43 farms must not pack the box: the visible grid is capped (columns past
+	// the barn width + rows that fit the 128px height), like the mines.
+	expect(state.count).toBe(state.cap);
+	expect(state.count).toBeLessThan(43);
+	expect(state.rows).toBeGreaterThanOrEqual(2);
+	expect(state.minGap).toBeGreaterThanOrEqual(45); // barns barely touch (55px wide, ~61px step)
+	expect(state.canvas[1]).toBe(128);
+	await assertNoUncaughtErrors(page);
+});
+
 test('Cats and Farms: mobile and reduced-motion renderers stay visible', async ({ browser }) => {
 	const mobile = await browser.newContext({ viewport: { width: 390, height: 844 } });
 	const mobilePage = await mobile.newPage();
