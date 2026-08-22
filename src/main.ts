@@ -59,7 +59,7 @@ if (debugSurface) {
  *   ?qa=backup    exercise the rolling save backup history (capture/list/restore)
  *   ?qa=content   validate content registries and report economy ordering
  * Never active in a plain production load. */
-if (debugSurface && params.has('qa') && params.get('qa') !== 'golden' && params.get('qa') !== 'save' && params.get('qa') !== 'backup' && params.get('qa') !== 'perf' && params.get('qa') !== 'ascend' && params.get('qa') !== 'offline' && params.get('qa') !== 'special' && params.get('qa') !== 'a11y' && params.get('qa') !== 'wrinkler' && params.get('qa') !== 'icon' && params.get('qa') !== 'onecol' && params.get('qa') !== 'anim' && params.get('qa') !== 'binverter' && params.get('qa') !== 'content') {
+if (debugSurface && params.has('qa') && params.get('qa') !== 'golden' && params.get('qa') !== 'save' && params.get('qa') !== 'backup' && params.get('qa') !== 'sound' && params.get('qa') !== 'perf' && params.get('qa') !== 'ascend' && params.get('qa') !== 'offline' && params.get('qa') !== 'special' && params.get('qa') !== 'a11y' && params.get('qa') !== 'wrinkler' && params.get('qa') !== 'icon' && params.get('qa') !== 'onecol' && params.get('qa') !== 'anim' && params.get('qa') !== 'binverter' && params.get('qa') !== 'content') {
 	const qaMode = params.get('qa'); // null for bare ?qa, else the value
 	const MINIGAME_BUILDINGS = ['Farm', 'Bank', 'Temple', 'Wizard tower'];
 	const tick = window.setInterval(() => {
@@ -339,6 +339,69 @@ if (debugSurface && params.get('qa') === 'backup') {
 			out.textContent = '[QA-backup] ERROR: ' + e.constructor.name + ': ' + e.message;
 		}
 		window.clearInterval(tick);
+	}, 250);
+}
+
+// QA: verify the sound engine. The engine wraps Audio with a soundjay guard
+// and must capture the REAL constructor into realAudio; if it captures the
+// no-op fallback instead, every `new Audio(url)` returns a plain object and
+// no sound ever loads or plays (regression for the module-scope `var Audio`
+// shadowing the global). Exercises the full load chain: PlaySound caches the
+// element, onloadeddata re-fires it, and readyState reaches >=2.
+// Usage: ?debug=1&qa=sound
+if (debugSurface && params.get('qa') === 'sound') {
+	const tick = window.setInterval(() => {
+		const G = window.Game;
+		if (!G || !G.ready || typeof PlaySound !== 'function') return;
+		if (G.__qaSound) return;
+		G.__qaSound = 1;
+		const out = document.createElement('div');
+		out.id = '__dbgqa';
+		out.style.cssText = 'position:fixed;top:0;left:0;z-index:99999;background:#fff;color:#060;font:12px monospace;white-space:pre-wrap;max-width:640px;';
+		document.body.appendChild(out);
+		const started = Date.now();
+		const sndUrl = 'snd/tick.mp3';
+		try {
+			PlaySound(sndUrl, 1); // cache + start loading (plays after load)
+			PlaySound('snd/error1.mp3', 0.5); // CC3 interface tone
+			const poll = window.setInterval(() => {
+				try {
+					const s = (window as any).Sounds && (window as any).Sounds[sndUrl];
+					const err = (window as any).Sounds && (window as any).Sounds['snd/error1.mp3'];
+					const wrapperOk = new window.Audio(sndUrl) instanceof HTMLAudioElement;
+					const loaded = s instanceof HTMLAudioElement && s.readyState >= 2;
+					const errLoaded = err instanceof HTMLAudioElement && err.readyState >= 2;
+					// CC3 music: Music object exists, jukebox populated, first track loads
+					const music = (window as any).Music;
+					const musicOk = music && music.tracks && Object.keys(music.tracks).length >= 8 && music.names && music.names.length >= 8;
+					const jukeboxOk = G.jukebox && G.jukebox.tracks && G.jukebox.tracks.length >= 8 && G.jukebox.tracks[0] === 'Farm Life';
+					const firstTrack = musicOk ? music.tracks[music.names[0]].audio : null;
+					const trackLoaded = firstTrack instanceof HTMLAudioElement && firstTrack.readyState >= 2;
+					// CC3 bridge fix: the Settings pref buttons must read ON/OFF live
+					const onOffOk = (window as any).ON === ' ON' && (window as any).OFF === ' OFF';
+					if ((loaded && errLoaded && trackLoaded) || Date.now() - started > 10000) {
+						window.clearInterval(poll);
+						const pass = wrapperOk && loaded && errLoaded && musicOk && jukeboxOk && trackLoaded && onOffOk && G.volume > 0;
+						out.textContent =
+							'[QA-sound] wrapper produces real Audio elements: ' + wrapperOk +
+							'\n[QA-sound] \'snd/tick.mp3\' loaded (readyState=' + (s ? s.readyState : 'n/a') + '): ' + loaded +
+							'\n[QA-sound] \'snd/error1.mp3\' loaded (readyState=' + (err ? err.readyState : 'n/a') + '): ' + errLoaded +
+							'\n[QA-sound] music tracks=' + (musicOk ? Object.keys(music.tracks).length : 'n/a') + ' jukebox=' + (jukeboxOk ? G.jukebox.tracks.length : 'n/a') +
+							'\n[QA-sound] first music track loaded (readyState=' + (firstTrack ? firstTrack.readyState : 'n/a') + '): ' + trackLoaded +
+							'\n[QA-sound] ON/OFF bridge: ' + onOffOk + ' volume=' + G.volume +
+							'\n[QA-sound] ' + (pass ? 'PASS: sound engine, music, and settings labels all work' : 'FAIL: see checks above');
+						window.clearInterval(tick);
+					}
+				} catch (e: any) {
+					window.clearInterval(poll);
+					out.textContent = '[QA-sound] ERROR: ' + e.constructor.name + ': ' + e.message;
+					window.clearInterval(tick);
+				}
+			}, 250);
+		} catch (e: any) {
+			out.textContent = '[QA-sound] ERROR: ' + e.constructor.name + ': ' + e.message;
+			window.clearInterval(tick);
+		}
 	}, 250);
 }
 

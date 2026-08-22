@@ -13,6 +13,7 @@ import { HowMuchPrestige, HowManyCookiesReset, EarnHeavenlyChips, GetHeavenlyMul
 import { ValidateContent, GetEconomyReport, SimulateEconomy, AnalyzeEconomy, SimulateStrategy } from "./systems/contentValidation";
 import { ExportSave, ImportSave, ImportSaveCode, FileSave, FileLoad, WriteSave, salvageSave, LoadSave } from "./systems/save";
 import { CaptureSave, ListBackups, RestoreBackup, DownloadBackup, RefreshBackupList } from "./systems/backup";
+import { CreateMusic } from "./systems/music";
 import { Shimmer, updateShimmers, killShimmers } from "./systems/shimmer";
 import { getWrinklersMax, ResetWrinklers, CollectWrinklers, playWrinklerSquishSound, SpawnWrinkler, PopRandomWrinkler, UpdateWrinklers, DrawWrinklers, SaveWrinklers, LoadWrinklers } from "./systems/wrinkler";
 import { UpdateAscensionModePrompt, PickAscensionMode, UpdateAscendIntro, UpdateReincarnateIntro, Reincarnate, Ascend, UpdateAscend, AscendRefocus, PurchaseHeavenlyUpgrade, BuildAscendTree, lumpTooltip, computeLumpTimes, loadLumps, gainLumps, clickLump, harvestLumps, computeLumpType, canLumps, getLumpRefillMax, getLumpRefillRemaining, canRefillLump, refillLump, spendLump, doLumps } from "./systems/ascend";
@@ -70,9 +71,12 @@ http://orteil.dashnet.org
 
 /*=====================================================================================
 MISC HELPER FUNCTIONS
-=======================================================================================*/
-//disable sounds coming from soundjay.com (sorry)
-var realAudio=typeof Audio!=='undefined'?Audio:function(){return {}};//backup real audio
+=======================================================================================*/	//disable sounds coming from soundjay.com (sorry)
+	//CC3 fix: the module-scope `var Audio` (line 50) shadows the browser global, so
+	//`typeof Audio` is 'undefined' here and realAudio fell back to the no-op
+	//`function(){return {}}` — every `new Audio(url)` then returned a dead plain
+	//object and no sound ever played. Capture the real constructor explicitly.
+	var realAudio: any=typeof window.Audio!=='undefined'?window.Audio:function(){return {}};//backup real audio
 Audio=function(this: any,src: any){
 	if (src && src.indexOf('soundjay')>-1) {Game.Popup('Sorry, no sounds hotlinked from soundjay.com.');this.play=function(){};}
 	else return new realAudio(src);
@@ -2502,6 +2506,32 @@ window.loadMinigameModule!(me.minigameUrl).then(function(){
 		// exact point in Init, so declaration order (and every id, save slot
 		// and Game.last hand-off) is unchanged.
 		declareVanillaUpgrades(Game as any);
+		//CC3: web background music (systems/music.ts) — 2.048's browser build had
+		//no music engine (Steam-only). Must run after declareVanillaUpgrades,
+		//which creates Game.jukebox (the Sound test upgrade). Publish the Music
+		//object the jukebox and volume slider already drive, populate the
+		//jukebox track list, and start the default track on the first user
+		//gesture (browser autoplay policy).
+		Music=CreateMusic();
+		Music.init(Game);
+		Game.jukebox.tracks.length=0;
+		for (var mi=0;mi<Music.names.length;mi++) Game.jukebox.tracks.push(Music.names[mi]);
+		Game.ToggleMusic=function()
+		{
+			if (Game.prefs.bgMusic) {if (!Music.currentName) Music.playTrack(Music.names[0]); else Music.unpause();}
+			else Music.pause();
+		};
+		var cc3MusicStarted=false;
+		var startMusicOnce=function()
+		{
+			if (cc3MusicStarted) return;
+			cc3MusicStarted=true;
+			document.removeEventListener('pointerdown',startMusicOnce);
+			document.removeEventListener('keydown',startMusicOnce);
+			if (Game.prefs.bgMusic && Music) Music.playTrack(Music.names[0]);
+		};
+		document.addEventListener('pointerdown',startMusicOnce);
+		document.addEventListener('keydown',startMusicOnce);
 		Game.ValidateContent=function(){return ValidateContent(Game as any);};
 		Game.GetEconomyReport=function(){return GetEconomyReport(Game as any);};
 		Game.SimulateEconomy=function(scenarios: Record<string, number>[]){return SimulateEconomy(Game as any,scenarios);};
@@ -4182,6 +4212,18 @@ Object.defineProperty(window, 'power', {get(){return power;}, set(v: any){power=
 Object.defineProperty(window, 'locId', {get(){return locId;}});
 Object.defineProperty(window, 'EN', {get(){return EN;}});
 Object.defineProperty(window, 'TopBarOffset', {get(){return TopBarOffset;}});
+/* CC3 rewrite (phase 6, slice 4): bridge the live ON/OFF suffix strings the
+ * same way. They are assigned inside Game.Launch (' '+loc("ON")) — long after
+ * the Object.assign above copied them by value (undefined) to window — so
+ * without the accessor the Options pref buttons rendered e.g. "Fancy
+ * graphicsundefined". Get/set keeps both the engine's writes and the menu
+ * modules' reads on one shared state. */
+Object.defineProperty(window, 'ON', {get(){return ON;}, set(v: any){ON=v;}});
+Object.defineProperty(window, 'OFF', {get(){return OFF;}, set(v: any){OFF=v;}});
+/* CC3: bridge the Music object the same way — the engine assigns it inside
+ * Game.Launch (after the by-value Object.assign above), and menu.ts's
+ * setVolumeMusic / the jukebox read it through window. */
+Object.defineProperty(window, 'Music', {get(){return Music;}, set(v: any){Music=v;}});
 
 /* CC3: explicit module marker — at runtime these files are always ESM modules
  * (Vite bundles them as such), and this keeps their top-level var/function

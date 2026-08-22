@@ -382,6 +382,19 @@ test('?qa=backup: rolling save backups capture, prune, restore, and download', a
 	expect(downloads.some((name) => /Backup-\d{4}-\d{4}\.txt$/.test(name))).toBe(true);
 });
 
+test('?qa=sound: sound engine, web music, and settings labels work', async ({ page }) => {
+	await boot(page, '&qa=sound');
+	const report = await qaReport(page, /PASS: sound engine, music, and settings labels all work/);
+	expect(report).not.toMatch(/ERROR/);
+	expect(report).toMatch(/wrapper produces real Audio elements: true/);
+	expect(report).toMatch(/\'snd\/tick\.mp3\' loaded \(readyState=\d+\): true/);
+	expect(report).toMatch(/\'snd\/error1\.mp3\' loaded \(readyState=\d+\): true/);
+	expect(report).toMatch(/music tracks=\d+ jukebox=\d+/);
+	expect(report).toMatch(/first music track loaded \(readyState=\d+\): true/);
+	expect(report).toMatch(/ON\/OFF bridge: true/);
+	expect(report).toMatch(/volume=\d+/);
+});
+
 test('?qa=perf: 4-minigame frame cost holds the 30-tick loop target', async ({ page }) => {
 	await boot(page, '&qa=perf&qlvl=1');
 	// The probe samples the loop for ~3s before writing its verdict.

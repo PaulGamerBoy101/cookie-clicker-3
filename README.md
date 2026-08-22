@@ -174,8 +174,15 @@ These weaken the CSP's XSS protection. That is an accepted, documented trade-off
   pruned to the newest 10), and restoring an older backup returns the live
   state to it. The Options menu's "Backups" section lists them for restore
   or download as a timestamped `.txt` save file (same format as "Save to
-  file", so it imports anywhere).
-  `?qa=ascend` drives the full
+  file", so it imports anywhere). `?qa=sound` verifies the sound engine:
+  the soundjay-guard `Audio` wrapper must capture the real browser
+  constructor (a module-scope `var Audio` shadowing the global used to
+  make every sound a dead plain object), and a sample must load through
+  the `PlaySound` cache to `readyState>=2`. It also verifies the CC3 web
+  music (8 tracks in `public/snd/music/`, composed by Bert Cole — the
+  browser build of 2.048 had no music at all), the jukebox track list,
+  and the live `ON`/`OFF` bridge the Settings pref buttons depend on
+  (they used to render "Fancy graphicsundefined"). `?qa=ascend` drives the full
   ascension (Legacy/prestige) flow — `Game.Ascend(1)` intro (grants heavenly
   chips + prestige) then `Game.Reincarnate(1)` (the reset) — and verifies the
   run is reset while the prestige state (chips, prestige, resets) is kept.

@@ -25,8 +25,8 @@ export function ShowMenu(what: any)
 	l('statsButton').className=(Game.onMenu=='stats')?'panelButton selected':'panelButton';
 	l('logButton').className=(Game.onMenu=='log')?'panelButton selected':'panelButton';
 	
-	if (Game.onMenu=='') PlaySound('snd/clickOff2.mp3');
-	else PlaySound('snd/clickOn2.mp3');
+	if (Game.onMenu=='') PlaySound('snd/back1.mp3',0.5);//CC3: interface back tone (interface-sfx-pack-1, CC0)
+	else PlaySound('snd/confirm1.mp3',0.5);//CC3: interface confirm tone (interface-sfx-pack-1, CC0)
 	
 	Game.UpdateMenu();
 	
@@ -137,10 +137,10 @@ export function UpdateMenu()
 				((App && App.writeCloudUI)?App.writeCloudUI():'')+
 				'<div class="listing">'+
 					Game.WriteSlider('volumeSlider',loc("Volume"),'[$]%',function(){return Game.volume;},'Game.setVolume(Math.round(l(\'volumeSlider\').value));l(\'volumeSliderRightText\').innerHTML=Game.volume+\'%\';')+
-					(App?Game.WriteSlider('volumeMusicSlider',loc("Volume (music)"),'[$]%',function(){return Game.volumeMusic;},'Game.setVolumeMusic(Math.round(l(\'volumeMusicSlider\').value));l(\'volumeMusicSliderRightText\').innerHTML=Game.volumeMusic+\'%\';'):'')+
+					Game.WriteSlider('volumeMusicSlider',loc("Volume (music)"),'[$]%',function(){return Game.volumeMusic;},'Game.setVolumeMusic(Math.round(l(\'volumeMusicSlider\').value));l(\'volumeMusicSliderRightText\').innerHTML=Game.volumeMusic+\'%\';')+
 					/*(App?Game.WriteSlider('wubMusicSlider',loc("Wub"),'[$]%',function(){return 100;},'Game.setWubMusic(Math.round(l(\'wubMusicSlider\').value));l(\'wubMusicSliderRightText\').innerHTML=(Math.round(l(\'wubMusicSlider\').value))+\'%\';'):'')+*/
 					'<br>'+
-					(App?Game.WritePrefButton('bgMusic','bgMusicButton',loc("Music in background")+ON,loc("Music in background")+OFF,'')+'<label>('+loc("music will keep playing even when the game window isn't focused")+')</label><br>':'')+
+					Game.WritePrefButton('bgMusic','bgMusicButton',loc("Music")+ON,loc("Music")+OFF,'Game.ToggleMusic();')+'<label>('+loc("music will keep playing even when the game window isn't focused")+')</label><br>'+
 					(App?Game.WritePrefButton('fullscreen','fullscreenButton',loc("Fullscreen")+ON,loc("Fullscreen")+OFF,'Game.ToggleFullscreen();')+'<br>':'')+
 					Game.WritePrefButton('fancy','fancyButton',loc("Fancy graphics")+ON,loc("Fancy graphics")+OFF,'Game.ToggleFancy();')+'<label>('+loc("visual improvements; disabling may improve performance")+')</label><br>'+
 					Game.WritePrefButton('filters','filtersButton',loc("CSS filters")+ON,loc("CSS filters")+OFF,'Game.ToggleFilters();')+'<label>('+(EN?'cutting-edge visual improvements; disabling may improve performance':loc("visual improvements; disabling may improve performance"))+')</label><br>'+

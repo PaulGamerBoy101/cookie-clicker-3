@@ -11,6 +11,9 @@ picked up, traded, or dropped as we go. Checked items are shipped.
 - Late-game tail rebalance + all-building balance audit
 - Full economy analysis tooling (`Game.AnalyzeEconomy`, `Game.SimulateStrategy`)
 - Rolling save backups (history, restore, download-to-file)
+- Web background music (8 tracks, Bert Cole) + interface tones (confirm/back/
+  error), Settings Music toggle + volume slider, jukebox tracks; fixed the
+  Settings pref buttons rendering "…undefined"
 
 ## Animations & polish
 

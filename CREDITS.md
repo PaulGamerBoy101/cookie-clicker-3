@@ -27,6 +27,18 @@ downloadable edition of the 2.048 release).
   Licensed under the SIL Open Font License, Version 1.1.
   Self-hosted woff2 subsets in `src/assets/fonts/`.
 
+## Music & sound effects
+
+- **Background music** — the 8 tracks in `public/snd/music/` (Farm Life,
+  Simpler Times, Origins, A Little R & R, Returning Home, Bustling Streets,
+  Long Road Ahead, Waiting) are from the free 16-Bit Starter Pack.
+  Music composed by **Bert Cole** — <https://bitbybitsound.com>.
+  Used under the pack's non-exclusive license; not to be re-sold or used in
+  derivative works.
+- **Interface tones** — `snd/confirm1.mp3`, `snd/back1.mp3`, `snd/error1.mp3`
+  are from the interface-sfx-pack-1 by **obsydianx**
+  (<https://obsydianx.itch.io/interface-sfx-pack-1>), licensed CC0.
+
 ## Tooling
 
 - [Vite](https://vite.dev) (MIT) — build pipeline (dev dependency only).

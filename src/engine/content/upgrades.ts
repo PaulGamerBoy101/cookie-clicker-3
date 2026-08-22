@@ -1715,11 +1715,11 @@ export function declareVanillaUpgrades(Game: EngineGame) {
 		order=49900;
 		new Game.Upgrade('Jukebox',loc("Play through the game's sound files!"),0,[31,12]);
 		Game.last.pool='toggle';
-		Game.jukebox={
-			sounds:[
-				'tick',
-				'tickOff',
-				'smallTick',
+		Game.jukebox={				sounds:[
+					'tick',
+					'tickOff',
+					'confirm1','back1','error1',//CC3 interface tones (interface-sfx-pack-1, CC0)
+					'smallTick',
 				'toneTick',
 				'clickOn','clickOn2',
 				'clickOff','clickOff2',
@@ -1867,9 +1867,9 @@ export function declareVanillaUpgrades(Game: EngineGame) {
 				str+='<option value="'+i+'"'+(i==Game.jukebox.onSound?' selected="true"':'')+'>'+Game.jukebox.sounds[i]+'</option>';
 			}
 			str+='</select><a class="option" onclick="Game.jukebox.setSound(Math.floor(Math.random()*Game.jukebox.sounds.length));">'+loc("Random")+'</a>';
-			if (App)
+			if (Music)//CC3: relaxed from `if (App)` — the track section now works in the browser (systems/music.ts)
 			{
-				var data=Music?Music.tracks[Game.jukebox.tracks[Game.jukebox.onTrack]].audio:0;
+				var data=Music.tracks[Game.jukebox.tracks[Game.jukebox.onTrack]].audio;
 				var dur=data?data.duration+1:0;
 				str+='<div class="line"></div>';
 				str+='<div class="fancyText" style="font-style:italic;letter-spacing:2px;padding:8px;font-size:18px;" id="jukeboxOnTrack">&bull; '+cap(Game.jukebox.tracks[Game.jukebox.onTrack])+' &bull;</div>';
