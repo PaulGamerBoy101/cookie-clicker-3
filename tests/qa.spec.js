@@ -281,7 +281,7 @@ test('Cats: save-safe building slot, Grandma/Farm ordering, and animated sprites
 	await assertNoUncaughtErrors(page);
 });
 
-test('Cats: compact multi-lane renderer supports 100 visible cats without attack states', async ({ page }) => {
+test('Cats: compact multi-lane renderer caps visible cats at 50 without attack states', async ({ page }) => {
 	await boot(page, '');
 	await page.waitForFunction(() => window.Game.Objects && window.Game.Objects.Cats && window.Game.Objects.Cats.canvas, null, BOOT);
 	const state = await page.evaluate(async () => {
@@ -290,6 +290,9 @@ test('Cats: compact multi-lane renderer supports 100 visible cats without attack
 		const originalDraw = ctx.drawImage.bind(ctx);
 		let catDraws = 0;
 		let attackDraws = 0;
+		let maxFrameDraws = 0;
+		let frameDraws = 0;
+		let lastT = -1;
 		let minCatWidth = Infinity;
 		let minCatY = Infinity;
 		ctx.drawImage = function (...args) {
@@ -297,19 +300,25 @@ test('Cats: compact multi-lane renderer supports 100 visible cats without attack
 			if (src.includes('/img/cats/attack-1.png')) attackDraws++;
 			if (src.includes('/img/cats/') && !src.includes('Summer1.png')) {
 				catDraws++;
+				// per-frame count: the renderer must draw at most the cap each tick
+				const T = window.Game.T;
+				if (T !== lastT) { lastT = T; frameDraws = 0; }
+				frameDraws++;
+				maxFrameDraws = Math.max(maxFrameDraws, frameDraws);
 				minCatWidth = Math.min(minCatWidth, Number(args[7]));
 				minCatY = Math.min(minCatY, Number(args[6]));
 			}
 			return originalDraw(...args);
 		};
-		cats.amount = 100;
+		cats.amount = 100; // own 100, only 50 may render
 		cats.unlocked = 1;
 		cats.refresh();
 		await new Promise((resolve) => setTimeout(resolve, 600));
-		return { amount: cats.amount, catDraws, attackDraws, minCatWidth, minCatY, canvas: [cats.canvas.width, cats.canvas.height] };
+		return { amount: cats.amount, catDraws, maxFrameDraws, attackDraws, minCatWidth, minCatY, canvas: [cats.canvas.width, cats.canvas.height] };
 	});
 	expect(state.amount).toBe(100);
-	expect(state.catDraws).toBeGreaterThanOrEqual(100);
+	expect(state.maxFrameDraws).toBe(50); // the visible-cat cap
+	expect(state.catDraws).toBeGreaterThanOrEqual(50);
 	expect(state.attackDraws).toBe(0);
 	expect(state.minCatWidth).toBeGreaterThanOrEqual(80);
 	expect(state.minCatY).toBeGreaterThanOrEqual(45);

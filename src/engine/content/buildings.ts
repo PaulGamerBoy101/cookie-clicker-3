@@ -512,7 +512,9 @@ export function declareVanillaBuildings(Game: EngineGame) {
 			// Keep every cat at the original 80x64 sprite size. A large amount
 			// may overlap on the ground, but cats should never shrink or float
 			// into the sky just because more were purchased.
-			var count=Math.min(this.amount,100);
+			// CC3: capped at 50 (was 100) — the full herd of animated sprites at
+			// 80x64 with per-cat motion math cost visible frame time.
+			var count=Math.min(this.amount,50);
 			var catScale=1;
 			ctx.clearRect(0,0,width,height);
 			ctx.imageSmoothingEnabled=false;
