@@ -851,13 +851,17 @@ if (debugSurface && params.get('qa') === 'wrinkler') {
 			const refund = G.cookies - before.cookies;
 			const refundOk = refund >= 550;      // ~1100 refund (1000 x 1.1), well above drift
 			const debuffGone = G.cpsSucked === 0;
+			// The pop path now plays the CC3 error tone — the cache entry proves it fired
+			const errSnd = (window as any).Sounds && (window as any).Sounds['snd/error1.mp3'];
+			const errorToneOk = errSnd instanceof HTMLAudioElement;
 			const lines = [
 				'[QA-wrinkler] phase 2 (pop resolved on a loop tick)',
 				'phase1 raw CpS ' + (d ? d.cpsBefore.toFixed(2) : '?') + '   cpsSucked=' + (d ? d.debuff.toFixed(3) : '?') + (d && d.debuffOk ? '   (PASS: visible wrinkler set cpsSucked, lowering displayed CpS)' : '   (FAIL: debuff not seen)'),
 				'wrinklersPopped ' + before.popped + ' -> ' + G.wrinklersPopped + (poppedOk ? '   (PASS: +1, wrinkler removed phase=0)' : '   (FAIL)'),
 				'cookies ' + Math.round(before.cookies) + ' -> ' + Math.round(G.cookies) + ' (+' + Math.round(refund) + ')' + (refundOk ? '   (PASS: refunded swallowed cookies +10%)' : '   (FAIL)'),
 				'cpsSucked = ' + G.cpsSucked + (debuffGone ? '   (PASS: CpS debuff cleared after the pop)' : '   (FAIL)'),
-				d && d.debuffOk && poppedOk && refundOk && debuffGone
+				'error tone on pop: ' + (errorToneOk ? 'PASS' : 'FAIL (no snd/error1.mp3 in the sound cache)'),
+				d && d.debuffOk && poppedOk && refundOk && debuffGone && errorToneOk
 					? '[QA-wrinkler] PASS: wrinkler spawns, sucks 5% CpS, and pops for a cookie refund'
 					: '[QA-wrinkler] CHECK: see above'
 			];

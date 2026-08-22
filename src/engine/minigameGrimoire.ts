@@ -303,7 +303,7 @@ M.launch=function()
 			var cost=0;
 			var fail=false;
 			if (typeof obj.cost!=='undefined') cost=obj.cost; else cost=M.getSpellCost(spell);
-			if (M.magic<cost) return false;
+			if (M.magic<cost) {PlaySound('snd/error1.mp3',0.5);return false;}//CC3: interface error tone when there isn't enough magic
 			var failChance=M.getFailChance(spell);
 			if (typeof obj.failChanceSet!=='undefined') failChance=obj.failChanceSet;
 			if (typeof obj.failChanceAdd!=='undefined') failChance+=obj.failChanceAdd;
@@ -329,10 +329,10 @@ M.launch=function()
 				var rect=l('grimoireSpell'+spell.id).getBoundingClientRect();
 				Game.SparkleAt((rect.left+rect.right)/2,(rect.top+rect.bottom)/2-24);
 				
-				if (fail) PlaySound('snd/spellFail.mp3',0.75); else PlaySound('snd/spell.mp3',0.75);
+				if (fail) {PlaySound('snd/spellFail.mp3',0.75);PlaySound('snd/error1.mp3',0.4);} else PlaySound('snd/spell.mp3',0.75);//CC3: interface error tone layered on the backfire
 				return true;
 			}
-			PlaySound('snd/spellFail.mp3',0.75);
+			PlaySound('snd/error1.mp3',0.5);//CC3: interface error tone when the spell can't be cast (not enough magic)
 			return false;
 		}
 		

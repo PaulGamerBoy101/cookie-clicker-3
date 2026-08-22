@@ -217,6 +217,7 @@ function inRect(x: any,y: any,rect: any)
 				{
 					Game.playWrinklerSquishSound();
 					PlaySound('snd/pop'+Math.floor(Math.random()*3+1)+'.mp3',0.75);
+					PlaySound('snd/error1.mp3',0.3);//CC3: interface error tone layered on the pop
 					Game.wrinklersPopped++;
 					Game.recalculateGains=1;
 					me.phase=0;
