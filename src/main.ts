@@ -52,10 +52,13 @@ if (debugSurface) {
  * Garden — exercising the minigame dynamic-import path end to end.
  *   ?qa           seed a level-1 minigame building set and open the Garden
  *   ?qa=cookies   seed cookies only (no minigames) for light store-buy tests
+ *   ?qa=cats      seed five Cats so the animated building can be previewed
+ *   ?qa=cats100   seed 100 Cats to preview the compact multi-lane display
  *   ?qa=golden    spawn + pop a forced "frenzy" golden cookie, report the buff
  *   ?qa=save      export a save, corrupt state, re-import, verify round-trip
+ *   ?qa=content   validate content registries and report economy ordering
  * Never active in a plain production load. */
-if (debugSurface && params.has('qa') && params.get('qa') !== 'golden' && params.get('qa') !== 'save' && params.get('qa') !== 'perf' && params.get('qa') !== 'ascend' && params.get('qa') !== 'offline' && params.get('qa') !== 'special' && params.get('qa') !== 'a11y' && params.get('qa') !== 'wrinkler' && params.get('qa') !== 'icon' && params.get('qa') !== 'onecol' && params.get('qa') !== 'anim' && params.get('qa') !== 'binverter') {
+if (debugSurface && params.has('qa') && params.get('qa') !== 'golden' && params.get('qa') !== 'save' && params.get('qa') !== 'perf' && params.get('qa') !== 'ascend' && params.get('qa') !== 'offline' && params.get('qa') !== 'special' && params.get('qa') !== 'a11y' && params.get('qa') !== 'wrinkler' && params.get('qa') !== 'icon' && params.get('qa') !== 'onecol' && params.get('qa') !== 'anim' && params.get('qa') !== 'binverter' && params.get('qa') !== 'content') {
 	const qaMode = params.get('qa'); // null for bare ?qa, else the value
 	const MINIGAME_BUILDINGS = ['Farm', 'Bank', 'Temple', 'Wizard tower'];
 	const tick = window.setInterval(() => {
@@ -65,7 +68,7 @@ if (debugSurface && params.has('qa') && params.get('qa') !== 'golden' && params.
 			G.__qaSeeded = 1;
 			try {
 				G.cookies += 1e6;
-				if (qaMode !== 'cookies') {
+				if (qaMode !== 'cookies' && qaMode !== 'cats' && qaMode !== 'cats100') {
 					G.lumps += 10;
 					for (const name of MINIGAME_BUILDINGS) {
 						const b = G.Objects[name];
@@ -81,6 +84,24 @@ if (debugSurface && params.has('qa') && params.get('qa') !== 'golden' && params.
 				}
 			} catch (e: any) {
 				console.error('QA seed failed:', e);
+			}
+			if (qaMode === 'cats' || qaMode === 'cats100') {
+				const cats = G.Objects['Cats'];
+				if (cats) {
+					const showcaseAmount = qaMode === 'cats100' ? 100 : 5;
+					G.BuildingsOwned -= cats.amount;
+					cats.amount = showcaseAmount;
+					cats.unlocked = 1;
+					cats.bought = showcaseAmount;
+					cats.highest = showcaseAmount;
+					cats.totalCookies = 0;
+					G.BuildingsOwned += cats.amount;
+					cats.refresh();
+				}
+				G.recalculateGains = 1;
+				if (G.CalculateGains) G.CalculateGains();
+				window.clearInterval(tick);
+				return;
 			}
 			if (qaMode === 'cookies') window.clearInterval(tick); // done seeding
 		}
@@ -98,6 +119,50 @@ if (debugSurface && params.has('qa') && params.get('qa') !== 'golden' && params.
 			}
 			if (farm.onMinigame) window.clearInterval(tick); // Garden open: done
 		}
+	}, 250);
+}
+
+// QA: validate registered content and report the current building economy.
+// This is intentionally read-only with respect to content definitions; it seeds
+// three building counts only so the report has comparable per-building values.
+// Usage: ?debug=1&qa=content
+if (debugSurface && params.get('qa') === 'content') {
+	const tick = window.setInterval(() => {
+		const G = window.Game;
+		if (!G || !G.ready || !G.Objects || typeof G.ValidateContent !== 'function' || typeof G.GetEconomyReport !== 'function') return;
+		if (G.__qaContent) return;
+		G.__qaContent = 1;
+		const out = document.createElement('div');
+		out.id = '__dbgqa';
+		out.style.cssText = 'position:fixed;top:0;left:0;z-index:99999;background:#fff;color:#060;font:12px monospace;white-space:pre-wrap;max-width:760px;';
+		document.body.appendChild(out);
+		try {
+			const names = ['Grandma', 'Cats', 'Farm'];
+			for (const name of names) {
+				const building = G.Objects[name];
+				if (!building) throw new Error('Missing building: ' + name);
+				building.amount = 10;
+				building.unlocked = 1;
+				building.bought = 10;
+			}
+			G.recalculateGains = 1;
+			const validation = G.ValidateContent();
+			const report = G.GetEconomyReport();
+			const selected = names.map((name) => report.buildings.find((building) => building.name === name));
+			const orderOk = selected[0] && selected[1] && selected[2] && selected[0].storeOrder < selected[1].storeOrder && selected[1].storeOrder < selected[2].storeOrder;
+			const cpsOk = selected[0] && selected[1] && selected[2] && selected[0].cpsPerBuilding < selected[1].cpsPerBuilding && selected[1].cpsPerBuilding < selected[2].cpsPerBuilding;
+			const pass = validation.valid && orderOk && cpsOk;
+			out.textContent =
+				'[QA-content] validation: ' + (validation.valid ? 'PASS' : 'FAIL') + ' (' + validation.buildingCount + ' buildings, ' + validation.upgradeCount + ' upgrades, ' + validation.errors + ' errors)\n' +
+				'[QA-content] economy snapshot total CpS=' + report.totalCps.toFixed(2) + '\n' +
+				selected.map((building) => building ? '[QA-content] ' + building.name + ': order=' + building.storeOrder + ', amount=' + building.amount + ', CpS/unit=' + building.cpsPerBuilding.toFixed(2) + ', total=' + building.totalCps.toFixed(2) : '[QA-content] missing building').join('\n') + '\n' +
+				'[QA-content] store order Grandma < Cats < Farm: ' + (orderOk ? 'PASS' : 'FAIL') + '\n' +
+				'[QA-content] CpS/unit Grandma < Cats < Farm: ' + (cpsOk ? 'PASS' : 'FAIL') + '\n' +
+				'[QA-content] ' + (pass ? 'PASS: typed content validation and economy report verified' : 'FAIL: see checks above');
+		} catch (e: any) {
+			out.textContent = '[QA-content] ERROR: ' + e.constructor.name + ': ' + e.message;
+		}
+		window.clearInterval(tick);
 	}, 250);
 }
 
@@ -213,8 +278,8 @@ if (debugSurface && params.get('qa') === 'binverter') {
 			let pass = true;
 			const chk = (label: string, cond: boolean) => { lines.push((cond ? 'PASS: ' : 'FAIL: ') + label); if (!cond) pass = false; };
 
-			// 1. declaration + store/canvas DOM (vanilla has 19 buildings, id 0-18, so the inverter is id 19)
-			chk('building declared as id 19', me.id === 19);
+			// 1. declaration + store/canvas DOM (vanilla now has 20 buildings, id 0-19, so the inverter is id 20)
+			chk('building declared as id 20', me.id === 20);
 			chk('store row #product' + me.id + ' present', !!document.getElementById('product' + me.id));
 			chk('store icon #productIcon' + me.id + ' present', !!document.getElementById('productIcon' + me.id));
 			chk('display canvas #rowCanvas' + me.id + ' present', !!document.getElementById('rowCanvas' + me.id));

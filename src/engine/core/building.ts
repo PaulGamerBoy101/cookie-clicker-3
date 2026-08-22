@@ -607,6 +607,18 @@ export class Building {
 				l('productIcon'+me.id).style.backgroundPosition='-'+icon[0]+'px -'+icon[1]+'px';
 				//l('productIconOff'+me.id).style.backgroundImage='url(img/'+iconOff+')';
 				l('productIconOff'+me.id).style.backgroundPosition='-'+iconOff[0]+'px -'+iconOff[1]+'px';
+				var customStoreIcon=(me.art as any).storeIcon;
+				if (customStoreIcon)
+				{
+					var customStoreSize=(me.art as any).storeIconSize||'48px 48px';
+					var customStoreUrl="url('"+customStoreIcon.replace(/'/g,"\\'")+"')";
+					l('productIcon'+me.id).style.backgroundImage=customStoreUrl;
+					l('productIconOff'+me.id).style.backgroundImage=customStoreUrl;
+					l('productIcon'+me.id).style.backgroundSize=customStoreSize;
+					l('productIconOff'+me.id).style.backgroundSize=customStoreSize;
+					l('productIcon'+me.id).style.backgroundPosition='0px 0px';
+					l('productIconOff'+me.id).style.backgroundPosition='0px 0px';
+				}
 				l('productName'+me.id).innerHTML=displayName;
 				if (name.length>12/Langs[locId].w && (Game.season=='fools' || !EN)) l('productName'+me.id).classList.add('longProductName'); else l('productName'+me.id).classList.remove('longProductName');
 				l('productOwned'+me.id).textContent=me.amount?me.amount:'';
@@ -747,7 +759,7 @@ export class Building {
 								//if (frames>1) frame=Math.floor(Math.random()*frames);
 								if (frames>1) {frame=prevFrame+Math.floor(Math.random()*(frames-1)+1);frame=frame%frames;}
 								prevFrame=frame;
-								this.pics.push({x:Math.floor(x),y:Math.floor(y),z:y,pic:usedPic,id:i,frame:frame});
+								this.pics.push({x:Math.floor(x),y:Math.floor(y),z:y,pic:usedPic,id:i,frame:frame,born:Game.T});
 								i++;
 								added++;
 							}
@@ -836,6 +848,25 @@ export class Building {
 							ctx.drawImage(sprite,Math.floor(pic.x+Math.random()*4-2),Math.floor(pic.y+Math.random()*4-2));
 						}
 						//else if (1) ctx.drawImage(sprite,0,0,sprite.width,sprite.height,pic.x,pic.y,sprite.width,sprite.height);
+						else if (this.name=='Grandma' && Game.prefs.animate)
+						{
+							//Grandmas keep their feet planted while gently breathing and
+							//swaying independently. Newly added Grandmas get a short,
+							//grounded bounce so purchases have immediate visual feedback.
+							var phase=pic.id*2.17;
+							var bob=Math.sin(Game.T*0.08+phase)*1.2;
+							var sway=Math.sin(Game.T*0.035+phase)*0.018;
+							var breathe=1+Math.sin(Game.T*0.06+phase)*0.012;
+							var age=Game.T-(pic.born||Game.T);
+							var bounce=age>=0 && age<24?Math.sin(age/24*Math.PI)*5:0;
+							ctx.save();
+							ctx.translate(pic.x+32,pic.y+64-bob-bounce);
+							ctx.rotate(sway);
+							ctx.scale(breathe,breathe);
+							if (pic.frame!=-1) ctx.drawImage(sprite,(sprite.width/frames)*pic.frame,0,sprite.width/frames,sprite.height,-32,-64,sprite.width/frames,sprite.height);
+							else ctx.drawImage(sprite,-32,-64);
+							ctx.restore();
+						}
 						else if (pic.frame!=-1) ctx.drawImage(sprite,(sprite.width/frames)*pic.frame,0,sprite.width/frames,sprite.height,pic.x,pic.y,(sprite.width/frames),sprite.height);
 						else ctx.drawImage(sprite,pic.x,pic.y);
 						

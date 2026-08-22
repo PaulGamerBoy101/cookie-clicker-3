@@ -71,6 +71,248 @@ test('?qa=golden: golden-cookie click path spawns a frenzy buff', async ({ page 
 	await assertNoUncaughtErrors(page);
 });
 
+test('?qa=content: typed content validation and economy report pass', async ({ page }) => {
+	await boot(page, '&qa=content');
+	const report = await qaReport(page, /PASS: typed content validation and economy report verified/);
+	expect(report).not.toMatch(/FAIL/);
+	expect(report).not.toMatch(/ERROR/);
+	expect(report).toMatch(/Grandma < Cats < Farm/);
+});
+
+test('Cursor upgrades: purchased finger sprite is applied to the cookie hands', async ({ page }) => {
+	await boot(page, '');
+	await page.waitForFunction(() => window.Game && window.Game.ready === 1 && window.Game.LeftBackground, null, BOOT);
+	const state = await page.evaluate(async () => {
+		const G = window.Game;
+		const cursor = G.Objects.Cursor;
+		const upgrade = G.Upgrades['Reinforced index finger'];
+		cursor.amount = 1;
+		cursor.unlocked = 1;
+		cursor.bought = 1;
+		cursor.refresh();
+		await new Promise((resolve) => setTimeout(resolve, 500));
+		const ctx = G.LeftBackground;
+		const originalDraw = ctx.drawImage.bind(ctx);
+		let iconDraws = 0;
+		let iconSource = null;
+		ctx.drawImage = function (...args) {
+			const src = args[0]?.src || '';
+			if (src.includes('/img/icons.webp') && Number(args[3]) === 48 && Number(args[4]) === 48) {
+				iconDraws++;
+				iconSource = [Number(args[1]), Number(args[2])];
+			}
+			return originalDraw(...args);
+		};
+		G.DrawBackground();
+		const beforePurchase = iconDraws;
+		G.cookies = 1e6;
+		upgrade.unlocked = 1;
+		upgrade.buy();
+		await new Promise((resolve) => setTimeout(resolve, 500));
+		G.DrawBackground();
+		return {
+			bought: upgrade.bought,
+			beforePurchase,
+			iconDraws,
+			iconSource,
+			expectedSource: [upgrade.icon[0] * 48, upgrade.icon[1] * 48],
+		};
+	});
+	expect(state.bought).toBe(1);
+	expect(state.beforePurchase).toBe(0);
+	expect(state.iconDraws).toBeGreaterThan(0);
+	expect(state.iconSource).toEqual(state.expectedSource);
+	await assertNoUncaughtErrors(page);
+});
+
+test('Grandmas: cozy idle motion stays grounded and purchases get a bounce state', async ({ page }) => {
+	await boot(page, '');
+	await page.waitForFunction(() => window.Game && window.Game.ready === 1 && window.Game.Objects.Grandma && window.Game.Objects.Grandma.canvas, null, BOOT);
+	const state = await page.evaluate(async () => {
+		const G = window.Game;
+		const grandma = G.Objects.Grandma;
+		grandma.amount = 3;
+		grandma.unlocked = 1;
+		grandma.bought = 3;
+		grandma.refresh();
+		await new Promise((resolve) => setTimeout(resolve, 500));
+		const firstFrame = grandma.canvas.toDataURL();
+		const positionsBefore = grandma.pics.map((pic) => [pic.x, pic.y]);
+		await new Promise((resolve) => setTimeout(resolve, 500));
+		const secondFrame = grandma.canvas.toDataURL();
+		const positionsAfter = grandma.pics.map((pic) => [pic.x, pic.y]);
+		grandma.amount = 4;
+		grandma.bought = 4;
+		grandma.refresh();
+		await new Promise((resolve) => setTimeout(resolve, 150));
+		const newGrandma = grandma.pics.find((pic) => pic.id === 3);
+		return {
+			animationChanged: firstFrame !== secondFrame,
+			positionsStable: JSON.stringify(positionsBefore) === JSON.stringify(positionsAfter),
+			newGrandmaBorn: newGrandma && typeof newGrandma.born === 'number',
+		};
+	});
+	expect(state.animationChanged).toBe(true);
+	expect(state.positionsStable).toBe(true);
+	expect(state.newGrandmaBorn).toBe(true);
+	await assertNoUncaughtErrors(page);
+});
+
+test('Cats: 24 balanced upgrades use the Protein spritesheet and apply mixed bonuses', async ({ page }) => {
+	await boot(page, '');
+	await page.waitForFunction(() => window.Game && window.Game.ready === 1 && window.Game.Objects.Cats, null, BOOT);
+	const state = await page.evaluate(async () => {
+		const G = window.Game;
+		const cats = G.Objects.Cats;
+		const baseNames = [
+			'Cardboard box basics','Sunbeam training','Whisker refinement','Midnight zoomies',
+			'Tuna-grade nutrition','Claw-powered kneading','Purrfect production','Nine-lives efficiency',
+			'Feline assembly','Astral catnaps','Infinite yarn loop','Quantum litter boxes',
+			'Cosmic whisker arrays','Protein singularity'
+		];
+		const specialNames = [
+			'Grandma-approved recipes','Purrfect timing','Cat café loyalty','Protein-rich kibble',
+			'Feather wand drills','Sunbeam perches','Catnip cultivation','Scratching-post ovens',
+			'Climbing shelves','Nine lives logistics'
+		];
+		const allNames = baseNames.concat(specialNames);
+		const load = (name) => new Promise((resolve, reject) => {
+			const image = new Image();
+			image.onload = () => resolve([image.naturalWidth, image.naturalHeight]);
+			image.onerror = reject;
+			image.src = name;
+		});
+		const sheet = await load('img/cat-upgrades/protein_spritesheet.png');
+		cats.amount = 75;
+		cats.unlocked = 1;
+		cats.bought = 75;
+		cats.buyFunction();
+		cats.refresh();
+		const upgrades = allNames.map((name) => G.Upgrades[name]);
+		const basePrices = baseNames.map((name) => G.Upgrades[name].basePrice);
+		const iconCount = upgrades.filter((upgrade) => upgrade && upgrade.icon[2] === 'img/cat-upgrades/protein_spritesheet.png').length;
+		const unlockedAt75 = specialNames.slice(0, 4).every((name) => G.Upgrades[name].unlocked === 1);
+		// Verify all 24 Cat upgrades are tied to the Cats building with tier keys
+		const buildingTieCount = upgrades.filter((u) => u && u.buildingTie && u.buildingTie.name === 'Cats').length;
+		const tierCount = upgrades.filter((u) => u && u.tier).length;
+		const tieredInBuilding = Object.keys(cats.tieredUpgrades || {}).length;
+		const grandma = G.Objects.Grandma;
+		grandma.amount = 10;
+		for (const name of allNames) G.Upgrades[name].bought = 0;
+		G.CalculateGains();
+		const baseline = { catCps: cats.storedCps, cps: G.cookiesPs, click: G.computedMouseCps };
+		for (const name of ['Grandma-approved recipes','Purrfect timing','Cat café loyalty','Protein-rich kibble']) G.Upgrades[name].bought = 1;
+		G.CalculateGains();
+		return {
+			registered: upgrades.filter(Boolean).length,
+			sheet,
+			iconCount,
+			basePrices,
+			unlockedAt75,
+			buildingTieCount,
+			tierCount,
+			tieredInBuilding,
+			boosted: { catCps: cats.storedCps, cps: G.cookiesPs, click: G.computedMouseCps },
+			baseline,
+		};
+	});
+	expect(state.registered).toBe(24);
+	expect(state.sheet).toEqual([288, 192]);
+	expect(state.iconCount).toBe(24);
+	expect(state.basePrices.every((price, index, prices) => index === 0 || price > prices[index - 1])).toBe(true);
+	expect(state.unlockedAt75).toBe(true);
+	expect(state.buildingTieCount).toBe(24);
+	expect(state.tierCount).toBe(24);
+	expect(state.tieredInBuilding).toBe(24);
+	expect(state.boosted.catCps).toBeGreaterThan(state.baseline.catCps);
+	expect(state.boosted.cps).toBeGreaterThan(state.baseline.cps);
+	expect(state.boosted.click).toBeGreaterThan(state.baseline.click);
+	await assertNoUncaughtErrors(page);
+});
+
+test('Cats: save-safe building slot, Grandma/Farm ordering, and animated sprites', async ({ page }) => {
+	await boot(page, '');
+	await page.waitForFunction(() => window.Game.Objects && window.Game.Objects.Cats && window.Game.Objects.Cats.canvas, null, BOOT);
+	const state = await page.evaluate(async () => {
+		const G = window.Game;
+		const cats = G.Objects.Cats;
+		const load = (name) => new Promise((resolve, reject) => {
+			const image = new Image();
+			image.onload = () => resolve({ width: image.naturalWidth, height: image.naturalHeight });
+			image.onerror = reject;
+			image.src = name;
+		});
+		const sprite = await load('img/cats/idle.png');
+		const background = await load('img/cats/Summer1.png');
+		cats.amount = 3;
+		cats.unlocked = 1;
+		cats.refresh();
+		await new Promise((resolve) => setTimeout(resolve, 600));
+		const firstFrame = cats.canvas.toDataURL();
+		await new Promise((resolve) => setTimeout(resolve, 600));
+		return {
+			ids: { grandma: G.Objects.Grandma.id, cats: cats.id, farm: G.Objects.Farm.id },
+			prices: { grandma: G.Objects.Grandma.basePrice, cats: cats.basePrice, farm: G.Objects.Farm.basePrice },
+			cps: { grandma: G.Objects.Grandma.baseCps, cats: cats.baseCps, farm: G.Objects.Farm.baseCps },
+			rows: [...document.querySelectorAll('#rows > .row')].slice(0, 3).map((el) => el.id),
+			products: [...document.querySelectorAll('#products > .product')].slice(1, 4).map((el) => el.id),
+			sprite,
+			background,
+			animationChanged: firstFrame !== cats.canvas.toDataURL(),
+		};
+	});
+	expect(state.ids.cats).toBeGreaterThan(state.ids.farm);
+	expect(state.rows).toEqual([`row${state.ids.grandma}`, `row${state.ids.cats}`, `row${state.ids.farm}`]);
+	expect(state.products).toEqual([`product${state.ids.grandma}`, `product${state.ids.cats}`, `product${state.ids.farm}`]);
+	expect(state.prices.grandma).toBeLessThan(state.prices.cats);
+	expect(state.prices.cats).toBeLessThan(state.prices.farm);
+	expect(state.cps.grandma).toBeLessThan(state.cps.cats);
+	expect(state.cps.cats).toBeLessThan(state.cps.farm);
+	expect(state.sprite.width).toBeGreaterThan(0);
+	expect(state.sprite.height).toBe(64);
+	expect(state.background.width).toBe(2304);
+	expect(state.background.height).toBe(1296);
+	expect(state.animationChanged).toBe(true);
+	await assertNoUncaughtErrors(page);
+});
+
+test('Cats: compact multi-lane renderer supports 100 visible cats without attack states', async ({ page }) => {
+	await boot(page, '');
+	await page.waitForFunction(() => window.Game.Objects && window.Game.Objects.Cats && window.Game.Objects.Cats.canvas, null, BOOT);
+	const state = await page.evaluate(async () => {
+		const cats = window.Game.Objects.Cats;
+		const ctx = cats.ctx;
+		const originalDraw = ctx.drawImage.bind(ctx);
+		let catDraws = 0;
+		let attackDraws = 0;
+		let minCatWidth = Infinity;
+		let minCatY = Infinity;
+		ctx.drawImage = function (...args) {
+			const src = args[0]?.src || '';
+			if (src.includes('/img/cats/attack-1.png')) attackDraws++;
+			if (src.includes('/img/cats/') && !src.includes('Summer1.png')) {
+				catDraws++;
+				minCatWidth = Math.min(minCatWidth, Number(args[7]));
+				minCatY = Math.min(minCatY, Number(args[6]));
+			}
+			return originalDraw(...args);
+		};
+		cats.amount = 100;
+		cats.unlocked = 1;
+		cats.refresh();
+		await new Promise((resolve) => setTimeout(resolve, 600));
+		return { amount: cats.amount, catDraws, attackDraws, minCatWidth, minCatY, canvas: [cats.canvas.width, cats.canvas.height] };
+	});
+	expect(state.amount).toBe(100);
+	expect(state.catDraws).toBeGreaterThanOrEqual(100);
+	expect(state.attackDraws).toBe(0);
+	expect(state.minCatWidth).toBeGreaterThanOrEqual(80);
+	expect(state.minCatY).toBeGreaterThanOrEqual(45);
+	expect(state.canvas[0]).toBeGreaterThan(0);
+	expect(state.canvas[1]).toBe(128);
+	await assertNoUncaughtErrors(page);
+});
+
 test('?qa=save: save export -> import round-trip restores state', async ({ page }) => {
 	await boot(page, '&qa=save');
 	const report = await qaReport(page, /PASS: export->import round-trip restored state/);
@@ -154,7 +396,7 @@ test('?qa=binverter: the Black Hole Inverter mod (building + content + save) ver
 	const report = await qaReport(page, /PASS: Black Hole Inverter verified end to end/);
 	expect(report).not.toMatch(/ERROR/);
 	expect(report).not.toMatch(/FAIL:/);
-	expect(report).toMatch(/building declared as id 19/);
+	expect(report).toMatch(/building declared as id 20/);
 	expect(report).toMatch(/17 building upgrades/);
 	expect(report).toMatch(/18 building achievements/);
 	expect(report).toMatch(/building amount restored to 7/);

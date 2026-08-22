@@ -37,6 +37,7 @@ export function declareVanillaFoolObjects(Game: EngineGame) {
 			'Javascript console':{name:'Doctrine',desc:'Taking many forms -religion, culture, philosophy- a doctrine may, when handled properly, cause a lasting impact on civilizations, reshaping minds and people and ensuring all future generations share a singular goal - the production, and acquisition, of more cookies.',icon:17},
 			'Idleverse':{name:'Lateral expansions',desc:'Sometimes the best way to keep going up is sideways. Diversify your ventures through non-cookie investments.',icon:18},
 			'Cortex baker':{name:'Think tank',desc:'There\'s only so many ways you can bring in more profit. Or is there? Hire the most brilliant experts in the known universe and let them scrape their brains for you!',icon:19},
+			'Cats':{name:'Cat cafe',desc:'A cozy little business where every customer leaves with more cookies than they came in with.',icon:1},
 		};
 		
 		if (true)//if (!EN)

@@ -10,6 +10,7 @@ import { Game } from "./core/game";
 import { Building } from "./core/building";
 import { Upgrade, TieredUpgrade, SynergyUpgrade } from "./core/upgrade";
 import { HowMuchPrestige, HowManyCookiesReset, EarnHeavenlyChips, GetHeavenlyMultiplier, ComputeCps, GetTieredCpsMult } from "./systems/economy";
+import { ValidateContent, GetEconomyReport } from "./systems/contentValidation";
 import { ExportSave, ImportSave, ImportSaveCode, FileSave, FileLoad, WriteSave, salvageSave, LoadSave } from "./systems/save";
 import { Shimmer, updateShimmers, killShimmers } from "./systems/shimmer";
 import { getWrinklersMax, ResetWrinklers, CollectWrinklers, playWrinklerSquishSound, SpawnWrinkler, PopRandomWrinkler, UpdateWrinklers, DrawWrinklers, SaveWrinklers, LoadWrinklers } from "./systems/wrinkler";
@@ -1412,6 +1413,7 @@ Game.Launch=function()
 					if (cookieUpgrade.clickPower && Game.Has(cookieUpgrade.name)) add+=Game.cookiesPs*cookieUpgrade.clickPower*0.01;
 				}
 			}
+			if (Game.Has('Purrfect timing')) add+=Game.cookiesPs*0.01;
 			var mult=1;
 			
 			
@@ -1662,6 +1664,7 @@ Game.Launch=function()
 			mult*=Game.eff('cps');
 			
 			if (Game.Has('Heralds') && Game.ascensionMode!=1) mult*=(1+0.01*Game.heralds);
+			if (Game.Has('Cat café loyalty')) mult*=1.01;
 			
 			for (var iKey in Game.cookieUpgrades)
 			{
@@ -2491,6 +2494,8 @@ window.loadMinigameModule!(me.minigameUrl).then(function(){
 		// exact point in Init, so declaration order (and every id, save slot
 		// and Game.last hand-off) is unchanged.
 		declareVanillaUpgrades(Game as any);
+		Game.ValidateContent=function(){return ValidateContent(Game as any);};
+		Game.GetEconomyReport=function(){return GetEconomyReport(Game as any);};
 		Game.baseResearchTime=Game.fps*60*30;
 		Game.SetResearch=function(what: any,_time: any)
 		{
@@ -3816,9 +3821,17 @@ window.loadMinigameModule!(me.minigameUrl).then(function(){
 			{
 				//if (Game.prefs.monospace) {l('cookies').className='title monospace';} else {l('cookies').className='title';}
 				var lastLocked=0;
-				for (var i in Game.Objects)
+				// CC3: iterate in storeOrder so custom buildings (e.g. Cats)
+				// appear between the buildings they belong visually, even if
+				// their auto-assigned id places them later in Game.Objects.
+				var sortedObjects=Object.keys(Game.Objects).map(function(k){return Game.Objects[k];}).sort(function(a:any,b:any){
+					var aOrder=typeof a.storeOrder==='number'?a.storeOrder:a.id;
+					var bOrder=typeof b.storeOrder==='number'?b.storeOrder:b.id;
+					return aOrder-bOrder;
+				});
+				for (var si=0;si<sortedObjects.length;si++)
 				{
-					var me=Game.Objects[i];
+					var me=sortedObjects[si];
 					
 					//make products full-opacity if we can buy them
 					var classes='product';

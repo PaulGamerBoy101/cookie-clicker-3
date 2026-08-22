@@ -113,7 +113,7 @@ a fresh production build and asserts its PASS report.
 
 ```
 npx playwright install chromium   # once, per machine
-npm test                          # builds dist/ itself, serves it, runs the 15 QA probes (tests/qa.spec.js)
+npm test                          # builds dist/ itself, serves it, runs the 21 QA probes (tests/qa.spec.js)
 ```
 
 Each test gets a fresh browser profile (the first load picks English, as a new
@@ -183,7 +183,11 @@ These weaken the CSP's XSS protection. That is an accepted, documented trade-off
   `?qa=a11y` exercises the accessibility (screen reader) mode: it enables
   `Game.prefs.screenreader`, persists it, and reloads; on the reloaded page the
   store products / buildings render as `<button aria-labelledby=...>` (with
-  srOnly labels) instead of plain `<div>`s. `?qa=wrinkler` drives the
+  srOnly labels) instead of plain `<div>`s. `?qa=content` validates building,
+  upgrade, tier, registry, and store-order relationships, then prints a typed
+  economy snapshot for Grandma, Cats, and Farm. The same helpers are available
+  to development tooling as `Game.ValidateContent()` and
+  `Game.GetEconomyReport()`. `?qa=wrinkler` drives the
 Grandmapocalypse wrinklers: it enables `Game.elderWrath`, spawns a fully visible
 (phase 2) wrinkler, checks it sets `Game.cpsSucked` (5% of CpS, lowering the
 displayed CpS + draining cookies), then pops it and verifies `Game.wrinklersPopped`

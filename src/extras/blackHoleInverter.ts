@@ -11,8 +11,8 @@
  *
  * Content (all declared with Game.vanilla=0, i.e. in the 'create' hook, which runs
  * AFTER the vanilla content and BEFORE LoadSave):
- *   - one new building: "Black hole inverter" (the 20th building; vanilla has 19,
- *     id 0-18, so this is id 19)
+ *   - one new building: "Black hole inverter" (the 21st building; vanilla has 20,
+ *     id 0-19, so this is id 20)
  *   - 14 tiered upgrades, 1 grandma synergy, 2 synergy upgrades
  *   - 14 tiered achievements, 3 production achievements, 1 level achievement (M87)
  *

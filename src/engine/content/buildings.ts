@@ -1,5 +1,5 @@
 /**
- * content/buildings.ts — the 19 vanilla building declarations.
+ * content/buildings.ts — the 20 vanilla building declarations.
  *
  * Ported verbatim from the 2.048 engine (engine/main.ts, the //define objects
  * block inside Game.Init). This is the architectural rewrite’s typed content
@@ -12,7 +12,7 @@
  */
 import type { Building, Game as EngineGame } from "../types";
 
-/** Declare the 19 vanilla buildings (and their per-building extras) on Game. */
+/** Declare the 20 vanilla buildings (and their per-building extras) on Game. */
 export function declareVanillaBuildings(Game: EngineGame) {
 		//define objects
 		new Game.Object('Cursor','cursor|cursors|clicked|[X] extra finger|[X] extra fingers','Autoclicks once every 10 seconds.',0,0,{},15,function (me: Building) {
@@ -136,7 +136,7 @@ export function declareVanillaBuildings(Game: EngineGame) {
 		};
 		
 		
-		new Game.Object('Farm','farm|farms|harvested|[X] more acre|[X] more acres','Grows cookie plants from cookie seeds.',3,2,{base:'farm',xV:8,yV:8,w:64,rows:2,x:0,y:16},500,function (me: Building) {
+		new Game.Object('Farm','farm|farms|harvested|[X] more acre|[X] more acres','Grows cookie plants from cookie seeds.',3,2,{pic:'img/barns.png',bg:'farmBackground.webp',xV:3,yV:2,w:64,rows:2,x:0,y:16},500,function (me: Building) {
 			var mult=1;
 			mult*=Game.GetTieredCpsMult(me);
 			mult*=Game.magicCpS(me.name);
@@ -147,7 +147,71 @@ export function declareVanillaBuildings(Game: EngineGame) {
 		});
 		Game.last.minigameUrl='minigameGarden.js';
 		Game.last.minigameName=loc("Garden");
-		
+
+		// Override Farm draw to crop 64x80 cells from the 3x2 barn
+		// spritesheet instead of drawing the full sheet, and scale them
+		// down so multiple farms overlap nicely in the 128px canvas.
+		var farmObj=Game.Objects['Farm'];
+		var barnCellW=64;
+		var barnCellH=80;
+		var barnSheetCols=3;
+		var barnSheetRows=2;
+		farmObj.draw=function(this: Building)
+		{
+			if (this.amount<=0||!this.canvas||!this.ctx) return false;
+			if (this.toResize)
+			{
+				this.canvas.width=this.canvas.clientWidth;
+				this.canvas.height=this.canvas.clientHeight;
+				this.toResize=false;
+			}
+			var ctx=this.ctx;
+			ctx.globalAlpha=1;
+			if (typeof(this.art.bg)=='string') ctx.fillPattern(Pic(this.art.bg),0,0,this.canvas.width,this.canvas.height,128,128);
+			var sheet=Pic(this.art.pic);
+			// Overlapping barn layout: barns overlap heavily and fill the full canvas.
+			var canvasW=this.canvas.width;
+			var canvasH=this.canvas.height;
+			// Keep barns at a nice visible size
+			var barnW=55;
+			var barnH=Math.floor(barnW*barnCellH/barnCellW); // ~69px
+			// Horizontal step: much less than barnW so barns overlap
+			var hStep=20;
+			// How many fit in one row across the full canvas width
+			var perRow=Math.floor((canvasW+barnW)/hStep);
+			var numRows=Math.ceil(this.amount/perRow);
+			// Vertical spacing between rows (tight, overlapping)
+			var vStep=Math.floor((canvasH-barnH)/(Math.max(numRows-1,1)));
+			if (vStep<barnH*0.4) vStep=Math.floor(barnH*0.4);
+			// Bottom-anchored: front row at bottom, back rows higher
+			var yBase=canvasH-barnH-2;
+			var iT=this.amount;
+			var i=this.pics.length;
+			if (i!=iT)
+			{
+				while (i<iT)
+				{
+					Math.seedrandom(Game.seed+' '+this.id+' '+i);
+					var row=Math.floor(i/perRow);
+					var col=i%perRow;
+					var sx=(i%barnSheetCols)*barnCellW;
+					var sy=(Math.floor(i/barnSheetCols)%barnSheetRows)*barnCellH;
+					// X spans the full canvas width; back rows shift slightly for depth
+					var x=col*hStep-barnW+Math.floor((Math.random()-0.5)*8);
+					// Back rows are higher (smaller y); z = y so back barns draw first
+					var y=yBase-row*vStep+Math.floor((Math.random()-0.5)*4);
+					this.pics.push({x:x,y:y,z:y,pic:this.art.pic,id:i,frame:0,sx:sx,sy:sy,born:Game.T});
+					i++;
+				}
+				this.pics.sort(Game.sortSprites);
+			}
+			for (var i=0;i<this.pics.length;i++)
+			{
+				var pic:any=this.pics[i];
+				ctx.drawImage(sheet,pic.sx,pic.sy,barnCellW,barnCellH,pic.x,pic.y,barnW,barnH);
+			}
+		};
+
 		new Game.Object('Mine','mine|mines|mined|[X] mile deeper|[X] miles deeper','Mines out cookie dough and chocolate chips.',4,3,{base:'mine',xV:16,yV:16,w:64,rows:2,x:0,y:24},10000,function (me: Building) {
 			var mult=1;
 			mult*=Game.GetTieredCpsMult(me);
@@ -324,5 +388,163 @@ export function declareVanillaBuildings(Game: EngineGame) {
 			Game.UnlockTiered(this);
 			if (this.amount>=Game.SpecialGrandmaUnlock && Game.Objects['Grandma'].amount>0) Game.Unlock(this.grandma!.name);
 		});
+
+		// Cats are appended after the vanilla building list so old saves keep
+		// every existing building at its original save index. Their visible
+		// store/row order is moved below to place them between Grandma and Farm.
+		// These sheets use the asset pack's 80x64 canvas per frame (not the
+		// cat's smaller visible 32px body). Cropping at 64px would splice
+		// adjacent frames together and make the animation look like scrolling.
+		var catAnimations=[
+			{pic:'img/cats/idle.png',frames:8,width:80},
+			{pic:'img/cats/walk.png',frames:12,width:80},
+			{pic:'img/cats/run.png',frames:8,width:80},
+			{pic:'img/cats/jump.png',frames:3,width:80},
+			{pic:'img/cats/running-jump.png',frames:3,width:80},
+			{pic:'img/cats/attack-1.png',frames:8,width:80},
+			{pic:'img/cats/hurt.png',frames:4,width:80}
+		];
+		var catArt:any={
+			pic:'img/cats/idle.png',
+			storeIcon:'img/cats/idle.png',
+			storeIconSize:'480px 48px'
+		};
+		var cats=new Game.Object('Cats','cat|cats|adopted|[X] extra cat|[X] extra cats','A cozy room full of curious cats that happily bake cookies.',0,1,catArt,500,function (me: Building) {
+			var mult=1;
+			mult*=Game.GetTieredCpsMult(me);
+			mult*=Game.magicCpS(me.name);
+			// Cat-specific additive bonuses from the custom upgrade collection.
+			var catAdd=0;
+			var catAddUpgrades=['Cardboard box basics','Sunbeam training','Whisker refinement','Midnight zoomies',
+				'Tuna-grade nutrition','Claw-powered kneading','Purrfect production','Nine-lives efficiency',
+				'Feline assembly','Astral catnaps','Infinite yarn loop','Quantum litter boxes',
+				'Cosmic whisker arrays','Protein singularity'];
+			for (var catAddIndex=0;catAddIndex<catAddUpgrades.length;catAddIndex++)
+			{
+				var catAddUpgrade=Game.Upgrades[catAddUpgrades[catAddIndex]];
+				if (catAddUpgrade && Game.Has(catAddUpgrades[catAddIndex]) && catAddUpgrade.catAdd) catAdd+=catAddUpgrade.catAdd;
+			}
+			var catMult=1;
+			var catMultUpgrades=['Protein-rich kibble','Feather wand drills','Sunbeam perches','Catnip cultivation','Scratching-post ovens','Climbing shelves','Nine lives logistics'];
+			for (var catMultIndex=0;catMultIndex<catMultUpgrades.length;catMultIndex++)
+			{
+				if (Game.Has(catMultUpgrades[catMultIndex])) catMult*=1.02;
+			}
+			if (Game.Has('Grandma-approved recipes')) catMult*=1+Math.min(Game.Objects['Grandma'].amount*0.005,0.25);
+			return (me.baseCps+catAdd)*mult*catMult;
+		},function (this: Building) {
+			Game.UnlockTiered(this);
+			var catUpgradeUnlocks:any[]=[
+				[10,'Grandma-approved recipes'],[25,'Purrfect timing'],[50,'Cat café loyalty'],
+				[75,'Protein-rich kibble'],[100,'Feather wand drills'],[150,'Sunbeam perches'],
+				[200,'Catnip cultivation'],[250,'Scratching-post ovens'],[350,'Climbing shelves'],
+				[450,'Nine lives logistics']
+			];
+			for (var catUpgradeUnlockIndex=0;catUpgradeUnlockIndex<catUpgradeUnlocks.length;catUpgradeUnlockIndex++)
+			{
+				if (this.amount>=catUpgradeUnlocks[catUpgradeUnlockIndex][0]) Game.Unlock(catUpgradeUnlocks[catUpgradeUnlockIndex][1]);
+			}
+		});
+		// The automatic building curve is intentionally overridden: 500 cookies
+		// for 4 CpS sits between Grandma (100/1) and Farm (1100/8).
+		cats.basePrice=500;
+		cats.price=500;
+		cats.bulkPrice=500;
+		cats.baseCps=4;
+		cats.storeOrder=1.5;
+		cats.dname='Cats';
+		cats.single='cat';
+		cats.plural='cats';
+		cats.desc='A cozy room full of curious cats that happily bake cookies.';
+		cats.baseDesc=cats.desc;
+		cats.displayName='<span style="font-size:90%;letter-spacing:-1px;position:relative;bottom:2px;">Cats</span>';
+
+		// The normal building renderer keeps sprites static. Cats use the same
+		// canvas and amount-based layout as Grandma, with a mostly-idle mix of
+		// animation personalities so buying more visibly changes the scene.
+		var catAnimationModes=[0,1,0,2,0,3,0,4];//idle, walk, idle, run, idle, jump, idle, running jump
+		cats.draw=function(this: Building)
+		{
+			if (this.amount<=0 || !this.canvas || !this.ctx) return false;
+			if (this.toResize)
+			{
+				this.canvas.width=this.canvas.clientWidth;
+				this.canvas.height=this.canvas.clientHeight;
+				this.toResize=false;
+			}
+			var ctx=this.ctx;
+			var width=this.canvas.width;
+			var height=this.canvas.height;
+			// Keep every cat at the original 80x64 sprite size. A large amount
+			// may overlap on the ground, but cats should never shrink or float
+			// into the sky just because more were purchased.
+			var count=Math.min(this.amount,100);
+			var catScale=1;
+			ctx.clearRect(0,0,width,height);
+			ctx.imageSmoothingEnabled=false;
+
+			// Summer1 is a full scene rather than a tile, so scale it to the
+			// building height and repeat it across the box without distortion.
+			var background=Pic('img/cats/Summer1.png');
+			if (background && background.complete && background.naturalWidth>0)
+			{
+				var backgroundWidth=Math.max(1,Math.ceil(height*background.naturalWidth/background.naturalHeight));
+				for (var backgroundX=0;backgroundX<width;backgroundX+=backgroundWidth)
+				{
+					ctx.drawImage(background,0,0,background.naturalWidth,background.naturalHeight,backgroundX,0,backgroundWidth,height);
+				}
+			}
+
+			for (var i=0;i<count;i++)
+			{
+				// Most cats are idle, while later purchases introduce walkers,
+				// runners, and playful reactions. This is independent of the
+				// unrelated "fancy" preference so the cats always animate.
+				var animationIndex=catAnimationModes[i%catAnimationModes.length];
+				var animation=catAnimations[animationIndex];
+				var sprite=Pic(animation.pic);
+				var frame=Math.floor((Game.T+i*7)/3)%animation.frames;
+				var drawWidth=animation.width*catScale;
+				var drawHeight=64*catScale;
+				var travelDistance=Math.max(1,width-drawWidth);
+				var idle=animationIndex==0;
+				var returning=false;
+				var x=0;
+				if (idle)
+				{
+					// Idle cats breathe in place; they do not drift across the scene.
+					if (count<=8)
+					{
+						var idlePositions=[0.12,0.5,0.86,0.3,0.7,0.2,0.58,0.9];
+						x=travelDistance*idlePositions[i%idlePositions.length];
+					}
+					else x=(i*47)%travelDistance;
+				}
+				else
+				{
+					var speed=[1.6,2.2,3,2.4,2.4,1.8,1.4][animationIndex];
+					var motion=(Game.T*speed+i*97)%(travelDistance*2);
+					returning=motion>travelDistance;
+					x=returning?(travelDistance*2-motion):motion;
+				}
+				var groundY=Math.max(0,height-drawHeight-12);
+				var groundOffset=(i%3)*4;
+				var y=Math.max(0,groundY+groundOffset+Math.sin((Game.T+i*17)*0.05)*2);
+				// The source sprites face left. Mirror only while traveling right;
+				// idle cats stay unflipped and stationary.
+				var movingRight=!idle && !returning;
+				ctx.save();
+				if (movingRight)
+				{
+					ctx.translate(Math.floor(x+drawWidth),0);
+					ctx.scale(-1,1);
+				}
+				ctx.drawImage(sprite,frame*animation.width,0,animation.width,64,movingRight?0:Math.floor(x),Math.floor(y),drawWidth,drawHeight);
+				ctx.restore();
+			}
+		};
+		var catRow=l('row'+cats.id);
+		var farmRow=l('row'+Game.Objects['Farm'].id);
+		if (catRow && farmRow && farmRow.parentNode) farmRow.parentNode.insertBefore(catRow,farmRow);
 
 }

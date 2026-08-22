@@ -166,6 +166,37 @@ export interface Wrinkler {
  * content tiers; `'synergy1'`/`'synergy2'`/`'fortune'` are special tiers. The
  * engine appends `.upgrades` to each tier as tiered content is declared.
  */
+export interface ContentValidationIssue {
+	severity: 'error' | 'warning';
+	code: string;
+	message: string;
+	item?: string;
+}
+
+export interface ContentValidationReport {
+	valid: boolean;
+	errors: number;
+	warnings: number;
+	buildingCount: number;
+	upgradeCount: number;
+	issues: ContentValidationIssue[];
+}
+
+export interface EconomyBuildingReport {
+	name: string;
+	storeOrder: number;
+	amount: number;
+	baseCps: number;
+	cpsPerBuilding: number;
+	totalCps: number;
+	share: number;
+}
+
+export interface EconomyReport {
+	totalCps: number;
+	buildings: EconomyBuildingReport[];
+}
+
 export interface Tier {
 	name: string;
 	/** Building level at which the tier unlocks (-1 = special/always). */
@@ -352,6 +383,8 @@ export interface Game {
 	ImportSaveCode(save: string): boolean;
 	ExportSaveCode(): string;
 	CalculateGains(): void;
+	ValidateContent(): ContentValidationReport;
+	GetEconomyReport(): EconomyReport;
 	ClickCookie(e: MouseEvent | null, amount?: number): void;
 	/* pic accepts an [iconColumn, iconRow] pair, a bare icon column/row, or a
 	 * sound name — the engine handles all of these at runtime. */

@@ -350,6 +350,29 @@ export function DrawBackground()
 				ctx.save();
 				ctx.translate(Game.cookieOriginX,Game.cookieOriginY);
 				var pic: any=Pic('cursor.webp');
+				var cursorIcon: any=0;
+				var cursorIconX=0;
+				var cursorIconY=0;
+				// Cursor/finger upgrades now change the hand sprite shown around
+				// the big cookie. Use the most advanced purchased cursor upgrade;
+				// before the first one is bought, retain the vanilla hand sprite.
+				var cursorUpgradeNames=[
+					'Reinforced index finger','Carpal tunnel prevention cream','Ambidextrous',
+					'Thousand fingers','Million fingers','Billion fingers','Trillion fingers',
+					'Quadrillion fingers','Quintillion fingers','Sextillion fingers',
+					'Septillion fingers','Octillion fingers','Nonillion fingers','Decillion fingers',
+					'Unshackled cursors'
+				];
+				for (var cursorUpgradeIndex=0;cursorUpgradeIndex<cursorUpgradeNames.length;cursorUpgradeIndex++)
+				{
+					var cursorUpgrade=Game.Upgrades[cursorUpgradeNames[cursorUpgradeIndex]];
+					if (cursorUpgrade && Game.Has(cursorUpgradeNames[cursorUpgradeIndex]) && Array.isArray(cursorUpgrade.icon) && cursorUpgrade.icon.length>=2)
+					{
+						cursorIcon=Pic('icons.webp');
+						cursorIconX=cursorUpgrade.icon[0]*48;
+						cursorIconY=cursorUpgrade.icon[1]*48;
+					}
+				}
 				var fancy=Game.prefs.fancy;
 				
 				if (showDragon) ctx.globalAlpha=0.25;
@@ -373,7 +396,8 @@ export function DrawBackground()
 					if (i==0 && fancy) rot-=Game.T*0.1;
 					if (i%50==0) rot+=7.2/2;
 					ctx.rotate((rot/360)*Math.PI*2);
-					ctx.drawImage(pic,0,0,32,32,x,y,32,32);
+					if (cursorIcon) ctx.drawImage(cursorIcon,cursorIconX,cursorIconY,48,48,x,y,32,32);
+					else ctx.drawImage(pic,0,0,32,32,x,y,32,32);
 					//ctx.drawImage(pic,32*(i==spe),0,32,32,x,y,32,32);
 					
 					/*if (i==spe)

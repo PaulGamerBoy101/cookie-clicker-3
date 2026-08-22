@@ -65,9 +65,22 @@ export function storeBulkButton(id: any)
 	if (id!=-1) PlaySound('snd/tick.mp3');
 }
 
+function getStoreObjects()
+{
+	var objects=[];
+	for (var i in Game.Objects) objects.push(Game.Objects[i]);
+	objects.sort(function(a: any,b: any){
+		var aOrder=typeof a.storeOrder==='number'?a.storeOrder:a.id;
+		var bOrder=typeof b.storeOrder==='number'?b.storeOrder:b.id;
+		return aOrder-bOrder;
+	});
+	return objects;
+}
+
 export function BuildStore()//create the DOM for the store's buildings
 {
 	//if (typeof showAds!=='undefined') l('store').scrollTop=100;
+	var storeObjects=getStoreObjects();
 	
 	var str='';
 	str+='<div id="storeBulk" class="storePre" '+Game.getTooltip(
@@ -81,9 +94,9 @@ export function BuildStore()//create the DOM for the store's buildings
 		'<div id="storeBulk100" class="storePreButton storeBulkAmount" '+Game.clickStr+'="Game.storeBulkButton(4);">100</div>'+
 		'<div id="storeBulkMax" class="storePreButton storeBulkAmount" '+Game.clickStr+'="Game.storeBulkButton(5);">'+loc("all")+'</div>'+
 		'</div>';
-	for (var i in Game.Objects)
+	for (var i=0;i<storeObjects.length;i++)
 	{
-		var me=Game.Objects[i];
+		var me=storeObjects[i];
 		str+=(Game.prefs.screenreader?'<button aria-labelledby="ariaReader-product-'+(me.id)+'"':'<div')+' class="product toggledOff" '+Game.getDynamicTooltip('Game.ObjectsById['+me.id+'].tooltip','store')+' id="product'+me.id+'"><div class="icon off" id="productIconOff'+me.id+'" style=""></div><div class="icon" id="productIcon'+me.id+'" style=""></div><div class="content"><div class="lockedTitle">???</div><div class="title productName" id="productName'+me.id+'"></div><span class="priceMult" id="productPriceMult'+me.id+'"></span><span class="price" id="productPrice'+me.id+'"></span><div class="title owned" id="productOwned'+me.id+'"></div>'+(Game.prefs.screenreader?'<label class="srOnly" style="width:64px;left:-64px;" id="ariaReader-product-'+(me.id)+'"></label>':'')+'</div>'+
 		/*'<div class="buySell"><div style="left:0px;" id="buttonBuy10-'+me.id+'">Buy 10</div><div style="left:100px;" id="buttonSell-'+me.id+'">Sell 1</div><div style="left:200px;" id="buttonSellAll-'+me.id+'">Sell all</div></div>'+*/
 		(Game.prefs.screenreader?'</button>':'</div>');
@@ -97,9 +110,9 @@ export function BuildStore()//create the DOM for the store's buildings
 		return function(id){Game.Prompt('<div class="block">Do you really want to sell your '+loc("%1 "+Game.ObjectsById[id].bsingle,LBeautify(Game.ObjectsById[id].amount))+'?</div>',[['Yes','Game.ObjectsById['+id+'].sell(-1);Game.ClosePrompt();'],['No','Game.ClosePrompt();']]);}(id);
 	}*/
 	
-	for (var i in Game.Objects)
+	for (var i=0;i<storeObjects.length;i++)
 	{
-		var me=Game.Objects[i];
+		var me=storeObjects[i];
 		me.l=l('product'+me.id);
 		
 		//these are a bit messy but ah well
