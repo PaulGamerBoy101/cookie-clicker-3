@@ -10,8 +10,9 @@ import { Game } from "./core/game";
 import { Building } from "./core/building";
 import { Upgrade, TieredUpgrade, SynergyUpgrade } from "./core/upgrade";
 import { HowMuchPrestige, HowManyCookiesReset, EarnHeavenlyChips, GetHeavenlyMultiplier, ComputeCps, GetTieredCpsMult } from "./systems/economy";
-import { ValidateContent, GetEconomyReport } from "./systems/contentValidation";
+import { ValidateContent, GetEconomyReport, SimulateEconomy, AnalyzeEconomy, SimulateStrategy } from "./systems/contentValidation";
 import { ExportSave, ImportSave, ImportSaveCode, FileSave, FileLoad, WriteSave, salvageSave, LoadSave } from "./systems/save";
+import { CaptureSave, ListBackups, RestoreBackup, DownloadBackup, RefreshBackupList } from "./systems/backup";
 import { Shimmer, updateShimmers, killShimmers } from "./systems/shimmer";
 import { getWrinklersMax, ResetWrinklers, CollectWrinklers, playWrinklerSquishSound, SpawnWrinkler, PopRandomWrinkler, UpdateWrinklers, DrawWrinklers, SaveWrinklers, LoadWrinklers } from "./systems/wrinkler";
 import { UpdateAscensionModePrompt, PickAscensionMode, UpdateAscendIntro, UpdateReincarnateIntro, Reincarnate, Ascend, UpdateAscend, AscendRefocus, PurchaseHeavenlyUpgrade, BuildAscendTree, lumpTooltip, computeLumpTimes, loadLumps, gainLumps, clickLump, harvestLumps, computeLumpType, canLumps, getLumpRefillMax, getLumpRefillRemaining, canRefillLump, refillLump, spendLump, doLumps } from "./systems/ascend";
@@ -1223,6 +1224,13 @@ Game.Launch=function()
 		Game.FileSave=FileSave;//CC3 rewrite (phase 4, slice 2): moved verbatim to systems/save.ts.
 		Game.FileLoad=FileLoad;//CC3 rewrite (phase 4, slice 2): moved verbatim to systems/save.ts.
 		
+		// CC3: rolling save backups (systems/backup.ts). CaptureSave is also
+		// called from WriteSave itself; the Game slots expose the menu + QA.
+		Game.CaptureSave=function(saveData: string){return CaptureSave(Game as any,saveData);};
+		Game.ListBackups=function(){return ListBackups(Game as any);};
+		Game.RestoreBackup=function(timestamp: number){return RestoreBackup(Game as any,timestamp);};
+		Game.DownloadBackup=function(timestamp: number){return DownloadBackup(Game as any,timestamp);};
+		Game.RefreshBackupList=function(){return RefreshBackupList(Game as any);};
 		
 		Game.toReload=false;
 		Game.toSave=false;
@@ -2496,6 +2504,9 @@ window.loadMinigameModule!(me.minigameUrl).then(function(){
 		declareVanillaUpgrades(Game as any);
 		Game.ValidateContent=function(){return ValidateContent(Game as any);};
 		Game.GetEconomyReport=function(){return GetEconomyReport(Game as any);};
+		Game.SimulateEconomy=function(scenarios: Record<string, number>[]){return SimulateEconomy(Game as any,scenarios);};
+		Game.AnalyzeEconomy=function(options: any){return AnalyzeEconomy(Game as any,options);};
+		Game.SimulateStrategy=function(options: any){return SimulateStrategy(Game as any,options);};
 		Game.baseResearchTime=Game.fps*60*30;
 		Game.SetResearch=function(what: any,_time: any)
 		{

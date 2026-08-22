@@ -36,8 +36,8 @@ jobs:
   test:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
         with:
           node-version: 20
           cache: npm
@@ -51,7 +51,7 @@ jobs:
       # explicit extras (they need extra servers / are timing-sensitive) and
       # must not gate the deploy.
       - run: npx playwright test tests/qa.spec.js
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: failure()
         with:
           name: playwright-report
@@ -63,8 +63,8 @@ jobs:
     if: github.event_name != 'pull_request'
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
         with:
           node-version: 20
           cache: npm
@@ -74,7 +74,7 @@ jobs:
       # The stamp step in the build fails the run if the service-worker cache
       # placeholder ever goes missing, so a broken deploy can't publish.
       - name: Publish dist/ to the gh-pages branch
-        uses: peaceiris/actions-gh-pages@v3
+        uses: peaceiris/actions-gh-pages@v4
         with:
           # this action does not pick up the default GITHUB_TOKEN env var
           github_token: ${{ github.token }}

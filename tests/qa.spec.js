@@ -77,6 +77,11 @@ test('?qa=content: typed content validation and economy report pass', async ({ p
 	expect(report).not.toMatch(/FAIL/);
 	expect(report).not.toMatch(/ERROR/);
 	expect(report).toMatch(/Grandma < Cats < Farm/);
+	expect(report).toMatch(/next purchase cost\/marginal CpS\/payback: PASS/);
+	expect(report).toMatch(/Cat\/Farm achievements registered: PASS/);
+	expect(report).toMatch(/strategy runner compares 3 purchase policies: PASS/);
+	expect(report).toMatch(/cross-building balance audit covers every building and level: PASS/);
+	expect(report).toMatch(/full analysis covers all buildings\/upgrades, categories, and restores counts: PASS/);
 });
 
 test('Cursor upgrades: purchased finger sprite is applied to the cookie hands', async ({ page }) => {
@@ -313,10 +318,68 @@ test('Cats: compact multi-lane renderer supports 100 visible cats without attack
 	await assertNoUncaughtErrors(page);
 });
 
+test('Cats and Farms: mobile and reduced-motion renderers stay visible', async ({ browser }) => {
+	const mobile = await browser.newContext({ viewport: { width: 390, height: 844 } });
+	const mobilePage = await mobile.newPage();
+	await boot(mobilePage, '&qa=cats100&oneCol=1');
+	await mobilePage.evaluate(() => document.querySelector('#oneColTabs button[data-col="middle"]').click());
+	await mobilePage.waitForFunction(() => {
+		const cats = window.Game.Objects.Cats;
+		return document.body.classList.contains('oneColumn') && cats.canvas.clientWidth > 0 && cats.canvas.clientHeight > 0;
+	}, null, BOOT);
+	const mobileState = await mobilePage.evaluate(() => {
+		const cats = window.Game.Objects.Cats;
+		const rect = cats.canvas.getBoundingClientRect();
+		return { oneColumn: document.body.classList.contains('oneColumn'), canvas: [cats.canvas.width, cats.canvas.height], visible: rect.width > 0 && rect.height > 0 };
+	});
+	expect(mobileState.oneColumn).toBe(true);
+	expect(mobileState.canvas[0]).toBeGreaterThan(0);
+	expect(mobileState.canvas[1]).toBeGreaterThanOrEqual(128);
+	expect(mobileState.visible).toBe(true);
+	await mobile.close();
+
+	const reduced = await browser.newContext({ reducedMotion: 'reduce' });
+	const reducedPage = await reduced.newPage();
+	await boot(reducedPage, '&qa=cats&oneCol=1');
+	await reducedPage.evaluate(() => document.querySelector('#oneColTabs button[data-col="middle"]').click());
+	await reducedPage.waitForFunction(() => {
+		const cats = window.Game.Objects.Cats;
+		return document.body.classList.contains('noMotion') && cats.canvas.clientWidth > 0 && cats.canvas.clientHeight > 0;
+	}, null, BOOT);
+	const reducedState = await reducedPage.evaluate(() => {
+		const cats = window.Game.Objects.Cats;
+		const rect = cats.canvas.getBoundingClientRect();
+		return { noMotion: document.body.classList.contains('noMotion'), canvas: [cats.canvas.width, cats.canvas.height], visible: rect.width > 0 && rect.height > 0, frame: window.Game.T };
+	});
+	expect(reducedState.noMotion).toBe(true);
+	expect(reducedState.canvas[0]).toBeGreaterThan(0);
+	expect(reducedState.canvas[1]).toBeGreaterThanOrEqual(128);
+	expect(reducedState.visible).toBe(true);
+	expect(reducedState.frame).toBeGreaterThan(0);
+	await reduced.close();
+});
+
 test('?qa=save: save export -> import round-trip restores state', async ({ page }) => {
 	await boot(page, '&qa=save');
 	const report = await qaReport(page, /PASS: export->import round-trip restored state/);
 	expect(report).not.toMatch(/ERROR/);
+	expect(report).toMatch(/cats=7/);
+	expect(report).toMatch(/cat upgrade=true/);
+	expect(report).toMatch(/cat achievement=true/);
+});
+
+test('?qa=backup: rolling save backups capture, prune, restore, and download', async ({ page }) => {
+	const downloads = [];
+	page.on('download', (d) => downloads.push(d.suggestedFilename()));
+	await boot(page, '&qa=backup');
+	const report = await qaReport(page, /PASS: rolling backups capture, prune, and restore correctly/);
+	expect(report).not.toMatch(/ERROR/);
+	expect(report).toMatch(/history=3/);
+	expect(report).toMatch(/dedupe: true/);
+	expect(report).toMatch(/prune-cap\(10\): true/);
+	expect(report).toMatch(/restored cookies=300/);
+	expect(report).toMatch(/download: true/);
+	expect(downloads.some((name) => /Backup-\d{4}-\d{4}\.txt$/.test(name))).toBe(true);
 });
 
 test('?qa=perf: 4-minigame frame cost holds the 30-tick loop target', async ({ page }) => {

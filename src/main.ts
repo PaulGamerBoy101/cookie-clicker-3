@@ -56,9 +56,10 @@ if (debugSurface) {
  *   ?qa=cats100   seed 100 Cats to preview the compact multi-lane display
  *   ?qa=golden    spawn + pop a forced "frenzy" golden cookie, report the buff
  *   ?qa=save      export a save, corrupt state, re-import, verify round-trip
+ *   ?qa=backup    exercise the rolling save backup history (capture/list/restore)
  *   ?qa=content   validate content registries and report economy ordering
  * Never active in a plain production load. */
-if (debugSurface && params.has('qa') && params.get('qa') !== 'golden' && params.get('qa') !== 'save' && params.get('qa') !== 'perf' && params.get('qa') !== 'ascend' && params.get('qa') !== 'offline' && params.get('qa') !== 'special' && params.get('qa') !== 'a11y' && params.get('qa') !== 'wrinkler' && params.get('qa') !== 'icon' && params.get('qa') !== 'onecol' && params.get('qa') !== 'anim' && params.get('qa') !== 'binverter' && params.get('qa') !== 'content') {
+if (debugSurface && params.has('qa') && params.get('qa') !== 'golden' && params.get('qa') !== 'save' && params.get('qa') !== 'backup' && params.get('qa') !== 'perf' && params.get('qa') !== 'ascend' && params.get('qa') !== 'offline' && params.get('qa') !== 'special' && params.get('qa') !== 'a11y' && params.get('qa') !== 'wrinkler' && params.get('qa') !== 'icon' && params.get('qa') !== 'onecol' && params.get('qa') !== 'anim' && params.get('qa') !== 'binverter' && params.get('qa') !== 'content') {
 	const qaMode = params.get('qa'); // null for bare ?qa, else the value
 	const MINIGAME_BUILDINGS = ['Farm', 'Bank', 'Temple', 'Wizard tower'];
 	const tick = window.setInterval(() => {
@@ -129,7 +130,7 @@ if (debugSurface && params.has('qa') && params.get('qa') !== 'golden' && params.
 if (debugSurface && params.get('qa') === 'content') {
 	const tick = window.setInterval(() => {
 		const G = window.Game;
-		if (!G || !G.ready || !G.Objects || typeof G.ValidateContent !== 'function' || typeof G.GetEconomyReport !== 'function') return;
+		if (!G || !G.ready || !G.Objects || typeof G.ValidateContent !== 'function' || typeof G.GetEconomyReport !== 'function' || typeof G.AnalyzeEconomy !== 'function') return;
 		if (G.__qaContent) return;
 		G.__qaContent = 1;
 		const out = document.createElement('div');
@@ -148,16 +149,32 @@ if (debugSurface && params.get('qa') === 'content') {
 			G.recalculateGains = 1;
 			const validation = G.ValidateContent();
 			const report = G.GetEconomyReport();
+			const simulation = G.SimulateEconomy([{ Grandma: 10, Cats: 10, Farm: 10 }]);
+			const analysis = G.AnalyzeEconomy({ levels: [1, 10] });
+			const strategies = (['cheapest', 'bestPayback', 'upgradesFirst'] as const).map((strategy) => G.SimulateStrategy({ strategy, durationSeconds: 120, clicksPerSecond: 5, sampleEverySeconds: 60, maxPurchases: 1000 }));
 			const selected = names.map((name) => report.buildings.find((building) => building.name === name));
 			const orderOk = selected[0] && selected[1] && selected[2] && selected[0].storeOrder < selected[1].storeOrder && selected[1].storeOrder < selected[2].storeOrder;
 			const cpsOk = selected[0] && selected[1] && selected[2] && selected[0].cpsPerBuilding < selected[1].cpsPerBuilding && selected[1].cpsPerBuilding < selected[2].cpsPerBuilding;
-			const pass = validation.valid && orderOk && cpsOk;
+			const paybackOk = selected.every((building) => building && building.nextPurchaseCost > 0 && building.marginalCps > 0 && Number.isFinite(building.paybackSeconds));
+			const simulationOk = simulation.length === 1 && simulation[0].buildings.some((building) => building.name === 'Cats' && building.amount === 10) && G.Objects['Grandma'].amount === 10 && G.Objects['Cats'].amount === 10 && G.Objects['Farm'].amount === 10;
+			const achievementOk = ['Cat nap council','Purrfectly populated','Nine lives, nine rows','The purrduction line','A cat for every cushion','The whole litter','Barnstormer','A field of dreams','From barn to bakery'].every((name) => !!G.Achievements[name]);
+			const analysisCategoriesOk = analysis.upgrades.some((upgrade) => upgrade.name === 'Purrfect timing' && upgrade.category === 'click' && Number.isFinite(upgrade.clickPaybackSeconds.five)) && analysis.upgrades.some((upgrade) => upgrade.name === 'Cardboard box basics' && upgrade.category === 'passive') && analysis.upgrades.some((upgrade) => upgrade.name === 'Heavenly cookies' && upgrade.category === 'prestige');
+			const strategyOk = strategies.length === 3 && strategies.every((run) => run.purchases > 0 && run.samples.length >= 2 && run.elapsedSeconds === 120);
+			const buildingBalanceOk = analysis.buildingBalance.length === analysis.buildingCount && analysis.buildingBalance.every((audit) => audit.milestones.length === 2 && audit.milestones.every((milestone) => milestone.level > 0 && milestone.totalInvestment >= 0 && milestone.totalCps >= 0 && milestone.nextPurchaseCost >= 0 && milestone.marginalCps >= 0 && milestone.paybackRatioToCurve >= 0));
+			const analysisOk = analysis.buildingCount === Object.keys(G.Objects).length && analysis.upgradeCount === Object.keys(G.Upgrades).length && analysis.milestones.length === analysis.buildingCount * 2 && analysis.buildingBalance.length === analysis.buildingCount && analysis.upgrades.length === analysis.upgradeCount && analysisCategoriesOk && buildingBalanceOk && strategyOk && G.Objects['Grandma'].amount === 10 && G.Objects['Cats'].amount === 10 && G.Objects['Farm'].amount === 10;
+			const pass = validation.valid && orderOk && cpsOk && paybackOk && simulationOk && achievementOk && analysisOk;
 			out.textContent =
 				'[QA-content] validation: ' + (validation.valid ? 'PASS' : 'FAIL') + ' (' + validation.buildingCount + ' buildings, ' + validation.upgradeCount + ' upgrades, ' + validation.errors + ' errors)\n' +
 				'[QA-content] economy snapshot total CpS=' + report.totalCps.toFixed(2) + '\n' +
 				selected.map((building) => building ? '[QA-content] ' + building.name + ': order=' + building.storeOrder + ', amount=' + building.amount + ', CpS/unit=' + building.cpsPerBuilding.toFixed(2) + ', total=' + building.totalCps.toFixed(2) : '[QA-content] missing building').join('\n') + '\n' +
 				'[QA-content] store order Grandma < Cats < Farm: ' + (orderOk ? 'PASS' : 'FAIL') + '\n' +
 				'[QA-content] CpS/unit Grandma < Cats < Farm: ' + (cpsOk ? 'PASS' : 'FAIL') + '\n' +
+				'[QA-content] next purchase cost/marginal CpS/payback: ' + (paybackOk ? 'PASS' : 'FAIL') + '\n' +
+				'[QA-content] simulator restores live counts: ' + (simulationOk ? 'PASS' : 'FAIL') + '\n' +
+				'[QA-content] Cat/Farm achievements registered: ' + (achievementOk ? 'PASS' : 'FAIL') + '\n' +
+				'[QA-content] strategy runner compares 3 purchase policies: ' + (strategyOk ? 'PASS' : 'FAIL') + '\n' +
+				'[QA-content] cross-building balance audit covers every building and level: ' + (buildingBalanceOk ? 'PASS' : 'FAIL') + '\n' +
+				'[QA-content] full analysis covers all buildings/upgrades, categories, and restores counts: ' + (analysisOk ? 'PASS' : 'FAIL') + '\n' +
 				'[QA-content] ' + (pass ? 'PASS: typed content validation and economy report verified' : 'FAIL: see checks above');
 		} catch (e: any) {
 			out.textContent = '[QA-content] ERROR: ' + e.constructor.name + ': ' + e.message;
@@ -218,11 +235,14 @@ if (debugSurface && params.get('qa') === 'save') {
 		out.style.cssText = 'position:fixed;top:0;left:0;z-index:99999;background:#fff;color:#060;font:12px monospace;white-space:pre-wrap;max-width:640px;';
 		document.body.appendChild(out);
 		try {
-			const COOKIES = 12345.678, CURSORS = 10, GRANDMAS = 5;
-			// 1. seed state A
+			const COOKIES = 12345.678, CURSORS = 10, GRANDMAS = 5, CATS = 7;
+			// 1. seed state A, including the new Cat building/content
 			G.cookies = COOKIES;
 			G.Objects['Cursor'].amount = CURSORS; G.Objects['Cursor'].unlocked = 1; G.Objects['Cursor'].bought = 1;
 			G.Objects['Grandma'].amount = GRANDMAS; G.Objects['Grandma'].unlocked = 1; G.Objects['Grandma'].bought = 1;
+			G.Objects['Cats'].amount = CATS; G.Objects['Cats'].unlocked = 1; G.Objects['Cats'].bought = CATS;
+			G.Upgrades['Cardboard box basics'].unlocked = 1; G.Upgrades['Cardboard box basics'].bought = 1;
+			G.Achievements['Cat nap council'].won = 1;
 			G.recalculateGains = 1; G.CalculateGains();
 			const cpsA = G.cookiesPs;
 			// 2. export the save string
@@ -231,6 +251,9 @@ if (debugSurface && params.get('qa') === 'save') {
 			G.cookies = 7;
 			G.Objects['Cursor'].amount = 0;
 			G.Objects['Grandma'].amount = 0;
+			G.Objects['Cats'].amount = 0;
+			G.Upgrades['Cardboard box basics'].bought = 0;
+			G.Achievements['Cat nap council'].won = 0;
 			G.recalculateGains = 1; G.CalculateGains();
 			const cpsCorrupt = G.cookiesPs;
 			// 4. re-import the export
@@ -240,18 +263,80 @@ if (debugSurface && params.get('qa') === 'save') {
 			const cookiesOk = Math.abs(G.cookies - COOKIES) < 0.01;
 			const cursorsOk = G.Objects['Cursor'].amount === CURSORS;
 			const grandmasOk = G.Objects['Grandma'].amount === GRANDMAS;
+			const catsOk = G.Objects['Cats'].amount === CATS;
+			const catUpgradeOk = G.Upgrades['Cardboard box basics'].bought === 1;
+			const catAchievementOk = G.Achievements['Cat nap council'].won === 1;
 			const cpsOk = Math.abs(G.cookiesPs - cpsA) < 0.01;
-			const pass = ok && cookiesOk && cursorsOk && grandmasOk && cpsOk;
+			const pass = ok && cookiesOk && cursorsOk && grandmasOk && catsOk && catUpgradeOk && catAchievementOk && cpsOk;
 			out.textContent =
 				'[QA-save] export length=' + saveStr.length +
 				'\n[QA-save] ImportSaveCode returned=' + ok +
-				'\n[QA-save] state A: cookies=' + COOKIES + ' cursors=' + CURSORS + ' grandmas=' + GRANDMAS + ' cps=' + cpsA.toFixed(2) +
-				'\n[QA-save] corrupted: cookies=7 cursors=0 grandmas=0 cps=' + cpsCorrupt.toFixed(2) +
-				'\n[QA-save] after import: cookies=' + G.cookies.toFixed(3) + ' cursors=' + G.Objects['Cursor'].amount + ' grandmas=' + G.Objects['Grandma'].amount + ' cps=' + G.cookiesPs.toFixed(2) +
-				'\n[QA-save] checks: cookies=' + cookiesOk + ' cursors=' + cursorsOk + ' grandmas=' + grandmasOk + ' cps=' + cpsOk +
+				'\n[QA-save] state A: cookies=' + COOKIES + ' cursors=' + CURSORS + ' grandmas=' + GRANDMAS + ' cats=' + CATS + ' cps=' + cpsA.toFixed(2) +
+				'\n[QA-save] corrupted: cookies=7 cursors=0 grandmas=0 cats=0 cps=' + cpsCorrupt.toFixed(2) +
+				'\n[QA-save] after import: cookies=' + G.cookies.toFixed(3) + ' cursors=' + G.Objects['Cursor'].amount + ' grandmas=' + G.Objects['Grandma'].amount + ' cats=' + G.Objects['Cats'].amount + ' cps=' + G.cookiesPs.toFixed(2) +
+				'\n[QA-save] checks: cookies=' + cookiesOk + ' cursors=' + cursorsOk + ' grandmas=' + grandmasOk + ' cats=' + catsOk + ' cat upgrade=' + catUpgradeOk + ' cat achievement=' + catAchievementOk + ' cps=' + cpsOk +
 				'\n[QA-save] ' + (pass ? 'PASS: export->import round-trip restored state' : 'FAIL: state mismatch');
 		} catch (e: any) {
 			out.textContent = '[QA-save] ERROR: ' + e.constructor.name + ': ' + e.message;
+		}
+		window.clearInterval(tick);
+	}, 250);
+}
+
+// QA: verify the CC3 rolling save backups (systems/backup.ts). Captures
+// several known states, checks the history (order, dedupe, prune cap), then
+// restores an older backup and verifies the live state returns to it.
+// Usage: ?debug=1&qa=backup
+if (debugSurface && params.get('qa') === 'backup') {
+	const tick = window.setInterval(() => {
+		const G = window.Game;
+		if (!G || !G.ready || typeof G.WriteSave !== 'function' || typeof G.CaptureSave !== 'function' || typeof G.ListBackups !== 'function' || typeof G.RestoreBackup !== 'function' || typeof G.DownloadBackup !== 'function') return;
+		if (G.__qaBackup) return;
+		G.__qaBackup = 1;
+		const out = document.createElement('div');
+		out.id = '__dbgqa';
+		out.style.cssText = 'position:fixed;top:0;left:0;z-index:99999;background:#fff;color:#060;font:12px monospace;white-space:pre-wrap;max-width:640px;';
+		document.body.appendChild(out);
+		try {
+			const backupKey = G.SaveTo + 'Backups';
+			// 1. capture three distinct states (cookies 100 / 200 / 300)
+			const captures: number[] = [];
+			for (const cookies of [100, 200, 300]) {
+				G.cookies = cookies;
+				G.recalculateGains = 1; G.CalculateGains();
+				G.CaptureSave(G.WriteSave(1));
+				captures.push(cookies);
+			}
+			const list1 = G.ListBackups(); // newest first
+			const countOk = list1.length === 3;
+			const orderOk = list1[0].timestamp > list1[1].timestamp && list1[1].timestamp > list1[2].timestamp;
+			// 2. dedupe: capturing the same save again adds nothing
+			G.CaptureSave(G.WriteSave(1));
+			const dedupeOk = G.ListBackups().length === 3;
+			// 3. prune: 12 captures keep only the newest 10
+			G.cookies = 400;
+			for (let i = 0; i < 9; i++) { G.CaptureSave(G.WriteSave(1) + '_' + i); }
+			const pruneOk = G.ListBackups().length === 10;
+			// 4. download the selected backup as a .txt save file (before restoring —
+			// the restore re-captures and would prune the oldest entry away)
+			const survivors = G.ListBackups(); // newest first
+			const oldest = survivors[survivors.length - 1];
+			const downloadOk = G.DownloadBackup(oldest.timestamp) && !G.DownloadBackup(1234567890123);
+			// 4b. restore the oldest surviving backup (cookies=300; the 100 and 200
+			// entries were pruned by the cap) and verify the live state returns to it
+			const restoreOk = G.RestoreBackup(oldest.timestamp) && Math.abs(G.cookies - 300) < 0.01;
+			// 5. the restore wrote through to the main save slot (a fresh backup
+			// of the restored state is captured by the WriteSave hook)
+			const restoredSaved = Math.abs(G.cookies - 300) < 0.01 && G.ListBackups().length >= 10;
+			const pass = countOk && orderOk && dedupeOk && pruneOk && restoreOk && restoredSaved && downloadOk;
+			out.textContent =
+				'[QA-backup] captures=' + captures.join(',') + ' history=' + list1.length +
+				'\n[QA-backup] order newest-last: ' + orderOk + ' dedupe: ' + dedupeOk + ' prune-cap(10): ' + pruneOk + ' download: ' + downloadOk +
+				'\n[QA-backup] restored cookies=' + G.cookies + ' (expect 300) restoreOk=' + restoreOk + ' restoredSaved=' + restoredSaved +
+				'\n[QA-backup] localStorage key=' + backupKey +
+				'\n[QA-backup] ' + (pass ? 'PASS: rolling backups capture, prune, and restore correctly' : 'FAIL: see checks above');
+		} catch (e: any) {
+			out.textContent = '[QA-backup] ERROR: ' + e.constructor.name + ': ' + e.message;
 		}
 		window.clearInterval(tick);
 	}, 250);

@@ -116,6 +116,14 @@ import type { Building, Game as EngineGame } from '../engine/types';
 		// Shrink the (long) name in the store, as the original did.
 		me.displayName = '<span style="font-size:80%;position:relative;bottom:4px;">Black hole inverter</span>';
 
+		// CC3 rebalance: the auto-curve price for id 20 lands 15,900x off the
+		// fitted midgame curve. Walk the same ~2.1x-per-store-step curve the
+		// vanilla tail now uses, so the mod building is purchasable right after
+		// Cortex baker instead of requiring absurd prestige stacking.
+		me.basePrice = 293489000000000000000000;
+		me.price = me.basePrice;
+		me.bulkPrice = me.basePrice;
+
 		// 14 tiered upgrades (Game.SetTier attaches each to me.tieredUpgrades[tier]).
 		for (let i = 0; i < TIERED_UPGRADES.length; i++) {
 			const up = Game.TieredUpgrade(TIERED_UPGRADES[i][0], '<q>' + TIERED_UPGRADES[i][1] + '</q>', NAME, i + 1);

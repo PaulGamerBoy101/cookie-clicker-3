@@ -23,7 +23,11 @@
  * No runtime imports: `Game`, `App`, `l`, `loc`, `utf8_to_b64`, `pack3`,
  * `localStorageGet/Set`, `saveAs` resolve through src/globals.d.ts to the
  * engine's window shim.
+ *
+ * CC3 addition: `CaptureSave` (systems/backup.ts) is called after each
+ * successful main-slot write so the rolling backup history tracks every save.
  */
+import { CaptureSave } from './backup';
 
 export function ExportSave()
 		{
@@ -262,9 +266,10 @@ export function WriteSave(type?: number)
 					}
 					else
 					{
-						str=escape(str);
-						localStorageSet(Game.SaveTo,str);//aaand save
-						if (App) App.save(str);
+					str=escape(str);
+					localStorageSet(Game.SaveTo,str);//aaand save
+					if (App) App.save(str);
+					CaptureSave(Game,str);//CC3: record the rolling backup history entry
 						if (!localStorageGet(Game.SaveTo))
 						{
 							Game.Notify(loc("Error while saving"),loc("Export your save instead!"));

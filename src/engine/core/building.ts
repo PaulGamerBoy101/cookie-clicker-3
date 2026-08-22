@@ -160,10 +160,11 @@ export class Building {
 				//this.basePrice=(this.n*2.5+7.5)*Math.pow(10,this.n);
 				var digits=Math.pow(10,(Math.ceil(Math.log(Math.ceil(this.basePrice))/Math.LN10)))/100;
 				this.basePrice=Math.round(this.basePrice/digits)*digits;
-				if (this.id>=16) this.basePrice*=10;
-				if (this.id>=17) this.basePrice*=10;
-				if (this.id>=18) this.basePrice*=10;
-				if (this.id>=19) this.basePrice*=10;
+				// CC3 rebalance: the 2.048 tail stacked an extra 10x per building
+				// from id 16 on (driving Fractal engine -> Cortex baker price/CpS
+				// to 10x-1000x off the midgame curve). The rebalanced base
+				// prices in content/buildings.ts already walk the fitted curve,
+				// so the stacking multipliers are removed.
 				this.price=this.basePrice;
 				this.bulkPrice=this.price;
 			}

@@ -75,10 +75,12 @@ async function seedRichState(page) {
 		objs['Cursor'].amount = 10; objs['Cursor'].bought = 10; objs['Cursor'].unlocked = 1; objs['Cursor'].totalCookies = 1000; objs['Cursor'].level = 1; objs['Cursor'].highest = 10;
 		objs['Grandma'].amount = 5; objs['Grandma'].bought = 5; objs['Grandma'].unlocked = 1; objs['Grandma'].totalCookies = 500; objs['Grandma'].level = 0; objs['Grandma'].highest = 5;
 		objs['Farm'].amount = 3; objs['Farm'].bought = 3; objs['Farm'].unlocked = 1; objs['Farm'].totalCookies = 300; objs['Farm'].level = 0; objs['Farm'].highest = 3;
+		objs['Cats'].amount = 7; objs['Cats'].bought = 7; objs['Cats'].unlocked = 1; objs['Cats'].totalCookies = 700; objs['Cats'].level = 0; objs['Cats'].highest = 7;
 		// upgrades (unlocked + bought)
 		G.Upgrades['Reinforced index finger'].unlocked = 1; G.Upgrades['Reinforced index finger'].bought = 1;
 		G.Upgrades['Carpal tunnel prevention cream'].unlocked = 1; G.Upgrades['Carpal tunnel prevention cream'].bought = 1;
 		G.Upgrades['Thumbprint cookies'].unlocked = 1; G.Upgrades['Thumbprint cookies'].bought = 1;
+		G.Upgrades['Cardboard box basics'].unlocked = 1; G.Upgrades['Cardboard box basics'].bought = 1;
 		// achievements (won)
 		G.Achievements['Wake and bake'].won = 1;
 		G.Achievements['Making some dough'].won = 1;
@@ -147,8 +149,10 @@ test('save compat: master export -> rewrite import -> re-export diff (symmetric)
 				heavenlyChips: G.heavenlyChips, lumps: G.lumps, dragonLevel: G.dragonLevel,
 				cursorAmt: G.Objects['Cursor'].amount, grandmaAmt: G.Objects['Grandma'].amount,
 				farmAmt: G.Objects['Farm'].amount,
+				catsAmt: G.Objects['Cats'].amount,
 				up1: G.Upgrades['Reinforced index finger'].bought,
 				up2: G.Upgrades['Thumbprint cookies'].bought,
+				catUp: G.Upgrades['Cardboard box basics'].bought,
 				ach1: G.Achievements['Wake and bake'].won,
 			},
 		};
@@ -172,8 +176,10 @@ test('save compat: master export -> rewrite import -> re-export diff (symmetric)
 	expect(rw.state.cursorAmt).toBe(10);
 	expect(rw.state.grandmaAmt).toBe(5);
 	expect(rw.state.farmAmt).toBe(3);
+	expect(rw.state.catsAmt).toBe(7);
 	expect(rw.state.up1).toBe(1);
 	expect(rw.state.up2).toBe(1);
+	expect(rw.state.catUp).toBe(1);
 	expect(rw.state.ach1).toBe(1);
 
 	// 3) section-by-section diff: master self-import (baseline) vs rewrite import.

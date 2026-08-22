@@ -1038,6 +1038,21 @@ export function declareVanillaAchievements(Game: EngineGame) {
 		
 		order=6001;
 		new Game.Achievement('All the stars in heaven',loc("Own <b>%1</b> heavenly upgrades.",100),[30,5]);
+
+		// CC3 expansion achievements are appended so existing achievement ids
+		// remain stable for imported saves.
+		order=1200;
+		Game.TieredAchievement('Cat nap council','','Cats',1);
+		Game.TieredAchievement('Purrfectly populated','','Cats',5);
+		Game.TieredAchievement('Nine lives, nine rows','','Cats',10);
+		Game.ProductionAchievement('The purrduction line','Cats',1);
+		new Game.Achievement('A cat for every cushion',loc("Own <b>%1</b> cats.",100),[0,26]);
+		new Game.Achievement('The whole litter',loc("Own <b>%1</b> cats.",450),[1,26]);
+
+		order=1200;
+		new Game.Achievement('Barnstormer',loc("Own <b>%1</b> farms.",25),[2,26]);
+		new Game.Achievement('A field of dreams',loc("Own <b>%1</b> farms.",100),[3,26]);
+		Game.ProductionAchievement('From barn to bakery','Farm',4);
 		
 		//end of achievements
 }

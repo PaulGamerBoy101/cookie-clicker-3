@@ -39,7 +39,7 @@ src/
     core/               typed classes: Game, Building, Upgrade, Achievement
     content/            typed content: tiers, buildings, upgrades, achievements, foolObjects,
                         milks, changelog, heavenlyPositions (Phase 6 slice 5)
-    systems/            typed systems: economy, save, shimmer, wrinkler, ascend, buffs,
+    systems/            typed systems: economy, save, backup, shimmer, wrinkler, ascend, buffs,
                         ticker, santa, dragon, shimmerTypes, specialMenu, bakeryName,
                         seasons, modding, reset
     utils/              pure helpers: helpers, formatting, encoding, DOM, time, LoadScript,
@@ -167,8 +167,15 @@ These weaken the CSP's XSS protection. That is an accepted, documented trade-off
   Garden. `?qa=cookies` seeds cookies only (no minigames) for light
   store-buy testing. `?qa=golden` spawns and pops a forced "frenzy" golden
   cookie and reports the resulting buff/CpS (verifies the golden-cookie click
-  path). `?qa=save` exports a save, corrupts the live state, re-imports it, and
-  verifies the round-trip restores the state. `?qa=ascend` drives the full
+  path).  `?qa=save` exports a save, corrupts the live state, re-imports it, and
+  verifies the round-trip restores the state. `?qa=backup` verifies the
+  rolling save backups (`src/engine/systems/backup.ts`): every successful
+  save is captured into a per-game localStorage history (deduplicated,
+  pruned to the newest 10), and restoring an older backup returns the live
+  state to it. The Options menu's "Backups" section lists them for restore
+  or download as a timestamped `.txt` save file (same format as "Save to
+  file", so it imports anywhere).
+  `?qa=ascend` drives the full
   ascension (Legacy/prestige) flow — `Game.Ascend(1)` intro (grants heavenly
   chips + prestige) then `Game.Reincarnate(1)` (the reset) — and verifies the
   run is reset while the prestige state (chips, prestige, resets) is kept.
@@ -187,7 +194,31 @@ These weaken the CSP's XSS protection. That is an accepted, documented trade-off
   upgrade, tier, registry, and store-order relationships, then prints a typed
   economy snapshot for Grandma, Cats, and Farm. The same helpers are available
   to development tooling as `Game.ValidateContent()` and
-  `Game.GetEconomyReport()`. `?qa=wrinkler` drives the
+  `Game.GetEconomyReport()`. For a complete read-only audit, use
+  `Game.AnalyzeEconomy({ levels: [1, 10, 25, 50, 100, 250, 500] })`; it reports
+  every building, every upgrade's contextual CpS/click contribution and
+  payback, plus fresh-run milestone scenarios and total investment. Upgrade
+  reports are categorized as passive, click, mixed, prestige, seasonal, toggle,
+  tech, debug, or utility; click upgrades include payback at 1, 5, and 10
+  clicks/sec, and unusually long ordinary paybacks are flagged in `warnings`.
+  Custom scenarios can provide `{ label, buildings, upgrades }`. The analyzer
+  snapshots and restores the live building, upgrade, cookie, and calculated
+  economy state.  `Game.SimulateStrategy({ strategy: 'bestPayback',
+  durationSeconds: 3600, clicksPerSecond: 5 })` runs a deterministic sandboxed
+  progression using `cheapest`, `bestPayback`, or `upgradesFirst` purchasing.
+  `Game.AnalyzeEconomy()` also includes `buildingBalance`, which evaluates
+  every building at each requested ownership level, reports total investment,
+  next-purchase cost, marginal CpS, and payback, and compares each payback with
+  the neighboring-building curve to flag local relative outliers. `?qa=content` exercises
+  the all-building balance audit, all-building/all-upgrade, and strategy coverage.
+  The audit drives the CC3 tail rebalance: 2.048 stacked an extra ×10 per
+  building from Fractal engine on (10×–1000× off the fitted curve); CC3 walks
+  the fitted ~2.1×-per-store-step curve from Antimatter condenser through
+  Cortex baker (Prism +15%, Chancemaker +42%, Fractal engine +78%, Javascript
+  console −88%, Idleverse −99%, Cortex baker −99.9%), and prices the Black
+  hole inverter mod building on the same curve. CpS, tiered upgrade ratios,
+  and all gameplay formulas are unchanged.
+  `?qa=wrinkler` drives the
 Grandmapocalypse wrinklers: it enables `Game.elderWrath`, spawns a fully visible
 (phase 2) wrinkler, checks it sets `Game.cpsSucked` (5% of CpS, lowering the
 displayed CpS + draining cookies), then pops it and verifies `Game.wrinklersPopped`

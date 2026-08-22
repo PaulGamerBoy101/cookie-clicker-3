@@ -144,6 +144,8 @@ export function declareVanillaBuildings(Game: EngineGame) {
 		},function (this: Building) {
 			Game.UnlockTiered(this);
 			if (this.amount>=Game.SpecialGrandmaUnlock && Game.Objects['Grandma'].amount>0) Game.Unlock(this.grandma!.name);
+			if (this.amount>=25) Game.Win('Barnstormer');
+			if (this.amount>=100) Game.Win('A field of dreams');
 		});
 		Game.last.minigameUrl='minigameGarden.js';
 		Game.last.minigameName=loc("Garden");
@@ -324,6 +326,12 @@ export function declareVanillaBuildings(Game: EngineGame) {
 		});
 		Game.last.displayName='<span style="font-size:65%;letter-spacing:-1px;position:relative;bottom:4px;">Antim. condenser</span>';//shrink
 		
+		// CC3 rebalance: the 2.048 tail multiplied base prices by an extra 10x
+		// per building from id 16 on (see core/building.ts, where it is removed),
+		// stacking price/CpS to 10x-1000x off the fitted midgame curve. The
+		// rebalanced prices are applied post-construction below and walk the
+		// fitted ~2.1x-per-store-step curve anchored at Antimatter condenser.
+		// CpS, tiered upgrade ratios, and all gameplay formulas are unchanged.
 		new Game.Object('Prism','prism|prisms|converted|[X] new color discovered|[X] new colors discovered','Converts light itself into cookies.',14,14,{base:'prism',xV:16,yV:4,w:64,rows:1,x:0,y:20},75000000000,function (me: Building) {
 			var mult=1;
 			mult*=Game.GetTieredCpsMult(me);
@@ -389,6 +397,30 @@ export function declareVanillaBuildings(Game: EngineGame) {
 			if (this.amount>=Game.SpecialGrandmaUnlock && Game.Objects['Grandma'].amount>0) Game.Unlock(this.grandma!.name);
 		});
 
+		// The Building ctor auto-generates basePrice from the id curve and
+		// ignores the price argument for id>0, so the rebalanced tail prices
+		// are applied post-construction (same pattern as the Cats block below).
+		// Prices walk a ~2.1x-per-store-step payback curve anchored at Antimatter
+		// condenser (1.709e14, unchanged), matching the midgame slope exactly.
+		var rebalancePrices:any={
+			'Prism':2420400000000000,
+			'Chancemaker':36807000000000000,
+			'Fractal engine':552110000000000000,
+			'Javascript console':8502400000000000000,
+			'Idleverse':134725000000000000000,
+			'Cortex baker':2181570000000000000000
+		};
+		for (var rebalanceName in rebalancePrices)
+		{
+			var rebalanceBuilding=Game.Objects[rebalanceName];
+			if (rebalanceBuilding)
+			{
+				rebalanceBuilding.basePrice=rebalancePrices[rebalanceName];
+				rebalanceBuilding.price=rebalancePrices[rebalanceName];
+				rebalanceBuilding.bulkPrice=rebalancePrices[rebalanceName];
+			}
+		}
+
 		// Cats are appended after the vanilla building list so old saves keep
 		// every existing building at its original save index. Their visible
 		// store/row order is moved below to place them between Grandma and Farm.
@@ -444,6 +476,8 @@ export function declareVanillaBuildings(Game: EngineGame) {
 			{
 				if (this.amount>=catUpgradeUnlocks[catUpgradeUnlockIndex][0]) Game.Unlock(catUpgradeUnlocks[catUpgradeUnlockIndex][1]);
 			}
+			if (this.amount>=100) Game.Win('A cat for every cushion');
+			if (this.amount>=450) Game.Win('The whole litter');
 		});
 		// The automatic building curve is intentionally overridden: 500 cookies
 		// for 4 CpS sits between Grandma (100/1) and Farm (1100/8).
