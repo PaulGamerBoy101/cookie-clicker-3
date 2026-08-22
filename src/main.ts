@@ -364,13 +364,16 @@ if (debugSurface && params.get('qa') === 'sound') {
 		try {
 			PlaySound(sndUrl, 1); // cache + start loading (plays after load)
 			PlaySound('snd/error1.mp3', 0.5); // CC3 interface tone
+			G.Win('Wake and bake'); // achievement unlock -> CC3 confirm tone
 			const poll = window.setInterval(() => {
 				try {
 					const s = (window as any).Sounds && (window as any).Sounds[sndUrl];
 					const err = (window as any).Sounds && (window as any).Sounds['snd/error1.mp3'];
+					const conf = (window as any).Sounds && (window as any).Sounds['snd/confirm1.mp3'];
 					const wrapperOk = new window.Audio(sndUrl) instanceof HTMLAudioElement;
 					const loaded = s instanceof HTMLAudioElement && s.readyState >= 2;
 					const errLoaded = err instanceof HTMLAudioElement && err.readyState >= 2;
+					const confLoaded = conf instanceof HTMLAudioElement && conf.readyState >= 2;
 					// CC3 music: Music object exists, jukebox populated, first track loads
 					const music = (window as any).Music;
 					const musicOk = music && music.tracks && Object.keys(music.tracks).length >= 8 && music.names && music.names.length >= 8;
@@ -379,13 +382,14 @@ if (debugSurface && params.get('qa') === 'sound') {
 					const trackLoaded = firstTrack instanceof HTMLAudioElement && firstTrack.readyState >= 2;
 					// CC3 bridge fix: the Settings pref buttons must read ON/OFF live
 					const onOffOk = (window as any).ON === ' ON' && (window as any).OFF === ' OFF';
-					if ((loaded && errLoaded && trackLoaded) || Date.now() - started > 10000) {
+					if ((loaded && errLoaded && confLoaded && trackLoaded) || Date.now() - started > 10000) {
 						window.clearInterval(poll);
-						const pass = wrapperOk && loaded && errLoaded && musicOk && jukeboxOk && trackLoaded && onOffOk && G.volume > 0;
+						const pass = wrapperOk && loaded && errLoaded && confLoaded && musicOk && jukeboxOk && trackLoaded && onOffOk && G.volume > 0;
 						out.textContent =
 							'[QA-sound] wrapper produces real Audio elements: ' + wrapperOk +
 							'\n[QA-sound] \'snd/tick.mp3\' loaded (readyState=' + (s ? s.readyState : 'n/a') + '): ' + loaded +
 							'\n[QA-sound] \'snd/error1.mp3\' loaded (readyState=' + (err ? err.readyState : 'n/a') + '): ' + errLoaded +
+							'\n[QA-sound] \'snd/confirm1.mp3\' loaded via achievement win (readyState=' + (conf ? conf.readyState : 'n/a') + '): ' + confLoaded +
 							'\n[QA-sound] music tracks=' + (musicOk ? Object.keys(music.tracks).length : 'n/a') + ' jukebox=' + (jukeboxOk ? G.jukebox.tracks.length : 'n/a') +
 							'\n[QA-sound] first music track loaded (readyState=' + (firstTrack ? firstTrack.readyState : 'n/a') + '): ' + trackLoaded +
 							'\n[QA-sound] ON/OFF bridge: ' + onOffOk + ' volume=' + G.volume +

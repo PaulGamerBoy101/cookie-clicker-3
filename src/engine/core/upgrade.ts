@@ -244,6 +244,7 @@ export class Upgrade {
 						Game.setOnCrate(0);
 						Game.tooltip.hide();
 						PlaySound('snd/buy'+choose([1,2,3,4])+'.mp3',0.75);
+						PlaySound('snd/confirm1.mp3',0.25);//CC3: interface confirm tone layered under the buy sound
 						success=1;
 					}
 				}

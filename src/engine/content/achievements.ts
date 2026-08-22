@@ -55,6 +55,7 @@ export function declareVanillaAchievements(Game: EngineGame) {
 					{
 						var name=it.shortName?it.shortName:it.dname;
 						it.won=1;
+						PlaySound('snd/confirm1.mp3',0.5);//CC3: interface confirm tone on achievement unlock
 						Game.Notify(loc("Achievement unlocked"),'<div class="title" style="font-size:18px;margin-top:-2px;">'+name+'</div>',it.icon);
 						Game.NotifyTooltip('function(){return Game.crateTooltip(Game.AchievementsById['+it.id+']);}');
 						if (Game.CountsAsAchievementOwned(it.pool)) Game.AchievementsOwned++;

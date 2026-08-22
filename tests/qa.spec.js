@@ -389,6 +389,7 @@ test('?qa=sound: sound engine, web music, and settings labels work', async ({ pa
 	expect(report).toMatch(/wrapper produces real Audio elements: true/);
 	expect(report).toMatch(/\'snd\/tick\.mp3\' loaded \(readyState=\d+\): true/);
 	expect(report).toMatch(/\'snd\/error1\.mp3\' loaded \(readyState=\d+\): true/);
+	expect(report).toMatch(/\'snd\/confirm1\.mp3\' loaded via achievement win \(readyState=\d+\): true/);
 	expect(report).toMatch(/music tracks=\d+ jukebox=\d+/);
 	expect(report).toMatch(/first music track loaded \(readyState=\d+\): true/);
 	expect(report).toMatch(/ON\/OFF bridge: true/);
