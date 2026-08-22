@@ -365,6 +365,30 @@ test('Farms: barns render in a mine-like grid without heavy overlap', async ({ p
 	await assertNoUncaughtErrors(page);
 });
 
+test('Mines: custom grid caps the herd and mirrors sprites for variety', async ({ page }) => {
+	await boot(page, '');
+	await page.waitForFunction(() => window.Game.Objects && window.Game.Objects.Mine && window.Game.Objects.Mine.canvas, null, BOOT);
+	const state = await page.evaluate(async () => {
+		const mine = window.Game.Objects.Mine;
+		mine.amount = 43;
+		mine.unlocked = 1;
+		mine.refresh();
+		await new Promise((resolve) => setTimeout(resolve, 300));
+		const perRow = Math.max(1, Math.floor((mine.canvas.width - 64) / 70) + 1);
+		const numRows = Math.max(1, Math.floor((mine.canvas.height - 64 - 4) / 30) + 1);
+		const cap = perRow * numRows;
+		const flipped = mine.pics.filter((p) => p.flip).length;
+		return { count: mine.pics.length, cap, flipped, total: mine.pics.length, canvas: [mine.canvas.width, mine.canvas.height] };
+	});
+	expect(state.count).toBe(state.cap); // visible-grid cap, like the farms
+	expect(state.count).toBeLessThan(43);
+	// variety: not all mines identical — at least one mirrored, one not
+	expect(state.flipped).toBeGreaterThan(0);
+	expect(state.flipped).toBeLessThan(state.total);
+	expect(state.canvas[1]).toBe(128);
+	await assertNoUncaughtErrors(page);
+});
+
 test('Cats and Farms: mobile and reduced-motion renderers stay visible', async ({ browser }) => {
 	const mobile = await browser.newContext({ viewport: { width: 390, height: 844 } });
 	const mobilePage = await mobile.newPage();
