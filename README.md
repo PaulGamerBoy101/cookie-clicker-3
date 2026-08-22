@@ -1,6 +1,6 @@
 # Cookie Clicker 3
 
-Cookie Clicker 3 is a modern Cookie Clicker experience based on [Cookie Clicker 2.048](https://github.com/DiSCooooo/Cookie-Clicker-2.048) (itself a port of Orteil's [Cookie Clicker](http://orteil.dashnet.org/cookieclicker/)). The project preserves the original game's behavior in a strictly typed TypeScript ES-module web app, built with a zero-runtime-dependency Vite pipeline (see [REWRITE.md](REWRITE.md) for the full rewrite log) — no jQuery, no IE polyfills, no CDN requests, no ads, no trackers.
+Cookie Clicker 3 is a modern Cookie Clicker experience based on [Cookie Clicker 2.048](https://github.com/DiSCooooo/Cookie-Clicker-2.048) (itself a port of Orteil's [Cookie Clicker](http://orteil.dashnet.org/cookieclicker/)). The project preserves the original game's behavior in a strictly typed TypeScript ES-module web app, built with a zero-runtime-dependency Vite pipeline — no jQuery, no IE polyfills, no CDN requests, no ads, no trackers. See [ROADMAP.md](ROADMAP.md) for where the project is headed.
 
 ## [PLAY ME HERE](https://giveen.github.io/cookie-clicker-3/)
 
@@ -76,7 +76,7 @@ The game was first converted from 2.048 classic script to strict-mode ES modules
 5. **Language files** — each `loc/*.js` became an `export default { id, name, strings }` module (typed by inference).
 6. **Strict-mode fixes** — implicit-global assignments that throw `ReferenceError` in strict-mode ESM were declared or republished.
 
-The ported engine and minigames initially shipped under `// @ts-nocheck`; since then, Phases 1–6 of the rewrite (logged in `REWRITE.md`) replaced that wholesale: every content block, core class, system, minigame, and UI module is now hand-typed TypeScript, and `engine/main.ts` is a thin typed orchestrator with **zero `@ts-nocheck` anywhere in `src/`**. Runtime behavior stays identical to `master` (see the save-compat check above).
+The ported engine and minigames initially shipped under `// @ts-nocheck`; the Phases 1–6 rewrite replaced that wholesale: every content block, core class, system, minigame, and UI module is now hand-typed TypeScript, and `engine/main.ts` is a thin typed orchestrator with **zero `@ts-nocheck` anywhere in `src/`**. Runtime behavior stays identical to `master` (see the save-compat check above).
 
 ## Developing
 

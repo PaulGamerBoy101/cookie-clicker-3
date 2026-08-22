@@ -14,7 +14,7 @@
  * capture the same Game object the original bare-global references resolved
  * to.
  *
- * Rewiring notes (runtime-identical, see REWRITE.md):
+ * Rewiring notes (runtime-identical):
  *  - `order`/`pool`/`power` were Init-scoped closure vars the engine's
  *    Game.Upgrade ctor read; they are now bare globals live-bridged to the
  *    engine's module-level vars through window accessors (the ctor bodies

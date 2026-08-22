@@ -23,7 +23,7 @@
  * lines stay in the engine under the ACHIEVEMENTS banner, exactly as the
  * Game.Upgrades* init lines do for the upgrades slice.)
  *
- * Rewiring notes (runtime-identical, see REWRITE.md):
+ * Rewiring notes (runtime-identical):
  *  - `order` was an Init-scoped closure var the Game.Achievement ctor
  *    read; it is now a bare global live-bridged to the engine's
  *    module-level var through the window accessors (the slice-3
