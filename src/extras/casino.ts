@@ -1098,6 +1098,11 @@
 		};
 
 		M.reset = function (hard?: boolean) {
+			//Game.Reset() (reincarnate — the non-hard path) calls reset() on
+			//every attached minigame, including before launch() has ever run
+			//(fresh profile, Chancemaker below level 1). M.games only exists
+			//after launch(), so skip until then — there is no state to reset.
+			if (!M.games) return;
 			M.deckCount = 4;
 			M.Deck = [];
 			M.hands = {dealer: {value: 0, cards: []}, player: [{value: 0, splitFirstTurn: false, cards: []}]};
