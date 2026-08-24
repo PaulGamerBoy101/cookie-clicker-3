@@ -14,7 +14,7 @@ const BOOT = { timeout: 30_000 };
  */
 async function boot(page, query) {
 	await page.goto(`/?debug=1${query}`, { waitUntil: 'load' });
-	const lang = page.locator('#langSelect-EN');
+	const lang = page.locator('#langSelect-English');
 	try {
 		await lang.waitFor({ state: 'visible', timeout: 5_000 });
 		await lang.click();

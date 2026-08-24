@@ -4070,7 +4070,7 @@ window.addEventListener('load',function()
 			for (var i in Langs)
 			{
 				var lang=Langs[i];
-				str+='<div class="langSelectButton title" id="langSelect-'+i+'">'+lang.name+'</div>';
+				str+='<div class="langSelectButton title" id="langSelect-'+lang.nameEN+'">'+lang.name+'</div>';
 			}
 			l('offGameMessage').innerHTML=
 			'<div class="title" id="languageSelectHeader">Language</div>'+
@@ -4079,8 +4079,8 @@ window.addEventListener('load',function()
 			for (var i in Langs)
 			{
 				var lang=Langs[i];
-				AddEvent(l('langSelect-'+i),'click',function(lang: any){return function(){callback(lang);};}(i));
-				AddEvent(l('langSelect-'+i),'mouseover',function(lang: any){return function(){l('languageSelectHeader').innerHTML=Langs[lang].changeLanguage;};}(i));
+				AddEvent(l('langSelect-'+lang.nameEN),'click',function(lang: any){return function(){callback(lang);};}(i));
+				AddEvent(l('langSelect-'+lang.nameEN),'mouseover',function(lang: any){return function(){l('languageSelectHeader').innerHTML=Langs[lang].changeLanguage;};}(i));
 			}
 		}
 		

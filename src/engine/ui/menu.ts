@@ -78,7 +78,7 @@ export function showLangSelection()
 	for (var i in Langs)
 	{
 		var lang=Langs[i];
-		str+='<div class="langSelectButton title'+(locId==lang.file?' selected':'')+'" style="padding:4px;" id="langSelect-'+i+'">'+lang.name+'</div>';
+		str+='<div class="langSelectButton title'+(locId==lang.file?' selected':'')+'" style="padding:4px;" id="langSelect-'+lang.nameEN+'">'+lang.name+'</div>';
 	}
 	Game.Prompt('<id ChangeLanguage><h3>'+loc("Change language")+'</h3>'+
 		'<div class="line"></div>'+
@@ -89,7 +89,7 @@ export function showLangSelection()
 	for (var i in Langs)
 	{
 		var lang=Langs[i];
-		AddEvent(l('langSelect-'+i),'click',function(lang: any){return function(){
+		AddEvent(l('langSelect-'+lang.nameEN),'click',function(lang: any){return function(){
 			if (lang!=locId)
 			{
 				PlaySound('snd/tick.mp3');
@@ -98,7 +98,7 @@ export function showLangSelection()
 				Game.toReload=true;
 			}
 		};}(i));
-		AddEvent(l('langSelect-'+i),'mouseover',function(lang: any){return function(){
+		AddEvent(l('langSelect-'+lang.nameEN),'mouseover',function(lang: any){return function(){
 			if (lang!=locId) PlaySound('snd/smallTick.mp3',0.75);
 		};}(i));
 	}
