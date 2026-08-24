@@ -29,6 +29,10 @@ import { declareWizardTower } from "./wizardtower";
 import { declareShipment } from "./shipment";
 import { declareAlchemyLab } from "./alchemylab";
 import { declarePortal } from "./portal";
+import { declareTimeMachine } from "./timemachine";
+import { declareAntimatterCondenser } from "./antimattercondenser";
+import { declarePrism } from "./prism";
+import { declareChancemaker } from "./chancemaker";
 import { declareRemaining } from "./remaining";
 
 /** Declare the 20 vanilla buildings (and their per-building extras) on Game. */
@@ -44,5 +48,9 @@ export function declareVanillaBuildings(Game: EngineGame) {
 	declareShipment(Game);
 	declareAlchemyLab(Game);
 	declarePortal(Game);
+	declareTimeMachine(Game);
+	declareAntimatterCondenser(Game);
+	declarePrism(Game);
+	declareChancemaker(Game);
 	declareRemaining(Game);
 }

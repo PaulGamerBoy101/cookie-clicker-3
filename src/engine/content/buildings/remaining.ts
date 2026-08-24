@@ -1,6 +1,6 @@
 /**
  * content/buildings/remaining.ts — the vanilla building declarations not yet
- * split into their own files (Time machine through Cortex baker, the tail price
+ * split into their own files (Fractal engine through Cortex baker, the tail price
  * rebalance, and Cats).
  *
  * Ported verbatim from the 2.048 engine (engine/main.ts, the //define objects
@@ -18,58 +18,6 @@ import type { Building, Game as EngineGame } from "../../types";
 
 /** Declare the not-yet-split vanilla buildings (and their per-building extras) on Game. */
 export function declareRemaining(Game: EngineGame) {
-		new Game.Object('Time machine','time machine|time machines|recovered|[X] century secured|[X] centuries secured','Brings cookies from the past, before they were even eaten.',12,8,{base:'timemachine',xV:32,yV:32,w:64,rows:1,x:0,y:0},123456789,function (me: Building) {
-			var mult=1;
-			mult*=Game.GetTieredCpsMult(me);
-			mult*=Game.magicCpS(me.name);
-			return me.baseCps*mult;
-		},function (this: Building) {
-			Game.UnlockTiered(this);
-			if (this.amount>=Game.SpecialGrandmaUnlock && Game.Objects['Grandma'].amount>0 && this.grandma) Game.Unlock(this.grandma!.name);
-			if (this.amount>=Game.SpecialCatUnlock && Game.Objects['Cats'].amount>0 && this.cat) Game.Unlock(this.cat!.name);
-		});
-		Game.last.displayName='<span style="font-size:80%;letter-spacing:-1px;position:relative;bottom:3px;">Time machine</span>';//shrink
-		
-		new Game.Object('Antimatter condenser','antimatter condenser|antimatter condensers|condensed|[X] extra quark flavor|[X] extra quark flavors','Condenses the antimatter in the universe into cookies.',13,13,{base:'antimattercondenser',xV:0,yV:64,w:64,rows:1,x:0,y:0},3999999999,function (me: Building) {
-			var mult=1;
-			mult*=Game.GetTieredCpsMult(me);
-			mult*=Game.magicCpS(me.name);
-			return me.baseCps*mult;
-		},function (this: Building) {
-			Game.UnlockTiered(this);
-			if (this.amount>=Game.SpecialGrandmaUnlock && Game.Objects['Grandma'].amount>0 && this.grandma) Game.Unlock(this.grandma!.name);
-		});
-		Game.last.displayName='<span style="font-size:65%;letter-spacing:-1px;position:relative;bottom:4px;">Antim. condenser</span>';//shrink
-		
-		// CC3 rebalance: the 2.048 tail multiplied base prices by an extra 10x
-		// per building from id 16 on (see core/building.ts, where it is removed),
-		// stacking price/CpS to 10x-1000x off the fitted midgame curve. The
-		// rebalanced prices are applied post-construction below and walk the
-		// fitted ~2.1x-per-store-step curve anchored at Antimatter condenser.
-		// CpS, tiered upgrade ratios, and all gameplay formulas are unchanged.
-		new Game.Object('Prism','prism|prisms|converted|[X] new color discovered|[X] new colors discovered','Converts light itself into cookies.',14,14,{base:'prism',xV:16,yV:4,w:64,rows:1,x:0,y:20},75000000000,function (me: Building) {
-			var mult=1;
-			mult*=Game.GetTieredCpsMult(me);
-			mult*=Game.magicCpS(me.name);
-			return me.baseCps*mult;
-		},function (this: Building) {
-			Game.UnlockTiered(this);
-			if (this.amount>=Game.SpecialGrandmaUnlock && Game.Objects['Grandma'].amount>0 && this.grandma) Game.Unlock(this.grandma!.name);
-		});
-		
-		// 2.048 quirk: the original art literal had a duplicate `rows` key
-		// (rows:1 … rows:2); JS keeps the last value, so only rows:2 survives here.
-		new Game.Object('Chancemaker','chancemaker|chancemakers|spontaneously generated|Chancemakers are powered by [X]-leaf clovers|Chancemakers are powered by [X]-leaf clovers','Generates cookies out of thin air through sheer luck.',15,19,{base:'chancemaker',xV:8,yV:64,w:64,x:0,y:0,rows:2},77777777777,function (me: Building) {
-			var mult=1;
-			mult*=Game.GetTieredCpsMult(me);
-			mult*=Game.magicCpS(me.name);
-			return me.baseCps*mult;
-		},function (this: Building) {
-			Game.UnlockTiered(this);
-			if (this.amount>=Game.SpecialGrandmaUnlock && Game.Objects['Grandma'].amount>0 && this.grandma) Game.Unlock(this.grandma!.name);
-		});
-		Game.last.displayName='<span style="font-size:85%;letter-spacing:-1px;position:relative;bottom:2px;">Chancemaker</span>';//shrink
-		
 		new Game.Object('Fractal engine','fractal engine|fractal engines|made from cookies|[X] iteration deep|[X] iterations deep','Turns cookies into even more cookies.',16,20,{base:'fractalEngine',xV:8,yV:64,w:64,rows:1,x:0,y:0},12345678987654321,function (me: Building) {
 			var mult=1;
 			mult*=Game.GetTieredCpsMult(me);
