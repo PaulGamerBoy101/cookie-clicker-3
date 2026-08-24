@@ -100,5 +100,6 @@ export function GetTieredCpsMult(me: Building)
 			}
 			if (me.fortune && Game.Has((me.fortune as any).name)) mult*=1.07;
 			if (me.grandma && Game.Has(me.grandma.name)) mult*=(1+Game.Objects['Grandma'].amount*0.01*(1/(me.id-1)));
+			if (me.cat && Game.Has(me.cat.name)) mult*=(1+Game.Objects['Cats'].amount*0.01*(1/(me.id-1)));
 			return mult;
 		}

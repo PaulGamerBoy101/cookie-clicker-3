@@ -185,15 +185,34 @@ test('save compat: master export -> rewrite import -> re-export diff (symmetric)
 	// 3) section-by-section diff: master self-import (baseline) vs rewrite import.
 	//    Both sides go through the identical import path, so this isolates the
 	//    branch difference; only lastDate (section 2, 3rd field) may differ.
+	//    Sections 6 (upgrades: an 'unlocked,bought' pair per upgrade) and 7
+	//    (achievements: one char each) are 1/0 strings in registration order.
+	//    New content is always APPENDED to the end of its registration list
+	//    (upgrade ids are the registration index), so importing an older save
+	//    leaves the new entries at 0 and re-export extends the section with
+	//    trailing '0's. Allow exactly that and nothing else.
+	const APPEND_ONLY_ZERO_SECTIONS = { 6: 'upgrades', 7: 'achievements' };
+	const appendOnlyZeros = (i, a, b) =>
+		i in APPEND_ONLY_ZERO_SECTIONS && b.startsWith(a) && /^[0]+$/.test(b.slice(a.length));
 	const a = normalizeLastDate(masterSelf.raw).split('|');
 	const b = normalizeLastDate(rw.raw).split('|');
 	expect(b.length).toBe(a.length);
 	const diffs = [];
 	for (let i = 0; i < a.length; i++) {
-		if (a[i] !== b[i]) diffs.push(`section ${i}: master-self=${JSON.stringify(a[i].slice(0, 80))}... rewrite-import=${JSON.stringify(b[i].slice(0, 80))}...`);
+		if (a[i] !== b[i] && !appendOnlyZeros(i, a[i], b[i]))
+			diffs.push(`section ${i}: master-self=${JSON.stringify(a[i].slice(0, 80))}... rewrite-import=${JSON.stringify(b[i].slice(0, 80))}...`);
 	}
 	expect(diffs, 'raw save sections must match (see diffs):\n' + diffs.join('\n')).toEqual([]);
 
 	// 4) the WriteSave(1) re-exports: identical after decoding + normalizing lastDate
-	expect(normalizeLastDate(dec(rw.exp))).toBe(normalizeLastDate(dec(masterSelf.exp)));
+	//    (with the same append-only-'0' tolerance on the achievements section)
+	const ea = normalizeLastDate(dec(masterSelf.exp)).split('|');
+	const eb = normalizeLastDate(dec(rw.exp)).split('|');
+	expect(eb.length).toBe(ea.length);
+	const exportDiffs = [];
+	for (let i = 0; i < ea.length; i++) {
+		if (ea[i] !== eb[i] && !appendOnlyZeros(i, ea[i], eb[i]))
+			exportDiffs.push(`section ${i}: master-self=${JSON.stringify(ea[i].slice(0, 80))}... rewrite-import=${JSON.stringify(eb[i].slice(0, 80))}...`);
+	}
+	expect(exportDiffs, 're-exported save sections must match (see diffs):\n' + exportDiffs.join('\n')).toEqual([]);
 });

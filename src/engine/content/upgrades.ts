@@ -177,6 +177,23 @@ export function declareVanillaUpgrades(Game: EngineGame) {
 		Game.GrandmaSynergy('Altered grandmas','a NiCe GrAnDmA tO bA##########','Portal');
 		Game.GrandmaSynergy('Grandmas\' grandmas','A nice grandma\'s nice grandma to bake double the cookies.','Time machine');
 		
+		// CC3: the cats-synergy pool — a mirror of Game.GrandmaSynergy centered
+		// on Cats. Owning a cat synergy makes Cats twice as efficient and gives
+		// the tied building +1% CpS per (id-1) cats (see GetTieredCpsMult).
+		Game.CatSynergies=[];
+		Game.CatSynergy=function(name: any,desc: any,building: any)
+		{
+			var building: any=Game.Objects[building];
+			var catNumber=loc("%1 cat",LBeautify(building.id-1));
+			desc=loc("%1 are <b>twice</b> as efficient.",cap(Game.Objects['Cats'].plural))+' '+loc("%1 gain <b>+%2%</b> CpS per %3.",[cap(building.plural),1,catNumber])+'<q>'+desc+'</q>';
+			
+			var upgrade=new Game.Upgrade(name,desc,building.basePrice*Game.Tiers[2].price,[10,9],function(){Game.Objects['Cats'].redraw();});
+			building.cat=upgrade;
+			upgrade.buildingTie=building;
+			Game.CatSynergies.push(upgrade.name);
+			return upgrade;
+		}
+		
 		order=14000;
 		
 		new Game.Upgrade('Bingo center/Research facility',loc("Grandma-operated science lab and leisure club.<br>Grandmas are <b>4 times</b> as efficient.<br><b>Regularly unlocks new upgrades</b>.")+'<q>What could possibly keep those grandmothers in check?...<br>Bingo.</q>',1000000000000000,[11,9],function(){Game.SetResearch('Specialized chocolate chips');});Game.last.noPerm=1;
@@ -2018,6 +2035,23 @@ export function declareVanillaUpgrades(Game: EngineGame) {
 			catSpecialUpgrade.tier=catSpecTier;
 			Game.Objects['Cats'].tieredUpgrades[catSpecTier]=catSpecialUpgrade;
 		}
+
+		// CC3: register the 8 cat-synergy upgrades. They are declared at the
+		// very end of the upgrade list on purpose: upgrade ids are the
+		// registration index and saves store purchased upgrades by id, so
+		// inserting them mid-list would shift every later id and break
+		// existing saves. (The Game.CatSynergy factory above only defines
+		// them; the store display order (order=300, right after the
+		// grandma synergies) is independent of registration order.)
+		order=300;
+		Game.CatSynergy('Kitten grandmas','A nice cat to help the grandmas. It\'s all in the family.','Grandma');
+		Game.CatSynergy('Farm cats','A nice cat to keep the mice away from the cookie plants. Mice are a real pest.','Farm');
+		Game.CatSynergy('Miner cats','Mine safety officer. The mice appreciate it, even if they can\'t say so.','Mine');
+		Game.CatSynergy('Worker cats','Assembly-line cat. Nine lives, one job, zero complaints.','Factory');
+		Game.CatSynergy('Space cats','Zero gravity is the perfect nap environment. They\'ve never been cozier.','Shipment');
+		Game.CatSynergy('Golden cats','Transmuted from silver. They hiss a little more now, but they pay rent in gold.','Alchemy lab');
+		Game.CatSynergy('Altered cats','It went through the portal. It came back a little different. Mostly naps.','Portal');
+		Game.CatSynergy('Time cats','Always napping exactly one second into the past, so the cookies are warm when they wake.','Time machine');
 
 		//end of upgrades
 

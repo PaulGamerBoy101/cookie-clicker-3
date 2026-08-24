@@ -56,6 +56,7 @@ export function declareVanillaBuildings(Game: EngineGame) {
 		});
 		
 		Game.SpecialGrandmaUnlock=15;
+		Game.SpecialCatUnlock=15;
 		new Game.Object('Grandma','grandma|grandmas|baked|Grandmas are [X] year older|Grandmas are [X] years older','A nice grandma to bake more cookies.',1,1,{pic: function (_i: string) {
 			var list=['grandma'];
 			if (Game.Has('Farmer grandmas')) list.push('farmerGrandma');
@@ -117,6 +118,7 @@ export function declareVanillaBuildings(Game: EngineGame) {
 			return (me.baseCps+add)*mult;
 		},function (this: Building) {
 			Game.UnlockTiered(this);
+			if (this.amount>=Game.SpecialCatUnlock && Game.Objects['Cats'].amount>0 && this.cat) Game.Unlock(this.cat!.name);
 		});
 		Game.last.sellFunction=function()
 		{
@@ -143,7 +145,8 @@ export function declareVanillaBuildings(Game: EngineGame) {
 			return me.baseCps*mult;
 		},function (this: Building) {
 			Game.UnlockTiered(this);
-			if (this.amount>=Game.SpecialGrandmaUnlock && Game.Objects['Grandma'].amount>0) Game.Unlock(this.grandma!.name);
+			if (this.amount>=Game.SpecialGrandmaUnlock && Game.Objects['Grandma'].amount>0 && this.grandma) Game.Unlock(this.grandma!.name);
+			if (this.amount>=Game.SpecialCatUnlock && Game.Objects['Cats'].amount>0 && this.cat) Game.Unlock(this.cat!.name);
 			if (this.amount>=25) Game.Win('Barnstormer');
 			if (this.amount>=100) Game.Win('A field of dreams');
 		});
@@ -231,7 +234,8 @@ export function declareVanillaBuildings(Game: EngineGame) {
 			return me.baseCps*mult;
 		},function (this: Building) {
 			Game.UnlockTiered(this);
-			if (this.amount>=Game.SpecialGrandmaUnlock && Game.Objects['Grandma'].amount>0) Game.Unlock(this.grandma!.name);
+			if (this.amount>=Game.SpecialGrandmaUnlock && Game.Objects['Grandma'].amount>0 && this.grandma) Game.Unlock(this.grandma!.name);
+			if (this.amount>=Game.SpecialCatUnlock && Game.Objects['Cats'].amount>0 && this.cat) Game.Unlock(this.cat!.name);
 		});
 		// CC3: same custom-grid treatment as the farms, with per-mine variety.
 		// The vanilla mine draw stamped one identical 64x64 sprite on a fixed
@@ -309,7 +313,8 @@ export function declareVanillaBuildings(Game: EngineGame) {
 			return me.baseCps*mult;
 		},function (this: Building) {
 			Game.UnlockTiered(this);
-			if (this.amount>=Game.SpecialGrandmaUnlock && Game.Objects['Grandma'].amount>0) Game.Unlock(this.grandma!.name);
+			if (this.amount>=Game.SpecialGrandmaUnlock && Game.Objects['Grandma'].amount>0 && this.grandma) Game.Unlock(this.grandma!.name);
+			if (this.amount>=Game.SpecialCatUnlock && Game.Objects['Cats'].amount>0 && this.cat) Game.Unlock(this.cat!.name);
 		});
 		//Game.last.minigameUrl='minigameDungeon.js';//not yet
 		Game.last.minigameName=loc("Dungeon");
@@ -321,7 +326,7 @@ export function declareVanillaBuildings(Game: EngineGame) {
 			return me.baseCps*mult;
 		},function (this: Building) {
 			Game.UnlockTiered(this);
-			if (this.amount>=Game.SpecialGrandmaUnlock && Game.Objects['Grandma'].amount>0) Game.Unlock(this.grandma!.name);
+			if (this.amount>=Game.SpecialGrandmaUnlock && Game.Objects['Grandma'].amount>0 && this.grandma) Game.Unlock(this.grandma!.name);
 		});
 		Game.last.minigameUrl='minigameMarket.js';
 		Game.last.minigameName=loc("Stock Market");
@@ -333,7 +338,7 @@ export function declareVanillaBuildings(Game: EngineGame) {
 			return me.baseCps*mult;
 		},function (this: Building) {
 			Game.UnlockTiered(this);
-			if (this.amount>=Game.SpecialGrandmaUnlock && Game.Objects['Grandma'].amount>0) Game.Unlock(this.grandma!.name);
+			if (this.amount>=Game.SpecialGrandmaUnlock && Game.Objects['Grandma'].amount>0 && this.grandma) Game.Unlock(this.grandma!.name);
 		});
 		Game.last.minigameUrl='minigamePantheon.js';
 		Game.last.minigameName=loc("Pantheon");
@@ -345,7 +350,7 @@ export function declareVanillaBuildings(Game: EngineGame) {
 			return me.baseCps*mult;
 		},function (this: Building) {
 			Game.UnlockTiered(this);
-			if (this.amount>=Game.SpecialGrandmaUnlock && Game.Objects['Grandma'].amount>0) Game.Unlock(this.grandma!.name);
+			if (this.amount>=Game.SpecialGrandmaUnlock && Game.Objects['Grandma'].amount>0 && this.grandma) Game.Unlock(this.grandma!.name);
 		});
 		Game.last.displayName='<span style="font-size:90%;letter-spacing:-1px;position:relative;bottom:2px;">Wizard tower</span>';//shrink
 		Game.last.minigameUrl='minigameGrimoire.js';
@@ -358,7 +363,8 @@ export function declareVanillaBuildings(Game: EngineGame) {
 			return me.baseCps*mult;
 		},function (this: Building) {
 			Game.UnlockTiered(this);
-			if (this.amount>=Game.SpecialGrandmaUnlock && Game.Objects['Grandma'].amount>0) Game.Unlock(this.grandma!.name);
+			if (this.amount>=Game.SpecialGrandmaUnlock && Game.Objects['Grandma'].amount>0 && this.grandma) Game.Unlock(this.grandma!.name);
+			if (this.amount>=Game.SpecialCatUnlock && Game.Objects['Cats'].amount>0 && this.cat) Game.Unlock(this.cat!.name);
 		});
 		
 		new Game.Object('Alchemy lab','alchemy lab|alchemy labs|transmuted|[X] primordial element mastered|[X] primordial elements mastered','Turns gold into cookies!',10,6,{base:'alchemylab',xV:16,yV:16,w:64,rows:2,x:0,y:16},200000,function (me: Building) {
@@ -368,7 +374,8 @@ export function declareVanillaBuildings(Game: EngineGame) {
 			return me.baseCps*mult;
 		},function (this: Building) {
 			Game.UnlockTiered(this);
-			if (this.amount>=Game.SpecialGrandmaUnlock && Game.Objects['Grandma'].amount>0) Game.Unlock(this.grandma!.name);
+			if (this.amount>=Game.SpecialGrandmaUnlock && Game.Objects['Grandma'].amount>0 && this.grandma) Game.Unlock(this.grandma!.name);
+			if (this.amount>=Game.SpecialCatUnlock && Game.Objects['Cats'].amount>0 && this.cat) Game.Unlock(this.cat!.name);
 		});
 		Game.last.displayName='<span style="font-size:90%;letter-spacing:-1px;position:relative;bottom:2px;">Alchemy lab</span>';//shrink
 		
@@ -379,7 +386,8 @@ export function declareVanillaBuildings(Game: EngineGame) {
 			return me.baseCps*mult;
 		},function (this: Building) {
 			Game.UnlockTiered(this);
-			if (this.amount>=Game.SpecialGrandmaUnlock && Game.Objects['Grandma'].amount>0) Game.Unlock(this.grandma!.name);
+			if (this.amount>=Game.SpecialGrandmaUnlock && Game.Objects['Grandma'].amount>0 && this.grandma) Game.Unlock(this.grandma!.name);
+			if (this.amount>=Game.SpecialCatUnlock && Game.Objects['Cats'].amount>0 && this.cat) Game.Unlock(this.cat!.name);
 		});
 		
 		new Game.Object('Time machine','time machine|time machines|recovered|[X] century secured|[X] centuries secured','Brings cookies from the past, before they were even eaten.',12,8,{base:'timemachine',xV:32,yV:32,w:64,rows:1,x:0,y:0},123456789,function (me: Building) {
@@ -389,7 +397,8 @@ export function declareVanillaBuildings(Game: EngineGame) {
 			return me.baseCps*mult;
 		},function (this: Building) {
 			Game.UnlockTiered(this);
-			if (this.amount>=Game.SpecialGrandmaUnlock && Game.Objects['Grandma'].amount>0) Game.Unlock(this.grandma!.name);
+			if (this.amount>=Game.SpecialGrandmaUnlock && Game.Objects['Grandma'].amount>0 && this.grandma) Game.Unlock(this.grandma!.name);
+			if (this.amount>=Game.SpecialCatUnlock && Game.Objects['Cats'].amount>0 && this.cat) Game.Unlock(this.cat!.name);
 		});
 		Game.last.displayName='<span style="font-size:80%;letter-spacing:-1px;position:relative;bottom:3px;">Time machine</span>';//shrink
 		
@@ -400,7 +409,7 @@ export function declareVanillaBuildings(Game: EngineGame) {
 			return me.baseCps*mult;
 		},function (this: Building) {
 			Game.UnlockTiered(this);
-			if (this.amount>=Game.SpecialGrandmaUnlock && Game.Objects['Grandma'].amount>0) Game.Unlock(this.grandma!.name);
+			if (this.amount>=Game.SpecialGrandmaUnlock && Game.Objects['Grandma'].amount>0 && this.grandma) Game.Unlock(this.grandma!.name);
 		});
 		Game.last.displayName='<span style="font-size:65%;letter-spacing:-1px;position:relative;bottom:4px;">Antim. condenser</span>';//shrink
 		
@@ -417,7 +426,7 @@ export function declareVanillaBuildings(Game: EngineGame) {
 			return me.baseCps*mult;
 		},function (this: Building) {
 			Game.UnlockTiered(this);
-			if (this.amount>=Game.SpecialGrandmaUnlock && Game.Objects['Grandma'].amount>0) Game.Unlock(this.grandma!.name);
+			if (this.amount>=Game.SpecialGrandmaUnlock && Game.Objects['Grandma'].amount>0 && this.grandma) Game.Unlock(this.grandma!.name);
 		});
 		
 		// 2.048 quirk: the original art literal had a duplicate `rows` key
@@ -429,7 +438,7 @@ export function declareVanillaBuildings(Game: EngineGame) {
 			return me.baseCps*mult;
 		},function (this: Building) {
 			Game.UnlockTiered(this);
-			if (this.amount>=Game.SpecialGrandmaUnlock && Game.Objects['Grandma'].amount>0) Game.Unlock(this.grandma!.name);
+			if (this.amount>=Game.SpecialGrandmaUnlock && Game.Objects['Grandma'].amount>0 && this.grandma) Game.Unlock(this.grandma!.name);
 		});
 		Game.last.displayName='<span style="font-size:85%;letter-spacing:-1px;position:relative;bottom:2px;">Chancemaker</span>';//shrink
 		
@@ -440,7 +449,7 @@ export function declareVanillaBuildings(Game: EngineGame) {
 			return me.baseCps*mult;
 		},function (this: Building) {
 			Game.UnlockTiered(this);
-			if (this.amount>=Game.SpecialGrandmaUnlock && Game.Objects['Grandma'].amount>0) Game.Unlock(this.grandma!.name);
+			if (this.amount>=Game.SpecialGrandmaUnlock && Game.Objects['Grandma'].amount>0 && this.grandma) Game.Unlock(this.grandma!.name);
 		});
 		Game.last.displayName='<span style="font-size:80%;letter-spacing:-1px;position:relative;bottom:4px;">Fractal engine</span>';//shrink
 		
@@ -451,7 +460,7 @@ export function declareVanillaBuildings(Game: EngineGame) {
 			return me.baseCps*mult;
 		},function (this: Building) {
 			Game.UnlockTiered(this);
-			if (this.amount>=Game.SpecialGrandmaUnlock && Game.Objects['Grandma'].amount>0) Game.Unlock(this.grandma!.name);
+			if (this.amount>=Game.SpecialGrandmaUnlock && Game.Objects['Grandma'].amount>0 && this.grandma) Game.Unlock(this.grandma!.name);
 		});
 		Game.last.displayName='<span style="font-size:65%;letter-spacing:-1px;position:relative;bottom:4px;">Javascript console</span>';//shrink
 		
@@ -462,7 +471,7 @@ export function declareVanillaBuildings(Game: EngineGame) {
 			return me.baseCps*mult;
 		},function (this: Building) {
 			Game.UnlockTiered(this);
-			if (this.amount>=Game.SpecialGrandmaUnlock && Game.Objects['Grandma'].amount>0) Game.Unlock(this.grandma!.name);
+			if (this.amount>=Game.SpecialGrandmaUnlock && Game.Objects['Grandma'].amount>0 && this.grandma) Game.Unlock(this.grandma!.name);
 		});
 		
 		new Game.Object('Cortex baker','cortex baker|cortex bakers|imagined|[X] extra IQ point|[X] extra IQ points','These artificial brains the size of planets are capable of simply dreaming up cookies into existence. Time and space are inconsequential. Reality is arbitrary.',19,34,{base:'cortex',xV:8,yV:96,w:48,rows:1,x:0,y:0,frames:4},12345678987654321,function (me: Building) {
@@ -472,7 +481,7 @@ export function declareVanillaBuildings(Game: EngineGame) {
 			return me.baseCps*mult;
 		},function (this: Building) {
 			Game.UnlockTiered(this);
-			if (this.amount>=Game.SpecialGrandmaUnlock && Game.Objects['Grandma'].amount>0) Game.Unlock(this.grandma!.name);
+			if (this.amount>=Game.SpecialGrandmaUnlock && Game.Objects['Grandma'].amount>0 && this.grandma) Game.Unlock(this.grandma!.name);
 		});
 
 		// The Building ctor auto-generates basePrice from the id curve and
@@ -521,6 +530,10 @@ export function declareVanillaBuildings(Game: EngineGame) {
 		};
 		var cats=new Game.Object('Cats','cat|cats|adopted|[X] extra cat|[X] extra cats','A cozy room full of curious cats that happily bake cookies.',0,1,catArt,500,function (me: Building) {
 			var mult=1;
+			for (var i in Game.CatSynergies)
+			{
+				if (Game.Has(Game.CatSynergies[i])) mult*=2;
+			}
 			mult*=Game.GetTieredCpsMult(me);
 			mult*=Game.magicCpS(me.name);
 			// Cat-specific additive bonuses from the custom upgrade collection.
@@ -556,6 +569,8 @@ export function declareVanillaBuildings(Game: EngineGame) {
 			}
 			if (this.amount>=100) Game.Win('A cat for every cushion');
 			if (this.amount>=450) Game.Win('The whole litter');
+			if (this.amount>=500) Game.Win('The five-hundred purr');
+			if (this.amount>=1000) Game.Win('One thousand paws');
 		});
 		// The automatic building curve is intentionally overridden: 500 cookies
 		// for 4 CpS sits between Grandma (100/1) and Farm (1100/8).

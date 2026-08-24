@@ -73,7 +73,9 @@ export function declareVanillaChangelog(Game: EngineGame) {
 	'<div class="listing">&bull; saves stay byte-compatible with Cookie Clicker 2.048 (verified by an automated export/import round-trip)</div>'+
 	'<div class="listing">&bull; no ads, no trackers, no CDN requests — every script, image, font and sound is self-hosted</div>'+
 	'<div class="listing">&bull; the game now boots offline (PWA), with a self-updating service worker</div>'+
-	'<div class="listing">&bull; added the Cats building (with roaming animated cats) and 24 cat upgrades</div>'+
+	'<div class="listing">&bull; added the Cats building (with roaming animated cats), 24 cat upgrades, and a full achievement set — 14 tiered, 3 production, 1 level, plus cat-count milestones up to 1,000</div>'+
+	'<div class="listing">&bull; muting the Cats store now leaves a little sleeping cat (breathing, tail-flick and zzz) in the muted-icons bar</div>'+
+	'<div class="listing">&bull; added the cat synergy system: 8 cat upgrades (Kitten grandmas, Farm cats, Miner cats, Worker cats, Space cats, Golden cats, Altered cats, Time cats) that each make Cats twice as efficient and boost their building +1% per (id-1) cats, plus the "The purr-fect match" achievement for owning all of them</div>'+
 	'<div class="listing">&bull; added the Black Hole Inverter building, a native mod with 17 upgrades and 18 achievements</div>'+
 	'<div class="listing">&bull; added Decide Your Destiny: spend sugar lumps to choose the outcome of the next natural golden cookie (a native port of klattmose\'s mod)</div>'+
 	'<div class="listing">&bull; added American Season: a July 1st season with rockets and a left-panel fireworks canvas (a native port of klattmose\'s mod)</div>'+

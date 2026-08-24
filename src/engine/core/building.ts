@@ -87,6 +87,7 @@ export class Building {
 	declare synergies: Upgrade[];
 	declare fortune: number | Upgrade;
 	declare grandma?: Upgrade;
+	declare cat?: Upgrade;
 	declare levelAchiev10?: Achievement;
 	declare minigameUrl: string | 0;
 	declare minigameName: string | 0;
@@ -463,6 +464,21 @@ export class Building {
 							if (Game.Has(Game.GrandmaSynergies[i]))
 							{
 								var other: any=Game.Upgrades[Game.GrandmaSynergies[i]].buildingTie;//buildingTie is optional-typed; the original derefs it unguarded
+								var mult=me.amount*0.01*(1/(other.id-1));
+								var boost=(other.storedTotalCps*Game.globalCpsMult)-(other.storedTotalCps*Game.globalCpsMult)/(1+mult);
+								synergyBoost+=boost;
+								if (!synergiesWith[other.plural]) synergiesWith[other.plural]=0;
+								synergiesWith[other.plural]+=mult;
+							}
+						}
+					}
+					else if (me.name=='Cats')
+					{
+						for (var i in Game.CatSynergies)
+						{
+							if (Game.Has(Game.CatSynergies[i]))
+							{
+								var other: any=Game.Upgrades[Game.CatSynergies[i]].buildingTie;//same pattern as the Grandma branch above
 								var mult=me.amount*0.01*(1/(other.id-1));
 								var boost=(other.storedTotalCps*Game.globalCpsMult)-(other.storedTotalCps*Game.globalCpsMult)/(1+mult);
 								synergyBoost+=boost;

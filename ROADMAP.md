@@ -5,7 +5,14 @@ picked up, traded, or dropped as we go. Checked items are shipped.
 
 ## Recently shipped (context)
 
-- Cats building with roaming animated cats, 24 balanced cat upgrades
+- Cats building with roaming animated cats, 24 balanced cat upgrades; the muted
+  Cats store icon now shows an animated sleeping cat (breathing + tail + zzz)
+- Cat synergy system (mirrors the grandma one): 8 cat upgrades — Kitten grandmas,
+  Farm cats, Miner cats, Worker cats, Space cats, Golden cats, Altered cats,
+  Time cats — each making Cats 2× as efficient and boosting the tied building
+  +1% per (id−1) cats, plus the "The purr-fect match" achievement
+- Cats achievements extended to the full standard set (14 tiered + 3 production
+  + 1 level) plus cat-count milestones up to 1,000
 - New cookie upgrades + barn/farm sprite + cursor hand sprites
 - Black Hole Inverter mod building (upgrades, achievements, save support)
 - Late-game tail rebalance + all-building balance audit
@@ -44,9 +51,9 @@ picked up, traded, or dropped as we go. Checked items are shipped.
 - [ ] **Cat minigame** — a fifth minigame alongside Garden/Grimoire/Market/
       Pantheon, cat-themed (the minigame framework is already typed and
       code-split; a cat colony / treat garden are natural fits).
-- [ ] **More achievements** — cat-count achievements exist at 100 and 450
-      ("A cat for every cushion", "The whole litter"); add higher milestones
-      (500/1000), cookie-collection, and seasonal achievements.
+- [ ] **More achievements** — Cats now carry the full standard set (14
+      tiered + 3 production + 1 level) plus cat-count milestones at 100,
+      450, 500 and 1000; add cookie-collection and seasonal achievements.
 - [ ] **Seasonal events** — the Santa/Dragon specials exist; add CC3-native
       events (e.g. a summer event using the summer backgrounds).
 - [ ] **Cat cosmetics** — alternate cat sprite palettes unlockable by milestone.

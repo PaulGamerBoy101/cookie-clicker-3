@@ -2282,7 +2282,12 @@ window.loadMinigameModule!(me.minigameUrl).then(function(){
 				me.ctx=me.canvas.getContext('2d',{alpha:false});
 				me.pics=[];
 				var icon=[0*64,me.icon*64];
-				muteStr+='<div class="tinyProductIcon" id="mutedProduct'+me.id+'" style="display:none;background-position:-'+icon[0]+'px -'+icon[1]+'px;" '+Game.clickStr+'="Game.ObjectsById['+me.id+'].mute(0);PlaySound(Game.ObjectsById['+me.id+'].muted?\'snd/clickOff2.mp3\':\'snd/clickOn2.mp3\');" '+Game.getDynamicTooltip('Game.mutedBuildingTooltip('+me.id+')','this')+'></div>';
+				// Cats get the animated sleeping-cat sheet instead of a static
+				// icon cell (see .catSleepIcon in main.css).
+				var isCats=me.name=='Cats';
+				var catCls=isCats?' catSleepIcon':'';
+				var catPos=isCats?'':'background-position:-'+icon[0]+'px -'+icon[1]+'px;';
+				muteStr+='<div class="tinyProductIcon'+catCls+'" id="mutedProduct'+me.id+'" style="display:none;'+catPos+'" '+Game.clickStr+'="Game.ObjectsById['+me.id+'].mute(0);PlaySound(Game.ObjectsById['+me.id+'].muted?\'snd/clickOff2.mp3\':\'snd/clickOn2.mp3\');" '+Game.getDynamicTooltip('Game.mutedBuildingTooltip('+me.id+')','this')+'></div>';
 				//muteStr+='<div class="tinyProductIcon" id="mutedProduct'+me.id+'" style="display:none;background-position:-'+icon[0]+'px -'+icon[1]+'px;" '+Game.clickStr+'="Game.ObjectsById['+me.id+'].mute(0);PlaySound(Game.ObjectsById['+me.id+'].muted?\'snd/clickOff2.mp3\':\'snd/clickOn2.mp3\');" '+Game.getTooltip('<div style="width:150px;text-align:center;font-size:11px;"><b>Unmute '+me.plural+'</b><br>(Display this building)</div>')+'></div>';
 				
 				AddEvent(me.canvas,'mouseover',function(me: any){return function(){me.mouseOn=true;}}(me));
@@ -3666,6 +3671,13 @@ window.loadMinigameModule!(me.minigameUrl).then(function(){
 				}
 				if (!Game.HasAchiev('Elder') && grandmas>=7) Game.Win('Elder');
 				if (!Game.HasAchiev('Veteran') && grandmas>=14) Game.Win('Veteran');
+				
+				var catSynergiesOwned=0;
+				for (var iKey in Game.CatSynergies)
+				{
+					if (Game.Has(Game.CatSynergies[iKey])) catSynergiesOwned++;
+				}
+				if (!Game.HasAchiev('The purr-fect match') && catSynergiesOwned>=Game.CatSynergies.length) Game.Win('The purr-fect match');
 				if (Game.Objects['Grandma'].amount>=6 && !Game.Has('Bingo center/Research facility') && Game.HasAchiev('Elder')) Game.Unlock('Bingo center/Research facility');
 				if (Game.pledges>0) Game.Win('Elder nap');
 				if (Game.pledges>=5) Game.Win('Elder slumber');

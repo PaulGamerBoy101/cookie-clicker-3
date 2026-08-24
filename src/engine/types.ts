@@ -438,6 +438,8 @@ export interface Game {
 	AscendDuration: number;
 	ascensionMode: number;
 	SpecialGrandmaUnlock: number;
+	/** Building-amount threshold that unlocks the building's cat synergy upgrade (set in content/buildings.ts). */
+	SpecialCatUnlock: number;
 
 	/* --- layout / DOM --- */
 	l: HTMLElement | null;
@@ -461,6 +463,8 @@ export interface Game {
 	BuildingsOwned: number;
 	/** Upgrade names in the grandma-synergy pool (set by Game.GrandmaSynergy). */
 	GrandmaSynergies: string[];
+	/** Upgrade names in the cats-synergy pool (set by Game.CatSynergy). */
+	CatSynergies: string[];
 	/** Upgrades grouped by store pool ('kitten', 'cookie', 'prestige', …). */
 	UpgradesByPool: Record<string, Upgrade[]>;
 	/**

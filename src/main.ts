@@ -163,12 +163,36 @@ if (debugSurface && params.get('qa') === 'content') {
 			const cpsOk = selected[0] && selected[1] && selected[2] && selected[0].cpsPerBuilding < selected[1].cpsPerBuilding && selected[1].cpsPerBuilding < selected[2].cpsPerBuilding;
 			const paybackOk = selected.every((building) => building && building.nextPurchaseCost > 0 && building.marginalCps > 0 && Number.isFinite(building.paybackSeconds));
 			const simulationOk = simulation.length === 1 && simulation[0].buildings.some((building) => building.name === 'Cats' && building.amount === 10) && G.Objects['Grandma'].amount === 10 && G.Objects['Cats'].amount === 10 && G.Objects['Farm'].amount === 10;
-			const achievementOk = ['Cat nap council','Purrfectly populated','Nine lives, nine rows','The purrduction line','A cat for every cushion','The whole litter','Barnstormer','A field of dreams','From barn to bakery'].every((name) => !!G.Achievements[name]);
+			const achievementOk = ['Cat nap council','Purrfectly populated','Nine lives, nine rows','The purrduction line','A cat for every cushion','The whole litter','Barnstormer','A field of dreams','From barn to bakery','Fifty-fur strong','A hundred paws','The meow-ve','Paw-some company','Whisker horde','The kitty condo','Cat-astrophe','Half a grand of fluff','The feline parliament','The meow-terpiece','The great cat-icula','Industrial meow-ny','The purr-oduction dynasty','The decan of cats','The five-hundred purr','One thousand paws','The purr-fect match'].every((name) => !!G.Achievements[name]) && G.Objects['Cats'].tieredAchievs && Object.keys(G.Objects['Cats'].tieredAchievs).length === 14 && G.Objects['Cats'].productionAchievs.length === 3 && !!G.Objects['Cats'].levelAchiev10;
 			const analysisCategoriesOk = analysis.upgrades.some((upgrade) => upgrade.name === 'Purrfect timing' && upgrade.category === 'click' && Number.isFinite(upgrade.clickPaybackSeconds.five)) && analysis.upgrades.some((upgrade) => upgrade.name === 'Cardboard box basics' && upgrade.category === 'passive') && analysis.upgrades.some((upgrade) => upgrade.name === 'Heavenly cookies' && upgrade.category === 'prestige');
 			const strategyOk = strategies.length === 3 && strategies.every((run) => run.purchases > 0 && run.samples.length >= 2 && run.elapsedSeconds === 120);
 			const buildingBalanceOk = analysis.buildingBalance.length === analysis.buildingCount && analysis.buildingBalance.every((audit) => audit.milestones.length === 2 && audit.milestones.every((milestone) => milestone.level > 0 && milestone.totalInvestment >= 0 && milestone.totalCps >= 0 && milestone.nextPurchaseCost >= 0 && milestone.marginalCps >= 0 && milestone.paybackRatioToCurve >= 0));
 			const analysisOk = analysis.buildingCount === Object.keys(G.Objects).length && analysis.upgradeCount === Object.keys(G.Upgrades).length && analysis.milestones.length === analysis.buildingCount * 2 && analysis.buildingBalance.length === analysis.buildingCount && analysis.upgrades.length === analysis.upgradeCount && analysisCategoriesOk && buildingBalanceOk && strategyOk && G.Objects['Grandma'].amount === 10 && G.Objects['Cats'].amount === 10 && G.Objects['Farm'].amount === 10;
-			const pass = validation.valid && orderOk && cpsOk && paybackOk && simulationOk && achievementOk && analysisOk;
+			// The muted Cats icon must carry the animated sleeping-cat sheet.
+			G.Objects['Cats'].mute(1);
+			const catsMuteEl = document.getElementById('mutedProduct' + G.Objects['Cats'].id);
+			const catSleepOk = !!(catsMuteEl && catsMuteEl.classList.contains('catSleepIcon') && getComputedStyle(catsMuteEl).backgroundImage.indexOf('cats/sleep.png') >= 0);
+			G.Objects['Cats'].mute(0);
+			// The cat-synergy system mirrors the grandma one: 8 registered
+			// upgrades (one per tied building), owning one doubles Cats CpS and
+			// boosts the tied building +1% per (id-1) cats.
+			const catSynergyNames = ['Kitten grandmas','Farm cats','Miner cats','Worker cats','Space cats','Golden cats','Altered cats','Time cats'];
+			const catSynergyOk = (G.CatSynergies || []).length === 8
+				&& catSynergyNames.every((name) => (G.CatSynergies || []).includes(name) && !!G.Upgrades[name] && !!G.Upgrades[name].buildingTie && !!G.Objects[G.Upgrades[name].buildingTie.name])
+				&& catSynergyNames.every((name) => (G.Upgrades[name].buildingTie as any).cat === G.Upgrades[name])
+				&& (() => {
+					const upgrade = G.Upgrades['Farm cats'];
+					const catsBefore = G.Objects['Cats'].storedCps;
+					const farmBefore = G.Objects['Farm'].storedCps;
+					const farmBoost = 1 + 10 * 0.01 * (1 / (G.Objects['Farm'].id - 1));
+					upgrade.bought = 1; upgrade.unlocked = 1;
+					G.recalculateGains = 1; G.CalculateGains();
+					const ok = Math.abs(G.Objects['Cats'].storedCps - 2 * catsBefore) <= 1e-9 * catsBefore && Math.abs(G.Objects['Farm'].storedCps - farmBefore * farmBoost) <= 1e-12 * farmBefore;
+					upgrade.bought = 0; upgrade.unlocked = 0;
+					G.recalculateGains = 1; G.CalculateGains();
+					return ok;
+				})();
+			const pass = validation.valid && orderOk && cpsOk && paybackOk && simulationOk && achievementOk && catSleepOk && catSynergyOk && analysisOk;
 			out.textContent =
 				'[QA-content] validation: ' + (validation.valid ? 'PASS' : 'FAIL') + ' (' + validation.buildingCount + ' buildings, ' + validation.upgradeCount + ' upgrades, ' + validation.errors + ' errors)\n' +
 				'[QA-content] economy snapshot total CpS=' + report.totalCps.toFixed(2) + '\n' +
@@ -178,6 +202,8 @@ if (debugSurface && params.get('qa') === 'content') {
 				'[QA-content] next purchase cost/marginal CpS/payback: ' + (paybackOk ? 'PASS' : 'FAIL') + '\n' +
 				'[QA-content] simulator restores live counts: ' + (simulationOk ? 'PASS' : 'FAIL') + '\n' +
 				'[QA-content] Cat/Farm achievements registered: ' + (achievementOk ? 'PASS' : 'FAIL') + '\n' +
+				'[QA-content] muted Cats icon uses the sleeping-cat sheet: ' + (catSleepOk ? 'PASS' : 'FAIL') + '\n' +
+				'[QA-content] cat synergies registered and double Cats / boost the tied building: ' + (catSynergyOk ? 'PASS' : 'FAIL') + '\n' +
 				'[QA-content] strategy runner compares 3 purchase policies: ' + (strategyOk ? 'PASS' : 'FAIL') + '\n' +
 				'[QA-content] cross-building balance audit covers every building and level: ' + (buildingBalanceOk ? 'PASS' : 'FAIL') + '\n' +
 				'[QA-content] full analysis covers all buildings/upgrades, categories, and restores counts: ' + (analysisOk ? 'PASS' : 'FAIL') + '\n' +
@@ -249,6 +275,7 @@ if (debugSurface && params.get('qa') === 'save') {
 			G.Objects['Cats'].amount = CATS; G.Objects['Cats'].unlocked = 1; G.Objects['Cats'].bought = CATS;
 			G.Upgrades['Cardboard box basics'].unlocked = 1; G.Upgrades['Cardboard box basics'].bought = 1;
 			G.Achievements['Cat nap council'].won = 1;
+			G.Achievements['One thousand paws'].won = 1;
 			G.recalculateGains = 1; G.CalculateGains();
 			const cpsA = G.cookiesPs;
 			// 2. export the save string
@@ -260,6 +287,7 @@ if (debugSurface && params.get('qa') === 'save') {
 			G.Objects['Cats'].amount = 0;
 			G.Upgrades['Cardboard box basics'].bought = 0;
 			G.Achievements['Cat nap council'].won = 0;
+			G.Achievements['One thousand paws'].won = 0;
 			G.recalculateGains = 1; G.CalculateGains();
 			const cpsCorrupt = G.cookiesPs;
 			// 4. re-import the export
@@ -272,15 +300,16 @@ if (debugSurface && params.get('qa') === 'save') {
 			const catsOk = G.Objects['Cats'].amount === CATS;
 			const catUpgradeOk = G.Upgrades['Cardboard box basics'].bought === 1;
 			const catAchievementOk = G.Achievements['Cat nap council'].won === 1;
+			const newCatAchievementOk = G.Achievements['One thousand paws'].won === 1;
 			const cpsOk = Math.abs(G.cookiesPs - cpsA) < 0.01;
-			const pass = ok && cookiesOk && cursorsOk && grandmasOk && catsOk && catUpgradeOk && catAchievementOk && cpsOk;
+			const pass = ok && cookiesOk && cursorsOk && grandmasOk && catsOk && catUpgradeOk && catAchievementOk && newCatAchievementOk && cpsOk;
 			out.textContent =
 				'[QA-save] export length=' + saveStr.length +
 				'\n[QA-save] ImportSaveCode returned=' + ok +
 				'\n[QA-save] state A: cookies=' + COOKIES + ' cursors=' + CURSORS + ' grandmas=' + GRANDMAS + ' cats=' + CATS + ' cps=' + cpsA.toFixed(2) +
 				'\n[QA-save] corrupted: cookies=7 cursors=0 grandmas=0 cats=0 cps=' + cpsCorrupt.toFixed(2) +
 				'\n[QA-save] after import: cookies=' + G.cookies.toFixed(3) + ' cursors=' + G.Objects['Cursor'].amount + ' grandmas=' + G.Objects['Grandma'].amount + ' cats=' + G.Objects['Cats'].amount + ' cps=' + G.cookiesPs.toFixed(2) +
-				'\n[QA-save] checks: cookies=' + cookiesOk + ' cursors=' + cursorsOk + ' grandmas=' + grandmasOk + ' cats=' + catsOk + ' cat upgrade=' + catUpgradeOk + ' cat achievement=' + catAchievementOk + ' cps=' + cpsOk +
+				'\n[QA-save] checks: cookies=' + cookiesOk + ' cursors=' + cursorsOk + ' grandmas=' + grandmasOk + ' cats=' + catsOk + ' cat upgrade=' + catUpgradeOk + ' cat achievement=' + catAchievementOk + ' new cat achievement=' + newCatAchievementOk + ' cps=' + cpsOk +
 				'\n[QA-save] ' + (pass ? 'PASS: export->import round-trip restored state' : 'FAIL: state mismatch');
 		} catch (e: any) {
 			out.textContent = '[QA-save] ERROR: ' + e.constructor.name + ': ' + e.message;

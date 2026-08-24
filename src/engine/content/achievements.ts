@@ -1054,6 +1054,34 @@ export function declareVanillaAchievements(Game: EngineGame) {
 		new Game.Achievement('Barnstormer',loc("Own <b>%1</b> farms.",25),[2,26]);
 		new Game.Achievement('A field of dreams',loc("Own <b>%1</b> farms.",100),[3,26]);
 		Game.ProductionAchievement('From barn to bakery','Farm',4);
+
+		// CC3: the extended Cats achievement set, appended (not interleaved)
+		// so every existing achievement id stays stable for imported saves.
+		// The tiered ones resolve through the standard tier table like the
+		// original three (tiers 1, 5, 10), so Cats ends up with the full
+		// standard shape: 14 tiered + 3 production + 1 level achievement,
+		// plus four cat-count milestones (100/450 above, 500/1000 below).
+		// Won automatically: tiered via UnlockTiered in the Cats update
+		// hook, production via the totalCookies ticker, level via levelUp,
+		// counts via the Cats update hook.
+		order=1200;
+		Game.TieredAchievement('Fifty-fur strong','','Cats',2);
+		Game.TieredAchievement('A hundred paws','','Cats',3);
+		Game.TieredAchievement('The meow-ve','','Cats',4);
+		Game.TieredAchievement('Paw-some company','','Cats',6);
+		Game.TieredAchievement('Whisker horde','','Cats',7);
+		Game.TieredAchievement('The kitty condo','','Cats',8);
+		Game.TieredAchievement('Cat-astrophe','','Cats',9);
+		Game.TieredAchievement('Half a grand of fluff','','Cats',11);
+		Game.TieredAchievement('The feline parliament','','Cats',12);
+		Game.TieredAchievement('The meow-terpiece','','Cats',13);
+		Game.TieredAchievement('The great cat-icula','','Cats',14);
+		Game.ProductionAchievement('Industrial meow-ny','Cats',2);
+		Game.ProductionAchievement('The purr-oduction dynasty','Cats',3);
+		new Game.Achievement('The decan of cats','', [11,26]);Game.Objects['Cats'].levelAchiev10=Game.last;
+		new Game.Achievement('The five-hundred purr',loc("Own <b>%1</b> cats.",500),[9,26]);
+		new Game.Achievement('One thousand paws',loc("Own <b>%1</b> cats.",1000),[10,26]);
+		new Game.Achievement('The purr-fect match',loc("Own <b>%1</b> cat synergy upgrades.",8)+'<q>Every cat finds its building. Every building finds its cat.</q>',[4,26]);
 		
 		//end of achievements
 }
