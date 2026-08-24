@@ -563,6 +563,22 @@ test('?qa=destiny: the Decide Your Destiny mod (content + decide + forced golden
 	await assertNoUncaughtErrors(page);
 });
 
+test('?qa=amseason: the American Season mod (season + rockets + menus + save) verified', async ({ page }) => {
+	await boot(page, '&qa=amseason');
+	const report = await qaReport(page, /PASS: American Season verified end to end/, 90_000);
+	expect(report).not.toMatch(/ERROR/);
+	expect(report).not.toMatch(/FAIL:/);
+	expect(report).toMatch(/season "american" registered with trigger/);
+	expect(report).toMatch(/11 firework upgrades declared/);
+	expect(report).toMatch(/"Explosive biscuit" triggered the American season/);
+	expect(report).toMatch(/rocket pop earned cookies/);
+	expect(report).toMatch(/"cps" hook adds \+1% per firework upgrade/);
+	expect(report).toMatch(/fireworks canvas present in the left panel/);
+	expect(report).toMatch(/options menu shows the config UI/);
+	expect(report).toMatch(/ImportSaveCode restored config \+ rocketsPopped/);
+	await assertNoUncaughtErrors(page);
+});
+
 test('?qa=anim: the CC3 polish (v3.0 animation pass) verified end to end', async ({ page }) => {
 	await boot(page, '&qa=anim&oneCol=1');
 	// Counter sampling (~1s) + the ~2.5s ascend-intro breakpoint wait +

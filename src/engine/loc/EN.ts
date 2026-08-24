@@ -3348,7 +3348,38 @@ export default { id: "EN", name: "english", strings: {
 	"Decided destiny <b>10 times</b> in one ascension.": "/",
 	"Accepted a negative fate for material gain.": "/",
 	"Decided your destiny would be a <b>Blab</b>.": "/",
-	"Times decided destiny :": "/"
+	"Times decided destiny :": "/",
+
+	/* CC3 extras — American Season (extras/americanSeason.ts, a port of
+	 * klattmose's mod) */
+	"Triggers <b>American season</b> for the next 24 hours.<br>Triggering another season will cancel this one.<br>Cost scales with unbuffed CpS and increases with every season switch.<q>Hold my beer and watch this</q>": "/",
+	"American season": "/",
+	"American season has started!": "/",
+	"American season is over.": "/",
+	"Independence Day!": "/",
+	"It's <b>American season</b>!<br>Set off some fireworks and have a barbecue!": "/",
+	"You've purchased <b>%1</b> firework upgrades.": "/",
+	"Cookie production multiplier <b>+1%</b>.<br>Cost scales with how many firework upgrades you own.<q>O say can you see, by the dawn's early light</q>": "/",
+	"Cookie production multiplier <b>+1%</b>.<br>Cost scales with how many firework upgrades you own.<q>What so proudly we hailed at the twilight's last gleaming</q>": "/",
+	"Cookie production multiplier <b>+1%</b>.<br>Cost scales with how many firework upgrades you own.<q>Whose broad stripes and bright stars through the perilous fight</q>": "/",
+	"Cookie production multiplier <b>+1%</b>.<br>Cost scales with how many firework upgrades you own.<q>O'er the ramparts we watched, were so gallantly streaming?</q>": "/",
+	"Cookie production multiplier <b>+1%</b>.<br>Cost scales with how many firework upgrades you own.<q>And the rockets' red glare, the bombs bursting in air</q>": "/",
+	"Cookie production multiplier <b>+1%</b>.<br>Cost scales with how many firework upgrades you own.<q>Gave proof through the night that our flag was still there</q>": "/",
+	"Cookie production multiplier <b>+1%</b>.<br>Cost scales with how many firework upgrades you own.<q>O say does that star-spangled banner yet wave</q>": "/",
+	"Cookie production multiplier <b>+1%</b>.<br>Cost scales with how many firework upgrades you own.<q>O'er the land of the free and the home of the brave?</q>": "/",
+	"Fireworks appear <b>twice as frequently</b>.<br>Cost scales with how many firework upgrades you own.<q>Swish</q>": "/",
+	"Fireworks fly <b>half as fast</b>.<br>Cost scales with how many firework upgrades you own.<q>Fwoosh</q>": "/",
+	"Fireworks give <b>twice as much</b>.<br>Cost scales with how many firework upgrades you own.<q>BOOM!</q>": "/",
+	"Rockets spawn much more frequently.<q>Fireworks and flamethrowers: a match made in hell.</q>": "/",
+	"Firework upgrades drop <b>5%</b> more often.<br>Rockets appear <b>5%</b> more often.": "/",
+	"Explode <b>1 rocket</b>": "/",
+	"Explode <b>74 rockets</b>": "/",
+	"Explode <b>1776 rockets</b>": "/",
+	"Unlock <b>every fireworks upgrade.</b><div class=\"line\"></div>Owning this achievement makes fireworks upgrades drop more frequently in future playthroughs.": "/",
+	"Projectiles": "/",
+	"Stars": "/",
+	"Other": "/",
+	"Rockets exploded :": "/"
 
 }
 } satisfies LanguageData;

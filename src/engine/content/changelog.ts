@@ -76,6 +76,7 @@ export function declareVanillaChangelog(Game: EngineGame) {
 	'<div class="listing">&bull; added the Cats building (with roaming animated cats) and 24 cat upgrades</div>'+
 	'<div class="listing">&bull; added the Black Hole Inverter building, a native mod with 17 upgrades and 18 achievements</div>'+
 	'<div class="listing">&bull; added Decide Your Destiny: spend sugar lumps to choose the outcome of the next natural golden cookie (a native port of klattmose\'s mod)</div>'+
+	'<div class="listing">&bull; added American Season: a July 1st season with rockets and a left-panel fireworks canvas (a native port of klattmose\'s mod)</div>'+
 	'<div class="listing">&bull; added background music (8 tracks by Bert Cole) and interface tones, with Music and volume settings</div>'+
 	'<div class="listing">&bull; rebalanced the late-game building tail back onto the ~2.1x-per-store-step price curve, checked by a full building balance audit</div>'+
 	'<div class="listing">&bull; added economy analysis tooling (Game.AnalyzeEconomy / Game.SimulateStrategy) behind the ?qa=content probe</div>'+

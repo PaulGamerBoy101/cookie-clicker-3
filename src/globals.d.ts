@@ -237,6 +237,24 @@ declare global {
 		__cc3Binverter?: number;
 		/* Set by extras/decideDestiny.ts once it has registered. */
 		__cc3DecideDestiny?: number;
+		/* Set by extras/americanSeason.ts once it has registered. */
+		__cc3AmericanSeason?: number;
+		/* The American Season namespace (extras/americanSeason.ts): the
+		 * original mod's global, kept so the mod's inline menu handlers
+		 * (UpdatePref / Toggle / `config = defaultConfig()`) and other mods
+		 * can call it. `config` is a get/set pair: "Restore Default"
+		 * replaces the state object, so it must assign, not just read. */
+		AmericanSeason?: {
+			name: string;
+			version: string;
+			config: Record<string, any>;
+			rocketsPopped: number;
+			upgrades: string[];
+			canvas: HTMLCanvasElement | null;
+			defaultConfig: () => Record<string, any>;
+			UpdatePref: (pref: string, value: string) => void;
+			Toggle: (pref: string, button: string, on: string, off: string, invert: string) => void;
+		};
 		/* The Decide Your Destiny namespace (extras/decideDestiny.ts): the
 		 * original mod's global, kept so other mods can call
 		 * DecideDestiny.NewDestiny to add custom fates. */

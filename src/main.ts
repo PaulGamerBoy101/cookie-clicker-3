@@ -20,6 +20,7 @@ import './engine/main';
  * during Game.Load, before LoadSave). */
 import './extras/blackHoleInverter';
 import './extras/decideDestiny';
+import './extras/americanSeason';
 import './styles/main.css';
 import type { Cc3AnimStats, Game as EngineGame, LanguageData } from './engine/types';
 
@@ -63,7 +64,7 @@ if (debugSurface) {
  *   ?qa=backup    exercise the rolling save backup history (capture/list/restore)
  *   ?qa=content   validate content registries and report economy ordering
  * Never active in a plain production load. */
-if (debugSurface && params.has('qa') && params.get('qa') !== 'golden' && params.get('qa') !== 'save' && params.get('qa') !== 'backup' && params.get('qa') !== 'sound' && params.get('qa') !== 'perf' && params.get('qa') !== 'ascend' && params.get('qa') !== 'offline' && params.get('qa') !== 'special' && params.get('qa') !== 'a11y' && params.get('qa') !== 'wrinkler' && params.get('qa') !== 'icon' && params.get('qa') !== 'onecol' && params.get('qa') !== 'anim' && params.get('qa') !== 'binverter' && params.get('qa') !== 'content' && params.get('qa') !== 'destiny') {
+if (debugSurface && params.has('qa') && params.get('qa') !== 'golden' && params.get('qa') !== 'save' && params.get('qa') !== 'backup' && params.get('qa') !== 'sound' && params.get('qa') !== 'perf' && params.get('qa') !== 'ascend' && params.get('qa') !== 'offline' && params.get('qa') !== 'special' && params.get('qa') !== 'a11y' && params.get('qa') !== 'wrinkler' && params.get('qa') !== 'icon' && params.get('qa') !== 'onecol' && params.get('qa') !== 'anim' && params.get('qa') !== 'binverter' && params.get('qa') !== 'content' && params.get('qa') !== 'destiny' && params.get('qa') !== 'amseason') {
 	const qaMode = params.get('qa'); // null for bare ?qa, else the value
 	const MINIGAME_BUILDINGS = ['Farm', 'Bank', 'Temple', 'Wizard tower'];
 	const tick = window.setInterval(() => {
@@ -564,6 +565,129 @@ if (debugSurface && params.get('qa') === 'destiny') {
 			out.textContent = lines.join('\n') + '\n[QA-destiny] ' + (pass ? 'PASS: Decide Your Destiny verified end to end' : 'FAIL: see checks above');
 		} catch (e: any) {
 			out.textContent = '[QA-destiny] ERROR: ' + e.constructor.name + ': ' + e.message;
+		}
+		window.clearInterval(tick);
+	}, 250);
+}
+
+// QA: verify American Season (extras/americanSeason.ts, a port of klattmose's
+// mod). Checks the season/trigger/upgrades/achievements/shimmer declarations,
+// triggers the season with "Explosive biscuit", pops rockets (earn + drop +
+// achievements), exercises the cps/ticker mod hooks and the menus, and
+// save/load round-trips the config + rocketsPopped through WriteSave +
+// ImportSaveCode. Usage: ?debug=1&qa=amseason
+if (debugSurface && params.get('qa') === 'amseason') {
+	const NAME = 'American Season';
+	const UPGRADES = ['Ring burst', 'Peony burst', 'Palm burst', 'Bees burst', 'Crossette burst', 'Waterfall burst', 'Pearl burst', 'Pistil burst', 'Short fuse', 'Slow burn', 'High explosive'];
+	const tick = window.setInterval(() => {
+		const G = window.Game;
+		if (!G || !G.ready || !G.Upgrades) return;
+		const trigger = G.Upgrades['Explosive biscuit'];
+		if (!trigger) return; // wait for launchMods to declare the content
+		if (G.__qaAmSeason) return;
+		G.__qaAmSeason = 1;
+		const out = document.createElement('div');
+		out.id = '__dbgqa';
+		out.style.cssText = 'position:fixed;top:0;left:0;z-index:99999;background:#fff;color:#060;font:12px monospace;white-space:pre-wrap;max-width:640px;';
+		document.body.appendChild(out);
+		try {
+			const lines: string[] = [];
+			let pass = true;
+			const chk = (label: string, cond: boolean) => { lines.push((cond ? 'PASS: ' : 'FAIL: ') + label); if (!cond) pass = false; };
+			const AS: any = (window as any).AmericanSeason;
+			const realRandom = Math.random;
+
+			// 1. content declarations
+			chk('mod registered with save/load', !!G.mods[NAME] && typeof G.mods[NAME].save === 'function' && typeof G.mods[NAME].load === 'function');
+			chk('window.AmericanSeason namespace exposed (inline menu handlers)', !!AS);
+			chk('season "american" registered with trigger', !!G.seasons['american'] && G.seasons['american'].trigger === 'Explosive biscuit');
+			// The original formula (2*Bunny - Fool) mirrors Fool around Bunny;
+			// with 2.048 upgrade ids that lands in the open special-section
+			// region (order 24000.x) right after the Easter cluster.
+			chk('trigger is a toggle in the special-section biscuit region (order ' + trigger.order + ')', trigger.pool === 'toggle' && trigger.order >= 24000 && trigger.order < 25000);
+			chk('11 firework upgrades declared', UPGRADES.every((n) => !!G.Upgrades[n]));
+			chk('upgrades appended to seasonDrops (the Keepsakes roll)', UPGRADES.every((n) => (G.seasonDrops || []).indexOf(n) !== -1));
+			chk('4 achievements declared', ['Pyrotechnics', 'July 4th', 'Pyromaniac', 'Full barrage'].every((n) => !!G.Achievements[n]));
+			chk('"Pyromaniac" is a shadow achievement', G.Achievements['Pyromaniac'].pool === 'shadow');
+			chk('rocket shimmer type registered on a timer', !!G.shimmerTypes['rocket'] && G.shimmerTypes['rocket'].spawnsOnTimer === true);
+			chk('rocket does not spawn outside the season', G.season != 'american' && G.shimmerTypes['rocket'].spawnConditions() === false);
+			const starburst = G.Upgrades['Starburst'];
+			// The mod sets (-630, 111), then its final rearrangeUps(Starburst, 5/5)
+			// moves it to the point opposite Starsnow on the star circle.
+			const anchor = G.Upgrades['Season switcher'];
+			const starDist = (u: any) => Math.hypot(u.posX - anchor.posX, u.posY - anchor.posY);
+			chk('"Starburst" heavenly: prestige pool, parented to "Season switcher", on the star circle', !!starburst && starburst.pool === 'prestige' && starburst.parents.length === 1 && (starburst.parents[0] as any).name === 'Season switcher' && Math.abs(starDist(starburst) - starDist(G.Upgrades['Starsnow'])) < 0.001);
+			chk('"Starburst" added to "Keepsakes" parents', (G.Upgrades['Keepsakes'].parents || []).indexOf(starburst) !== -1);
+			chk('"Grand finale" is a debug-pool upgrade', G.Upgrades['Grand finale'].pool === 'debug');
+
+			// 2. trigger the season with the biscuit
+			G.cookies = 1e15;
+			trigger.unlocked = 1;
+			trigger.buy();
+			chk('"Explosive biscuit" triggered the American season (seasonT ' + Math.round(G.seasonT) + ')', G.season === 'american' && G.seasonT > 0);
+			chk('rocket now spawns in the season', G.shimmerTypes['rocket'].spawnConditions() === true);
+
+			// 3. pop a rocket (deterministic RNG: no drop roll, earn + counter + check hook)
+			Math.random = () => 0.5; // 0.5 < failRate 0.8 -> no upgrade drop
+			const before = G.cookies;
+			const r1 = new G.shimmer('rocket');
+			r1.spawnLead = 1;
+			r1.pop();
+			Math.random = realRandom;
+			chk('rocket pop earned cookies (+' + Math.round(G.cookies - before) + ')', G.cookies >= before + 25);
+			chk('rocketsPopped incremented (got ' + AS.rocketsPopped + ')', AS.rocketsPopped === 1);
+			G.runModHook('check');
+			chk('"Pyrotechnics" won after 1 rocket', G.Achievements['Pyrotechnics'].won === 1);
+
+			// 4. force an upgrade drop with a deterministic RNG, buy a firework upgrade, check the cps hook
+			Math.random = () => 0.999; // 0.999 > 0.8 -> drop; choose() -> index floor(0.999*11)=10
+			const r2 = new G.shimmer('rocket');
+			r2.spawnLead = 1;
+			r2.pop();
+			Math.random = realRandom;
+			chk('deterministic drop unlocked the last upgrade in the pool ("High explosive")', G.Upgrades['High explosive'].unlocked === 1);
+			G.Unlock('Ring burst');
+			G.cookies = 1e12;
+			G.Upgrades['Ring burst'].buy();
+			chk('"Ring burst" bought at 2^0*999=999', G.Upgrades['Ring burst'].bought === 1);
+			const cps = G.runModHookOnValue('cps', 100);
+			chk('"cps" hook adds +1% per firework upgrade (100 -> ' + cps + ')', Math.abs(cps - 101) < 1e-9);
+
+			// 5. ticker news during the season
+			G.cookiesEarned = Math.max(G.cookiesEarned, 1000);
+			const news = ((G.modHooks['ticker'] || []) as any[]).map((f) => f()).find((a: any) => a && a.length > 0);
+			chk('ticker hook serves American news in the season', Array.isArray(news) && news[0].indexOf('News :') === 0);
+
+			// 6. the fireworks canvas
+			chk('fireworks canvas present in the left panel', !!l('AmericanSeasonFireworksDisplay'));
+
+			// 7. the menus (the mod appends to the freshly rendered menu DOM)
+			G.onMenu = 'prefs';
+			G.UpdateMenu();
+			chk('options menu shows the config UI (SHOW_CANVASButton)', l('menu').innerHTML.indexOf('SHOW_CANVASButton') !== -1);
+			G.onMenu = 'stats';
+			G.UpdateMenu();
+			chk('stats menu shows version + rockets exploded', l('menu').innerHTML.indexOf('American Season:</b>') !== -1 && l('menu').innerHTML.indexOf('Rockets exploded') !== -1);
+
+			// 8. save round-trip through the engine save format
+			AS.config.STAR_COUNT = 42;
+			const saveStr = G.WriteSave(1);
+			//WriteSave(1) returns a base64 string, so assert on the mod data
+			//registry that saveModData() populated while building it
+			const reg = G.modSaveData[NAME] as string;
+			chk('WriteSave invoked the mod save (registry has config + rocketsPopped)', typeof reg === 'string' && reg.indexOf('"STAR_COUNT":42') !== -1 && reg.indexOf('"rocketsPopped":2') !== -1);
+			AS.config.STAR_COUNT = 1;
+			chk('state corrupted before import (STAR_COUNT=1)', AS.config.STAR_COUNT === 1);
+			G.ImportSaveCode(saveStr);
+			chk('ImportSaveCode restored config + rocketsPopped (STAR_COUNT ' + AS.config.STAR_COUNT + ', rockets ' + AS.rocketsPopped + ')', AS.config.STAR_COUNT === 42 && AS.rocketsPopped === 2);
+
+			// 9. the trigger's descFunc renders
+			const desc = (G.Upgrades['Explosive biscuit'].descFunc as any)();
+			chk('trigger descFunc renders the firework-upgrade listing', typeof desc === 'string' && desc.indexOf('firework upgrades') !== -1);
+
+			out.textContent = lines.join('\n') + '\n[QA-amseason] ' + (pass ? 'PASS: American Season verified end to end' : 'FAIL: see checks above');
+		} catch (e: any) {
+			out.textContent = '[QA-amseason] ERROR: ' + e.constructor.name + ': ' + e.message;
 		}
 		window.clearInterval(tick);
 	}, 250);

@@ -28,12 +28,18 @@ The original community mods are by **klattmose**
 ("Cookie Clicker Script Extender") framework they were built on. The original
 repository carries no license file, so CC3 does not copy that code: each mod
 is a faithful, self-contained **re-implementation** on the engine's own
-vanilla content constructors and mod API (no CCSE dependency, no asset
-re-hosting), and the original author is credited in the changelog and in each
-port's file header.
+vanilla content constructors and mod API (no CCSE dependency). Where a mod's
+art or sound is specific to the mod itself (not reusable vanilla assets), the
+original files are vendored into `public/` as-is and credited to klattmose
+here and in the port's file header. The original author is credited in the
+changelog and in each port's file header.
 
 - **Black Hole Inverter** (`extras/blackHoleInverter.ts`)
 - **Decide Your Destiny** (`extras/decideDestiny.ts`)
+- **American Season** (`extras/americanSeason.ts`) — icons, rocket sprite and
+  launch/boom sounds are klattmose's originals, vendored in
+  `public/img/customIcons.png`, `public/img/rocket.png`,
+  `public/snd/rocketLaunch.mp3`, `public/snd/rocketBoom.mp3`.
 
 ## Fonts
 
