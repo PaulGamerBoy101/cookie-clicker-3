@@ -21,6 +21,7 @@ import type { Game as EngineGame } from "../../types";
 import { declareCursor } from "./cursor";
 import { declareGrandma } from "./grandma";
 import { declareFarm } from "./farm";
+import { declareMine } from "./mine";
 import { declareRemaining } from "./remaining";
 
 /** Declare the 20 vanilla buildings (and their per-building extras) on Game. */
@@ -28,5 +29,6 @@ export function declareVanillaBuildings(Game: EngineGame) {
 	declareCursor(Game);
 	declareGrandma(Game);
 	declareFarm(Game);
+	declareMine(Game);
 	declareRemaining(Game);
 }
