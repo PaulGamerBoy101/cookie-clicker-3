@@ -33,6 +33,10 @@ import { declareTimeMachine } from "./timemachine";
 import { declareAntimatterCondenser } from "./antimattercondenser";
 import { declarePrism } from "./prism";
 import { declareChancemaker } from "./chancemaker";
+import { declareFractalEngine } from "./fractalengine";
+import { declareJavascriptConsole } from "./javascriptconsole";
+import { declareIdleverse } from "./idleverse";
+import { declareCortexBaker } from "./cortexbaker";
 import { declareRemaining } from "./remaining";
 
 /** Declare the 20 vanilla buildings (and their per-building extras) on Game. */
@@ -52,5 +56,9 @@ export function declareVanillaBuildings(Game: EngineGame) {
 	declareAntimatterCondenser(Game);
 	declarePrism(Game);
 	declareChancemaker(Game);
+	declareFractalEngine(Game);
+	declareJavascriptConsole(Game);
+	declareIdleverse(Game);
+	declareCortexBaker(Game);
 	declareRemaining(Game);
 }
