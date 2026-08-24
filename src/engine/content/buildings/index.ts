@@ -25,6 +25,10 @@ import { declareMine } from "./mine";
 import { declareFactory } from "./factory";
 import { declareBank } from "./bank";
 import { declareTemple } from "./temple";
+import { declareWizardTower } from "./wizardtower";
+import { declareShipment } from "./shipment";
+import { declareAlchemyLab } from "./alchemylab";
+import { declarePortal } from "./portal";
 import { declareRemaining } from "./remaining";
 
 /** Declare the 20 vanilla buildings (and their per-building extras) on Game. */
@@ -36,5 +40,9 @@ export function declareVanillaBuildings(Game: EngineGame) {
 	declareFactory(Game);
 	declareBank(Game);
 	declareTemple(Game);
+	declareWizardTower(Game);
+	declareShipment(Game);
+	declareAlchemyLab(Game);
+	declarePortal(Game);
 	declareRemaining(Game);
 }
