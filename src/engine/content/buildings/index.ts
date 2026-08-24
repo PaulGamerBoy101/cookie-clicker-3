@@ -22,6 +22,9 @@ import { declareCursor } from "./cursor";
 import { declareGrandma } from "./grandma";
 import { declareFarm } from "./farm";
 import { declareMine } from "./mine";
+import { declareFactory } from "./factory";
+import { declareBank } from "./bank";
+import { declareTemple } from "./temple";
 import { declareRemaining } from "./remaining";
 
 /** Declare the 20 vanilla buildings (and their per-building extras) on Game. */
@@ -30,5 +33,8 @@ export function declareVanillaBuildings(Game: EngineGame) {
 	declareGrandma(Game);
 	declareFarm(Game);
 	declareMine(Game);
+	declareFactory(Game);
+	declareBank(Game);
+	declareTemple(Game);
 	declareRemaining(Game);
 }

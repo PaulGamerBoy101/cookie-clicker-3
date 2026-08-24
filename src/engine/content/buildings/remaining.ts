@@ -1,6 +1,6 @@
 /**
  * content/buildings/remaining.ts — the vanilla building declarations not yet
- * split into their own files (Factory through Cortex baker, the tail price
+ * split into their own files (Wizard tower through Cortex baker, the tail price
  * rebalance, and Cats).
  *
  * Ported verbatim from the 2.048 engine (engine/main.ts, the //define objects
@@ -18,43 +18,6 @@ import type { Building, Game as EngineGame } from "../../types";
 
 /** Declare the not-yet-split vanilla buildings (and their per-building extras) on Game. */
 export function declareRemaining(Game: EngineGame) {
-		new Game.Object('Factory','factory|factories|mass-produced|[X] additional patent|[X] additional patents','Produces large quantities of cookies.',5,4,{base:'factory',xV:8,yV:0,w:64,rows:1,x:0,y:-22},3000,function (me: Building) {
-			var mult=1;
-			mult*=Game.GetTieredCpsMult(me);
-			mult*=Game.magicCpS(me.name);
-			return me.baseCps*mult;
-		},function (this: Building) {
-			Game.UnlockTiered(this);
-			if (this.amount>=Game.SpecialGrandmaUnlock && Game.Objects['Grandma'].amount>0 && this.grandma) Game.Unlock(this.grandma!.name);
-			if (this.amount>=Game.SpecialCatUnlock && Game.Objects['Cats'].amount>0 && this.cat) Game.Unlock(this.cat!.name);
-		});
-		//Game.last.minigameUrl='minigameDungeon.js';//not yet
-		Game.last.minigameName=loc("Dungeon");
-		
-		new Game.Object('Bank','bank|banks|banked|Interest rates [X]% better|Interest rates [X]% better','Generates cookies from interest.',6,15,{base:'bank',xV:8,yV:4,w:56,rows:1,x:0,y:13},0,function (me: Building) {
-			var mult=1;
-			mult*=Game.GetTieredCpsMult(me);
-			mult*=Game.magicCpS(me.name);
-			return me.baseCps*mult;
-		},function (this: Building) {
-			Game.UnlockTiered(this);
-			if (this.amount>=Game.SpecialGrandmaUnlock && Game.Objects['Grandma'].amount>0 && this.grandma) Game.Unlock(this.grandma!.name);
-		});
-		Game.last.minigameUrl='minigameMarket.js';
-		Game.last.minigameName=loc("Stock Market");
-		
-		new Game.Object('Temple','temple|temples|discovered|[X] sacred artifact retrieved|[X] sacred artifacts retrieved','Full of precious, ancient chocolate.',7,16,{base:'temple',xV:8,yV:4,w:72,rows:2,x:0,y:-5},0,function (me: Building) {
-			var mult=1;
-			mult*=Game.GetTieredCpsMult(me);
-			mult*=Game.magicCpS(me.name);
-			return me.baseCps*mult;
-		},function (this: Building) {
-			Game.UnlockTiered(this);
-			if (this.amount>=Game.SpecialGrandmaUnlock && Game.Objects['Grandma'].amount>0 && this.grandma) Game.Unlock(this.grandma!.name);
-		});
-		Game.last.minigameUrl='minigamePantheon.js';
-		Game.last.minigameName=loc("Pantheon");
-		
 		new Game.Object('Wizard tower','wizard tower|wizard towers|summoned|Incantations have [X] more syllable|Incantations have [X] more syllables','Summons cookies with magic spells.',8,17,{base:'wizardtower',xV:16,yV:16,w:48,rows:2,x:0,y:20},0,function (me: Building) {
 			var mult=1;
 			mult*=Game.GetTieredCpsMult(me);
