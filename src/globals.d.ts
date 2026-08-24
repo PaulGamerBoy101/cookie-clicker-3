@@ -235,5 +235,17 @@ declare global {
 		__cc3Anim?: Cc3AnimStats;
 		/* Set by extras/blackHoleInverter.ts once it has registered. */
 		__cc3Binverter?: number;
+		/* Set by extras/decideDestiny.ts once it has registered. */
+		__cc3DecideDestiny?: number;
+		/* The Decide Your Destiny namespace (extras/decideDestiny.ts): the
+		 * original mod's global, kept so other mods can call
+		 * DecideDestiny.NewDestiny to add custom fates. */
+		DecideDestiny?: {
+			name: string;
+			version: string;
+			AllDestinies: unknown[];
+			AllDestiniesByName: Record<string, unknown>;
+			NewDestiny: (name: string, icon: [number, number], effect: string, other?: Record<string, unknown>) => void;
+		};
 	}
 }

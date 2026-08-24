@@ -79,6 +79,28 @@ export function setupModding()
 	Game.modHooks={};
 	Game.modHooksNames=['logic','draw','reset','reincarnate','ticker','cps','cookiesPerClick','click','create','check'];
 	for (var i=0;i<Game.modHooksNames.length;i++){Game.modHooks[Game.modHooksNames[i]]=[];}
+	//CCSE-era extension surfaces (see "CC3 extras mods" — the original
+	//klattmose mods were written against the CCSE framework, whose helper
+	//functions were thin wrappers over these exact arrays). The engine
+	//calls them in two places: UpdateMenu (ui/menu.ts) invokes the custom
+	//menu arrays right after the menu DOM is replaced, and the golden
+	//shimmer popFunc (systems/shimmerTypes.ts) invokes
+	//customShimmerTypes['golden'].customListPush with (shimmer, effectList)
+	//after the vanilla effect list is built, letting mods inspect or force
+	//the golden cookie outcome.
+	Game.customMenu=[];
+	Game.customOptionsMenu=[];
+	Game.customStatsMenu=[];
+	Game.customInfoMenu=[];
+	//The golden shimmer carries the four CCSE hook arrays:
+	// customListPush(me, list) runs at the start of effect-list construction
+	// (push strings to extend the pool — or, as Decide Your Destiny does,
+	// set me.force/me.wrath to decide the outcome);
+	// customEffectDurMod(me) and customMult(me) each return a multiplier
+	// (applied to the effect duration / magnitude);
+	// customBuff(me, buff, choice, effectDurMod, mult) runs right after the
+	// vanilla `var buff=0;` and may replace the buff the pop creates.
+	Game.customShimmerTypes={golden:{customListPush:[],customEffectDurMod:[],customMult:[],customBuff:[]}};
 	Game.registerMod=function(id: any,mod: any): any
 	{
 		id=id.replace(/\W+/g,' ');

@@ -551,6 +551,18 @@ test('?qa=binverter: the Black Hole Inverter mod (building + content + save) ver
 	await assertNoUncaughtErrors(page);
 });
 
+test('?qa=destiny: the Decide Your Destiny mod (content + decide + forced golden + save) verified', async ({ page }) => {
+	await boot(page, '&qa=destiny');
+	const report = await qaReport(page, /PASS: Decide Your Destiny verified end to end/, 90_000);
+	expect(report).not.toMatch(/ERROR/);
+	expect(report).not.toMatch(/FAIL:/);
+	expect(report).toMatch(/9 heavenly "Destiny: \*" upgrades/);
+	expect(report).toMatch(/'check' hook unlocked the decider/);
+	expect(report).toMatch(/natural golden cookie forced Frenzy \(mult 7\)/);
+	expect(report).toMatch(/ImportSaveCode restored Lucky x2/);
+	await assertNoUncaughtErrors(page);
+});
+
 test('?qa=anim: the CC3 polish (v3.0 animation pass) verified end to end', async ({ page }) => {
 	await boot(page, '&qa=anim&oneCol=1');
 	// Counter sampling (~1s) + the ~2.5s ascend-intro breakpoint wait +

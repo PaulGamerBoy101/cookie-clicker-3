@@ -21,6 +21,20 @@ The 2.048 source this port was built from:
 <https://github.com/DiSCooooo/Cookie-Clicker-2.048> (a fan-maintained
 downloadable edition of the 2.048 release).
 
+## Community mods (native ports in `src/extras/`)
+
+The original community mods are by **klattmose**
+(<https://klattmose.github.io/CookieClicker/>), who also wrote the CCSE
+("Cookie Clicker Script Extender") framework they were built on. The original
+repository carries no license file, so CC3 does not copy that code: each mod
+is a faithful, self-contained **re-implementation** on the engine's own
+vanilla content constructors and mod API (no CCSE dependency, no asset
+re-hosting), and the original author is credited in the changelog and in each
+port's file header.
+
+- **Black Hole Inverter** (`extras/blackHoleInverter.ts`)
+- **Decide Your Destiny** (`extras/decideDestiny.ts`)
+
 ## Fonts
 
 - **Merriweather** (Black, 900) by Sorkin Type, via Google Fonts.

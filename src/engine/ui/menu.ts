@@ -445,6 +445,13 @@ export function UpdateMenu()
 	}
 	//str='<div id="selectionKeeper" class="selectable">'+str+'</div>';
 	l('menu').innerHTML=str;
+	//CCSE-style mod menu hooks (see setupModding in systems/modding.ts):
+	//called after the menu DOM is replaced, so they decorate the freshly
+	//rendered menu (the CCSE framework injected at exactly this point).
+	if (Game.customMenu) for (var i=0;i<Game.customMenu.length;i++) Game.customMenu[i]();
+	if (Game.onMenu=='prefs' && Game.customOptionsMenu) for (var i=0;i<Game.customOptionsMenu.length;i++) Game.customOptionsMenu[i]();
+	if (Game.onMenu=='stats' && Game.customStatsMenu) for (var i=0;i<Game.customStatsMenu.length;i++) Game.customStatsMenu[i]();
+	if (Game.onMenu=='log' && Game.customInfoMenu) for (var i=0;i<Game.customInfoMenu.length;i++) Game.customInfoMenu[i]();
 	if (Game.onMenu=='prefs') Game.RefreshBackupList();//CC3: populate the rolling backup history dropdown
 	if (App)
 	{

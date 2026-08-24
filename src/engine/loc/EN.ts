@@ -3330,7 +3330,25 @@ export default { id: "EN", name: "english", strings: {
 	"[Achievement name 585]I'll rest when I'm dead": "I'll rest when I'm dead",
 	"[Achievement name 586]What do you get for the baker who has everything": "What do you get for the baker who has everything",
 	"[Achievement name 587]Bottomless pit": "Bottomless pit",
-	"[Achievement name 588]All the stars in heaven": "All the stars in heaven"
+	"[Achievement name 588]All the stars in heaven": "All the stars in heaven",
+
+	/* CC3 extras — Decide Your Destiny (extras/decideDestiny.ts, a port of
+	 * klattmose's mod) */
+	"Spend sugar lumps to choose the outcome of the next natural golden cookie.": "/",
+	"Unlocks the <b>Destiny decider</b>, letting you spend sugar lumps to choose the outcome of the next natural golden cookie.": "/",
+	"Adds the <b>Building special</b> effect to the pool of choices.": "/",
+	"Adds the <b>Dragon Harvest</b> effect to the pool of choices.": "/",
+	"Adds the <b>Cookie chain</b> and <b>Cookie storm</b> effects to the pool of choices.": "/",
+	"Adds the <b>Click frenzy</b> and <b>Cursed finger</b> effects to the pool of choices.": "/",
+	"Adds the <b>Ruin</b> and <b>Clot</b> effects to the pool of choices, which will <b>give</b> sugar lumps.": "/",
+	"Adds the <b>Dragonflight</b> effect to the pool of choices.": "/",
+	"Adds the <b>Elder frenzy</b> effect to the pool of choices.": "/",
+	"Adds the <b>Blab</b> effect to the pool of choices.": "/",
+	"Decided destiny <b>1 time</b>.": "/",
+	"Decided destiny <b>10 times</b> in one ascension.": "/",
+	"Accepted a negative fate for material gain.": "/",
+	"Decided your destiny would be a <b>Blab</b>.": "/",
+	"Times decided destiny :": "/"
 
 }
 } satisfies LanguageData;

@@ -138,7 +138,15 @@ type BoundsRect = { left: number; right: number; top: number; bottom: number };
 					}
 					
 					//select an effect
-					var list=[];
+					var list: string[]=[];
+					//CCSE-style mod hook, injection point 1 (see setupModding
+					//in systems/modding.ts): runs with the list still empty;
+					//callbacks push effect strings to extend the pool, or
+					//set me.force/me.wrath to decide the outcome. (The loop
+					//variable is `m` to avoid colliding with the for-in `i`
+					//declared later in this function.)
+					if (Game.customShimmerTypes && Game.customShimmerTypes['golden'] && Game.customShimmerTypes['golden'].customListPush)
+						for (var m=0;m<Game.customShimmerTypes['golden'].customListPush.length;m++) Game.customShimmerTypes['golden'].customListPush[m](me, list);
 					if (me.wrath>0) list.push('clot','multiply cookies','ruin cookies');
 					else list.push('frenzy','multiply cookies');
 					if (me.wrath>0 && Game.hasGod && Game.hasGod('scorn')) list.push('clot','ruin cookies','clot','ruin cookies');
@@ -205,19 +213,33 @@ type BoundsRect = { left: number; right: number; top: number; bottom: number };
 					
 					var popup='';
 					var buff: any=0;
+					//CCSE-style mod hook, injection point 2 (see setupModding
+					//in systems/modding.ts): custom effect-duration and
+					//magnitude multipliers, and the optional buff override
+					//(Hurricane Sugar uses customBuff to steer the outcome).
+					if (Game.customShimmerTypes && Game.customShimmerTypes['golden'])
+					{
+						if (Game.customShimmerTypes['golden'].customEffectDurMod) for (var m=0;m<Game.customShimmerTypes['golden'].customEffectDurMod.length;m++) effectDurMod*=Game.customShimmerTypes['golden'].customEffectDurMod[m](me);
+						if (Game.customShimmerTypes['golden'].customMult) for (var m=0;m<Game.customShimmerTypes['golden'].customMult.length;m++) mult*=Game.customShimmerTypes['golden'].customMult[m](me);
+						if (Game.customShimmerTypes['golden'].customBuff) for (var m=0;m<Game.customShimmerTypes['golden'].customBuff.length;m++) buff=Game.customShimmerTypes['golden'].customBuff[m](me, buff, choice, effectDurMod, mult);
+					}
 					
 					if (choice=='building special')
 					{
+						//`objList` (was `list`): renamed because this function now
+						//declares `var list: string[]` above for the effect pool;
+						//var hoisting made the two collide. Identifiers are not
+						//part of any save or UI surface, behavior is unchanged.
 						var time=Math.ceil(30*effectDurMod);
-						var list=[];
+						var objList: number[]=[];
 						for (var i in Game.Objects)
 						{
-							if (Game.Objects[i].amount>=10) list.push(Game.Objects[i].id);
+							if (Game.Objects[i].amount>=10) objList.push(Game.Objects[i].id);
 						}
-						if (list.length==0) {choice='frenzy';}//default to frenzy if no proper building
+						if (objList.length==0) {choice='frenzy';}//default to frenzy if no proper building
 						else
 						{
-							var obj=choose(list);
+							var obj=choose(objList);
 							var pow=Game.ObjectsById[obj].amount/10+1;
 							if (me.wrath && Math.random()<0.3)
 							{

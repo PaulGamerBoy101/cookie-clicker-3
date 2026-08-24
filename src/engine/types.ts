@@ -486,6 +486,25 @@ export interface Game {
 	mods: Record<string, Mod>;
 	sortedMods: Mod[];
 	modSaveData: Record<string, string>;
+	/* CCSE-era extension surfaces (set up by setupModding in
+	 * systems/modding.ts). The custom menu arrays are invoked by UpdateMenu
+	 * (ui/menu.ts) after the menu DOM is replaced; customShimmerTypes
+	 * carries the golden shimmer hook arrays invoked from the golden
+	 * popFunc (systems/shimmerTypes.ts) — customListPush at the start of
+	 * effect-list construction, customEffectDurMod/customMult/customBuff
+	 * right after the vanilla `var buff=0;`. */
+	customMenu: Array<() => void>;
+	customOptionsMenu: Array<() => void>;
+	customStatsMenu: Array<() => void>;
+	customInfoMenu: Array<() => void>;
+	customShimmerTypes: {
+		golden: {
+			customListPush: Array<(me: any, list: string[]) => void>;
+			customEffectDurMod: Array<(me: any) => number>;
+			customMult: Array<(me: any) => number>;
+			customBuff: Array<(me: any, buff: any, choice: string, effectDurMod: number, mult: number) => any>;
+		};
+	};
 
 	/* --- lifecycle methods --- */
 	Init(): void;
@@ -561,7 +580,10 @@ export interface Game {
 
 	/* --- mod registration --- */
 	registerMod(id: string, mod: Mod): boolean;
-	registerHook(hook: string, func: () => void): void;
+	/* `func` may receive the hook parameter (e.g. 'reset' is called with
+	 * `true` for a hard reset, `false` for an ascension) — the vanilla
+	 * registerHook passes whatever runModHook forwards. */
+	registerHook(hook: string, func: (...args: any[]) => void): void;
 
 	/* --- content constructors (modding API) --- */
 	/* Phase 3 slice 2: the real class (core/building.ts) — the engine

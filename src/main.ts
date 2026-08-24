@@ -19,6 +19,7 @@ import './engine/main';
  * eval; each self-registers (its content is declared in the 'create' hook
  * during Game.Load, before LoadSave). */
 import './extras/blackHoleInverter';
+import './extras/decideDestiny';
 import './styles/main.css';
 import type { Cc3AnimStats, Game as EngineGame, LanguageData } from './engine/types';
 
@@ -55,11 +56,14 @@ if (debugSurface) {
  *   ?qa=cats      seed five Cats so the animated building can be previewed
  *   ?qa=cats100   seed 100 Cats to preview the compact multi-lane display
  *   ?qa=golden    spawn + pop a forced "frenzy" golden cookie, report the buff
+ *   ?qa=destiny   exercise Decide Your Destiny: buy the heavenly chain, decide a
+ *                 destiny, pop a natural golden cookie, verify the forced
+ *                 effect + save round-trip
  *   ?qa=save      export a save, corrupt state, re-import, verify round-trip
  *   ?qa=backup    exercise the rolling save backup history (capture/list/restore)
  *   ?qa=content   validate content registries and report economy ordering
  * Never active in a plain production load. */
-if (debugSurface && params.has('qa') && params.get('qa') !== 'golden' && params.get('qa') !== 'save' && params.get('qa') !== 'backup' && params.get('qa') !== 'sound' && params.get('qa') !== 'perf' && params.get('qa') !== 'ascend' && params.get('qa') !== 'offline' && params.get('qa') !== 'special' && params.get('qa') !== 'a11y' && params.get('qa') !== 'wrinkler' && params.get('qa') !== 'icon' && params.get('qa') !== 'onecol' && params.get('qa') !== 'anim' && params.get('qa') !== 'binverter' && params.get('qa') !== 'content') {
+if (debugSurface && params.has('qa') && params.get('qa') !== 'golden' && params.get('qa') !== 'save' && params.get('qa') !== 'backup' && params.get('qa') !== 'sound' && params.get('qa') !== 'perf' && params.get('qa') !== 'ascend' && params.get('qa') !== 'offline' && params.get('qa') !== 'special' && params.get('qa') !== 'a11y' && params.get('qa') !== 'wrinkler' && params.get('qa') !== 'icon' && params.get('qa') !== 'onecol' && params.get('qa') !== 'anim' && params.get('qa') !== 'binverter' && params.get('qa') !== 'content' && params.get('qa') !== 'destiny') {
 	const qaMode = params.get('qa'); // null for bare ?qa, else the value
 	const MINIGAME_BUILDINGS = ['Farm', 'Bank', 'Temple', 'Wizard tower'];
 	const tick = window.setInterval(() => {
@@ -481,6 +485,85 @@ if (debugSurface && params.get('qa') === 'binverter') {
 			out.textContent = lines.join('\n') + '\n[QA-binverter] ' + (pass ? 'PASS: Black Hole Inverter verified end to end' : 'FAIL: see checks above');
 		} catch (e: any) {
 			out.textContent = '[QA-binverter] ERROR: ' + e.constructor.name + ': ' + e.message;
+		}
+		window.clearInterval(tick);
+	}, 250);
+}
+
+// QA: verify Decide Your Destiny (extras/decideDestiny.ts). Checks the content
+// declarations, buys the heavenly "Destiny: Decided" with chips, lets the
+// 'check' hook unlock the decider, decides a destiny, pops a NATURAL golden
+// cookie (no force, no chain) and verifies the chosen effect was forced and
+// the decision cleared. Then save/load round-trips through WriteSave +
+// ImportSaveCode. Usage: ?debug=1&qa=destiny
+if (debugSurface && params.get('qa') === 'destiny') {
+	const NAME = 'Decide Your Destiny';
+	const DECIDER = 'Destiny decider';
+	const tick = window.setInterval(() => {
+		const G = window.Game;
+		if (!G || !G.ready || !G.Upgrades) return;
+		const decider = G.Upgrades[DECIDER];
+		const decided = G.Upgrades['Destiny: Decided'];
+		if (!decider || !decided) return; // wait for launchMods to declare the content
+		if (G.__qaDestiny) return;
+		G.__qaDestiny = 1;
+		const out = document.createElement('div');
+		out.id = '__dbgqa';
+		out.style.cssText = 'position:fixed;top:0;left:0;z-index:99999;background:#fff;color:#060;font:12px monospace;white-space:pre-wrap;max-width:640px;';
+		document.body.appendChild(out);
+		try {
+			const lines: string[] = [];
+			let pass = true;
+			const chk = (label: string, cond: boolean) => { lines.push((cond ? 'PASS: ' : 'FAIL: ') + label); if (!cond) pass = false; };
+			const modSave = (): string => { const m = G.mods[NAME]; return (m && typeof m.save === 'function') ? m.save() : '(missing mod save)'; };
+			const modLoad = (s: string): boolean => { const m = G.mods[NAME]; if (m && typeof m.load === 'function') { m.load(s); return true; } return false; };
+
+			// 1. content declarations
+			chk('mod registered with save/load', !!G.mods[NAME] && typeof G.mods[NAME].save === 'function' && typeof G.mods[NAME].load === 'function');
+			chk('9 heavenly "Destiny: *" upgrades', ['Decided', 'Architecture', 'Agriculture', 'Scattershot', 'Carpal tunnel', 'Misfortune', 'Altitude', 'Apocalypse', 'Whimsy'].every((n) => !!G.Upgrades['Destiny: ' + n]));
+			chk('4 achievements', ['Decisive', 'Control freak', 'Tradeoff', 'Whimsical'].every((n) => !!G.Achievements[n]));
+			chk('decider is a toggle with a choice selector', decider.pool === 'toggle' && typeof decider.choicesFunction === 'function' && typeof decider.choicesPick === 'function');
+			chk("'Destiny: Decided' parent resolved to vanilla 'Legacy' (CCSE empty-parents rule)", decided.parents.length === 1 && !!decided.parents[0] && (decided.parents[0] as any).name === 'Legacy');
+			chk('heavenly pool/order set (pool=' + decider.pool + '/' + decided.pool + ', order=' + decided.order + ')', decided.pool === 'prestige' && decided.order === decided.id);
+
+			// 2. unlock path: buy the heavenly upgrade with chips, 'check' hook unlocks the decider
+			G.heavenlyChips = 1e6;
+			decided.unlocked = 1;
+			decided.buy();
+			chk('heavenly "Destiny: Decided" bought (chips left ' + Math.round(G.heavenlyChips) + ')', decided.bought === 1);
+			G.runModHook('check');
+			chk("'check' hook unlocked the decider (unlocked=" + decider.unlocked + ')', decider.unlocked === 1);
+			chk('initial lump cost is 1 (2^0)', decider.priceLumps === 1);
+
+			// 3. decide Frenzy, pop a natural golden cookie
+			G.lumps = 10;
+			G.prefs.askLumps = 0; // skip the spend confirmation prompt
+			decider.choicesPick(1); // AllDestinies[1] = Frenzy
+			chk('decision recorded (mod save "' + modSave() + '")', modSave() === '1.3;Frenzy,1');
+			chk('timesDecided=1 raised the price to 2 lumps', decider.priceLumps === 2);
+			chk('achievement "Decisive" won', G.Achievements['Decisive'].won === 1);
+			const sh = new G.shimmer('golden');
+			sh.pop(); // natural: no force, no chain -> the mod must force the decided effect
+			const buff = G.buffs['Frenzy'];
+			chk('natural golden cookie forced Frenzy (mult ' + (buff ? buff.arg1 : 'n/a') + ')', !!buff && buff.arg1 === 7);
+			chk('decision cleared after the pop (mod save "' + modSave() + '")', modSave() === '1.3;Undecided,1');
+
+			// 4. save round-trip through the engine save format
+			decider.choicesPick(2); // AllDestinies[2] = Lucky
+			chk('second decision: Lucky, 2 times (price 4)', modSave() === '1.3;Lucky,2' && decider.priceLumps === 4);
+			const saveStr = G.WriteSave(1);
+			//WriteSave(1) returns a base64 string, so assert on the mod data
+			//registry that saveModData() populated while building it
+			chk('WriteSave invoked the mod save (registry "' + (G.modSaveData[NAME] || '(missing)') + '")', G.modSaveData[NAME] === '1.3;Lucky,2');
+			modLoad('1.3;Blab,9'); // simulate a different (older) save arriving
+			chk('corrupted state before import: Blab x9', modSave() === '1.3;Blab,9');
+			G.ImportSaveCode(saveStr);
+			chk('ImportSaveCode restored Lucky x2 (got "' + modSave() + '")', modSave() === '1.3;Lucky,2');
+			chk('priceLumps re-derived on load (2^2=4, got ' + decider.priceLumps + ')', decider.priceLumps === 4);
+
+			out.textContent = lines.join('\n') + '\n[QA-destiny] ' + (pass ? 'PASS: Decide Your Destiny verified end to end' : 'FAIL: see checks above');
+		} catch (e: any) {
+			out.textContent = '[QA-destiny] ERROR: ' + e.constructor.name + ': ' + e.message;
 		}
 		window.clearInterval(tick);
 	}, 250);
