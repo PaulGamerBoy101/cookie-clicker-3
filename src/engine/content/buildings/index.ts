@@ -1,6 +1,6 @@
 /**
  * content/buildings/ — the vanilla building declarations, one file per
- * building (plus remaining.ts while the split is in progress).
+ * building.
  *
  * Ported verbatim from the 2.048 engine (engine/main.ts, the //define objects
  * block inside Game.Init). This is the architectural rewrite's typed content
@@ -37,7 +37,7 @@ import { declareFractalEngine } from "./fractalengine";
 import { declareJavascriptConsole } from "./javascriptconsole";
 import { declareIdleverse } from "./idleverse";
 import { declareCortexBaker } from "./cortexbaker";
-import { declareRemaining } from "./remaining";
+import { declareCats } from "./cats";
 
 /** Declare the 20 vanilla buildings (and their per-building extras) on Game. */
 export function declareVanillaBuildings(Game: EngineGame) {
@@ -60,5 +60,37 @@ export function declareVanillaBuildings(Game: EngineGame) {
 	declareJavascriptConsole(Game);
 	declareIdleverse(Game);
 	declareCortexBaker(Game);
-	declareRemaining(Game);
+	declareTailRebalance(Game);
+	declareCats(Game);
+}
+
+/**
+ * Apply the tail price rebalance, after every vanilla building is declared
+ * but before Cats (Cats' price is unaffected). Moved verbatim from the
+ * original //define objects block; it runs in this position on purpose.
+ */
+function declareTailRebalance(Game: EngineGame) {
+		// The Building ctor auto-generates basePrice from the id curve and
+		// ignores the price argument for id>0, so the rebalanced tail prices
+		// are applied post-construction (same pattern as the Cats block below).
+		// Prices walk a ~2.1x-per-store-step payback curve anchored at Antimatter
+		// condenser (1.709e14, unchanged), matching the midgame slope exactly.
+		var rebalancePrices:any={
+			'Prism':2420400000000000,
+			'Chancemaker':36807000000000000,
+			'Fractal engine':552110000000000000,
+			'Javascript console':8502400000000000000,
+			'Idleverse':134725000000000000000,
+			'Cortex baker':2181570000000000000000
+		};
+		for (var rebalanceName in rebalancePrices)
+		{
+			var rebalanceBuilding=Game.Objects[rebalanceName];
+			if (rebalanceBuilding)
+			{
+				rebalanceBuilding.basePrice=rebalancePrices[rebalanceName];
+				rebalanceBuilding.price=rebalancePrices[rebalanceName];
+				rebalanceBuilding.bulkPrice=rebalancePrices[rebalanceName];
+			}
+		}
 }

@@ -1,46 +1,21 @@
 /**
- * content/buildings/remaining.ts — the vanilla building declarations not yet
- * split into their own files (Fractal engine through Cortex baker, the tail price
- * rebalance, and Cats).
+ * content/buildings/cats.ts — the Cats building declaration (CC3 content).
  *
- * Ported verbatim from the 2.048 engine (engine/main.ts, the //define objects
- * block inside Game.Init). This is the architectural rewrite's typed content
- * layer: the same `new Game.Object` calls, in the same order, with the same
- * CpS/buy closures — only the file moved, and every closure is now typed.
+ * Split from content/buildings.ts (pure move — same new Game.Object call,
+ * same order position, same closures; only the file changed). Includes the
+ * animation sheets, the custom cat-room draw override (with its 50-sprite
+ * cap) and the store-row reposition that places Cats between Grandma and
+ * Farm.
  *
- * Splitting is a pure move: each building block is lifted into
- * buildings/<name>.ts one at a time (see the git history) and called from
- * index.ts in exactly this order. Declaration order is load-bearing —
- * Game.Objects key order is the save index (see the Cats comment) — so the
- * call order in index.ts must never change.
+ * Cats stays declared LAST: Game.Objects key order is the building save
+ * index, so appending Cats at the end keeps every pre-Cats building at its
+ * original save index. Never move this declaration earlier.
  */
 import type { Building, Game as EngineGame } from "../../types";
 
-/** Declare the not-yet-split vanilla buildings (and their per-building extras) on Game. */
-export function declareRemaining(Game: EngineGame) {
-		// The Building ctor auto-generates basePrice from the id curve and
-		// ignores the price argument for id>0, so the rebalanced tail prices
-		// are applied post-construction (same pattern as the Cats block below).
-		// Prices walk a ~2.1x-per-store-step payback curve anchored at Antimatter
-		// condenser (1.709e14, unchanged), matching the midgame slope exactly.
-		var rebalancePrices:any={
-			'Prism':2420400000000000,
-			'Chancemaker':36807000000000000,
-			'Fractal engine':552110000000000000,
-			'Javascript console':8502400000000000000,
-			'Idleverse':134725000000000000000,
-			'Cortex baker':2181570000000000000000
-		};
-		for (var rebalanceName in rebalancePrices)
-		{
-			var rebalanceBuilding=Game.Objects[rebalanceName];
-			if (rebalanceBuilding)
-			{
-				rebalanceBuilding.basePrice=rebalancePrices[rebalanceName];
-				rebalanceBuilding.price=rebalancePrices[rebalanceName];
-				rebalanceBuilding.bulkPrice=rebalancePrices[rebalanceName];
-			}
-		}
+/** Declare the Cats building on Game (must stay last in declaration order). */
+export function declareCats(Game: EngineGame) {
+
 
 		// Cats are appended after the vanilla building list so old saves keep
 		// every existing building at its original save index. Their visible
