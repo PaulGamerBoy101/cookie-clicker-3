@@ -40,6 +40,9 @@ changelog and in each port's file header.
   launch/boom sounds are klattmose's originals, vendored in
   `public/img/customIcons.png`, `public/img/rocket.png`,
   `public/snd/rocketLaunch.mp3`, `public/snd/rocketBoom.mp3`.
+- **Casino** (`extras/casino.ts`) — the blackjack card sprite and the table
+  background are klattmose's originals, vendored in
+  `public/img/phantasypantsCards.png` and `public/img/BGcasino.jpg`.
 
 ## Fonts
 

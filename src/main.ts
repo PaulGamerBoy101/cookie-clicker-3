@@ -21,6 +21,7 @@ import './engine/main';
 import './extras/blackHoleInverter';
 import './extras/decideDestiny';
 import './extras/americanSeason';
+import './extras/casino';
 import './styles/main.css';
 import type { Cc3AnimStats, Game as EngineGame, LanguageData } from './engine/types';
 
@@ -64,7 +65,7 @@ if (debugSurface) {
  *   ?qa=backup    exercise the rolling save backup history (capture/list/restore)
  *   ?qa=content   validate content registries and report economy ordering
  * Never active in a plain production load. */
-if (debugSurface && params.has('qa') && params.get('qa') !== 'golden' && params.get('qa') !== 'save' && params.get('qa') !== 'backup' && params.get('qa') !== 'sound' && params.get('qa') !== 'perf' && params.get('qa') !== 'ascend' && params.get('qa') !== 'offline' && params.get('qa') !== 'special' && params.get('qa') !== 'a11y' && params.get('qa') !== 'wrinkler' && params.get('qa') !== 'icon' && params.get('qa') !== 'onecol' && params.get('qa') !== 'anim' && params.get('qa') !== 'binverter' && params.get('qa') !== 'content' && params.get('qa') !== 'destiny' && params.get('qa') !== 'amseason') {
+if (debugSurface && params.has('qa') && params.get('qa') !== 'golden' && params.get('qa') !== 'save' && params.get('qa') !== 'backup' && params.get('qa') !== 'sound' && params.get('qa') !== 'perf' && params.get('qa') !== 'ascend' && params.get('qa') !== 'offline' && params.get('qa') !== 'special' && params.get('qa') !== 'a11y' && params.get('qa') !== 'wrinkler' && params.get('qa') !== 'icon' && params.get('qa') !== 'onecol' && params.get('qa') !== 'anim' && params.get('qa') !== 'binverter' && params.get('qa') !== 'content' && params.get('qa') !== 'destiny' && params.get('qa') !== 'amseason' && params.get('qa') !== 'casino') {
 	const qaMode = params.get('qa'); // null for bare ?qa, else the value
 	const MINIGAME_BUILDINGS = ['Farm', 'Bank', 'Temple', 'Wizard tower'];
 	const tick = window.setInterval(() => {
@@ -688,6 +689,247 @@ if (debugSurface && params.get('qa') === 'amseason') {
 			out.textContent = lines.join('\n') + '\n[QA-amseason] ' + (pass ? 'PASS: American Season verified end to end' : 'FAIL: see checks above');
 		} catch (e: any) {
 			out.textContent = '[QA-amseason] ERROR: ' + e.constructor.name + ': ' + e.message;
+		}
+		window.clearInterval(tick);
+	}, 250);
+}
+
+// QA: verify Casino (extras/casino.ts). A faithful port of klattmose's
+// Blackjack minigame riding the vanilla minigame slot on the Chancemaker:
+// the mod registers via the mod API (init from launchMods), attaches M to
+// Game.Objects['Chancemaker'].minigame with minigameUrl 'casino.js' (a no-op
+// module in minigameModules), and the engine's scriptLoaded calls M.launch.
+// Phase 1 forces the minigame to load (level 1 + LoadMinigames), phase 2
+// verifies declarations + deterministic blackjack mechanics + menus + the
+// vanilla minigame save slot round-trip. Usage: ?debug=1&qa=casino
+if (debugSurface && params.get('qa') === 'casino') {
+	const tick = window.setInterval(() => {
+		const G = window.Game;
+		const CM: any = (window as any).Casino;
+		if (!G || !G.ready || !G.Upgrades || !CM) return;
+		const ch = G.Objects['Chancemaker'];
+		if (!ch.minigameLoaded) {
+			// Phase 1: kick off the vanilla minigame load.
+			if (!G.__qaCasinoKick) {
+				G.__qaCasinoKick = 1;
+				ch.level = 1;
+				ch.amount = Math.max(ch.amount, 1);
+				G.BuildingsOwned = Math.max(G.BuildingsOwned, 1);
+				G.LoadMinigames();
+			}
+			return; // wait for loadMinigameModule -> scriptLoaded -> M.launch
+		}
+		if (G.__qaCasino) return;
+		G.__qaCasino = 1;
+		const out = document.createElement('div');
+		out.id = '__dbgqa';
+		out.style.cssText = 'position:fixed;top:0;left:0;z-index:99999;background:#fff;color:#060;font:12px monospace;white-space:pre-wrap;max-width:640px;';
+		document.body.appendChild(out);
+		try {
+			const lines: string[] = [];
+			let pass = true;
+			const chk = (label: string, cond: boolean) => { lines.push((cond ? 'PASS: ' : 'FAIL: ') + label); if (!cond) pass = false; };
+			const realRandom = Math.random;
+
+			// 1. declarations
+			chk('mod registered (no mod-API save section: state rides the vanilla minigame slot)', !!G.mods['casino'] && typeof (G.mods['casino'] as any).save === 'undefined');
+			chk('attached to the Chancemaker (M.parent.minigame === M)', CM.parent === ch && ch.minigame === CM && CM.name === 'Casino');
+			chk('minigameUrl wired to the no-op module', ch.minigameUrl === 'casino.js' && ch.minigameName === 'Casino' && CM.version === '4.0');
+			const UPGRADES = ['Raise the stakes', 'High roller!', 'Big spender!', 'Main player', 'True gambler', 'Math lessons', 'Counting cards', 'Standard push', 'Tiebreaker', 'Double down', 'Surrender', 'I make my own luck', 'Infinite Improbability Drive', 'Double or nothing', 'Stoned cows', 'Game for Pros', 'Actually, do tell me the odds'];
+			chk('17 upgrades declared', UPGRADES.every((n) => !!G.Upgrades[n]) && CM.Upgrades.length === 17);
+			const ACHIEVEMENTS = ['Card minnow', 'Card trout', 'Card shark', 'Five card stud', 'Why can\'t I hold all these cards?', 'Ace up your sleeve', 'Paid off the dealer', 'Deal with the Devil', 'Blackjack!', 'I like to live dangerously', 'I also like to live dangerously'];
+			chk('11 achievements declared', ACHIEVEMENTS.every((n) => !!G.Achievements[n]) && CM.Achievements.length === 11);
+			chk('4 shadow achievements', ['Ace up your sleeve', 'Paid off the dealer', 'Deal with the Devil', 'I also like to live dangerously'].every((n) => G.Achievements[n].pool === 'shadow'));
+			chk('heavenly upgrade in PrestigeUpgrades at (38, -188)', (G.PrestigeUpgrades || []).indexOf(G.Upgrades['Actually, do tell me the odds']) !== -1 && G.Upgrades['Actually, do tell me the odds'].pool === 'prestige' && G.Upgrades['Actually, do tell me the odds'].posX === 38 && G.Upgrades['Actually, do tell me the odds'].posY === -188);
+			const tg = G.Upgrades['True gambler'];
+			chk('bet-multiplier upgrades ordered right after "True gambler"', Math.abs(G.Upgrades['Double or nothing'].order - (tg.order + 0.001)) < 1e-9 && Math.abs(G.Upgrades['Stoned cows'].order - (G.Upgrades['Double or nothing'].order + 0.001)) < 1e-9 && Math.abs(G.Upgrades['Game for Pros'].order - (G.Upgrades['Stoned cows'].order + 0.001)) < 1e-9);
+			chk('all upgrade orders in the 1e6 region', CM.Upgrades.every((u: any) => u.order >= 1000000 && u.order < 1000000 + 0.2));
+			chk('priceFunc scales basePrice with peak CPS (Math lessons = 1x)', Math.abs(G.Upgrades['Math lessons'].getPrice() - 1 * G.cookiesPsRawHighest * 60) < 1e-9 && Math.abs(G.Upgrades['Surrender'].getPrice() - 35 * G.cookiesPsRawHighest * 60) < 1e-9);
+			chk('heavenly upgrade hidden until "Card shark" is won', !G.Upgrades['Actually, do tell me the odds'].showIf());
+
+			// 2. the table
+			chk('minigame UI built into rowSpecial', !!l('casinoMoney') && !!l('casinoActions') && !!l('casinoGame') && !!l('casinoInfo') && !!l('casinoBG'));
+			chk('53 cards (placeholder + 4 suits x 13 pips)', CM.cards.length === 53 && CM.cards[0].pip === 0 && CM.cards[1].pip === 1 && CM.cards[1].value === 1 && CM.cards[13].pip === 13 && CM.cards[13].value === 10 && CM.cards[14].suit === 1);
+			chk('4-deck shoe built (208 cards)', CM.Deck.length === CM.deckCount * 52 && CM.Deck.length === 208 && CM.minDecks === 2);
+			chk('cardImage offsets (K of spades -> 948px/0px, hidden -> 158px/492px)', CM.cardImage(CM.cards[13]) === '-948px -0px ' && CM.cardImage(CM.cards[0]) === '-158px -492px ');
+
+			const bj = CM.games.Blackjack;
+			// pure helpers
+			const hv = (cards: any[]) => { const h: any = {value: 0, cards}; bj.getHandValue(h); return h.value; };
+			chk('ace values: A+K=21, A+A=12, 10+9=19', hv([CM.cards[1], CM.cards[13]]) === 21 && hv([CM.cards[1], CM.cards[14]]) === 12 && hv([CM.cards[13], CM.cards[9]]) === 19);
+			// precision 1 (set by reset): floor to 1 decimal, values under 0.1% clamp
+chk('formatPercentage floors to 1 decimal', CM.formatPercentage(0.1234) === '12.3%' && CM.formatPercentage(0.00001) === '<0.1%');
+			const deckCopy = CM.Deck.slice();
+			CM.reshuffle();
+			chk('reshuffle rebuilds a 4-deck shoe', CM.Deck.length === 208 && CM.Deck.every((c: any) => !!c.pip) && JSON.stringify(CM.Deck) === JSON.stringify(deckCopy));
+			chk('instantWinChance is 0 without the luck upgrade', bj.instantWinChance() === 0);
+			G.Upgrades['I make my own luck'].bought = 1;
+			ch.chancemakerChance = undefined;
+			chk('instantWinChance = 1-(1-0.0002^amount) with the luck upgrade', Math.abs(bj.instantWinChance() - (1 - Math.pow(1 - 0.0002, ch.amount))) < 1e-12);
+			G.Upgrades['Infinite Improbability Drive'].bought = 1;
+			chk('IID doubles the chance', Math.abs(bj.instantWinChance() - (1 - Math.pow(1 - 0.0004, ch.amount))) < 1e-12);
+			G.Upgrades['I make my own luck'].bought = 0;
+			G.Upgrades['Infinite Improbability Drive'].bought = 0;
+
+			// 3. deterministic deal (the probe runs synchronously, so the engine
+			//    loop cannot interleave with these beats)
+			G.cookies = 1e7;
+			CM.bankPercentage = true;
+			CM.betChoice = 1;
+			CM.betMode = 1;
+			Math.random = () => 0; // always draw Deck[0] (kept through section 7)
+			CM.reset(true);
+			CM.logic(); //inactive-phase recompute: reset left betAmount 0
+			bj.istep = 0;
+			bj.phase = bj.phases.deal;
+			let guard = 0;
+			while (bj.phase === bj.phases.deal && guard++ < 10) {
+				CM.nextBeat = 0;
+				CM.logic();
+			}
+			const p0 = CM.hands.player[0];
+			chk('deal: player A-3 (14), dealer 2-4 (6), phase firstTurn', bj.phase === bj.phases.firstTurn && p0.cards.length === 2 && p0.value === 14 && CM.hands.dealer.cards.length === 2 && CM.hands.dealer.cards[1].pip === 0 && bj.hiddenCard.pip === 4);
+			chk('deal spent the bank-percentage bet (1e7 -> ' + G.cookies + ')', Math.abs(G.cookies - (1e7 - 1e7 * 0.001)) < 1e-9);
+
+			// 4. hit to bust -> Math lessons unlock -> dealer turn -> bust
+			bj.phase = bj.phases.playerTurn;
+			p0.cards = [CM.cards[13], CM.cards[26]]; // K+K = 20
+			bj.getHandValue(p0);
+			bj.hit(p0, true); // draws the next Deck[0] card
+			chk('bust on 21+ unlocks "Math lessons" and stands', G.Upgrades['Math lessons'].unlocked === 1 && p0.value > 21);
+			guard = 0;
+			while (bj.phase !== bj.phases.inactive && guard++ < 10) {
+				CM.nextBeat = 0;
+				CM.logic();
+			}
+			chk('busted hand pays 0 (losses ' + bj.losses + ', netTotal ' + bj.netTotal + ')', bj.losses === 1 && Math.abs(bj.netTotal + 1e4) < 1e-6);
+
+			// 5. natural blackjack with a rigged shoe (deal order is P,D,P,D, so
+			//    the player draws Deck[0] and Deck[2]: A, filler, K up top)
+			CM.reshuffle();
+			CM.Deck.splice(0, 0, CM.cards[1], CM.cards[2], CM.cards[13]);
+			G.cookies = 1e7;
+			CM.betAmount = 1e4;
+			bj.istep = 0;
+			bj.phase = bj.phases.deal;
+			guard = 0;
+			while (bj.phase === bj.phases.deal && guard++ < 10) {
+				CM.nextBeat = 0;
+				CM.logic();
+			}
+			chk('natural A+K is a blackjack: 2.5x payout, "I make my own luck" unlocked, "Blackjack!" won', bj.phase === bj.phases.inactive && CM.hands.player[0].value === 21 && bj.winsT === 1 && G.Upgrades['I make my own luck'].unlocked === 1 && G.Achievements['Blackjack!'].won === 1 && Math.abs(G.cookies - (1e7 - 1e4 + 2.5e4)) < 1e-6);
+
+			// 6. dealer bust (dealer K+2 -> hits K -> 22)
+			CM.reshuffle();
+			CM.Deck.splice(0, 0, CM.cards[13], CM.cards[2], CM.cards[3], CM.cards[13], CM.cards[13]);
+			G.cookies = 1e7;
+			CM.betAmount = 1e4;
+			bj.istep = 0;
+			bj.phase = bj.phases.deal;
+			guard = 0;
+			while (bj.phase === bj.phases.deal && guard++ < 10) {
+				CM.nextBeat = 0;
+				CM.logic();
+			}
+			bj.phase = bj.phases.playerTurn;
+			bj.stand();
+			guard = 0;
+			while (bj.phase !== bj.phases.inactive && guard++ < 10) {
+				CM.nextBeat = 0;
+				CM.logic();
+			}
+			chk('dealer bust pays 2x (winsT ' + bj.winsT + ')', bj.phase === bj.phases.inactive && bj.winsT === 2 && Math.abs(bj.netTotal - (1.5e4 - 1e4 + 1e4)) < 1e-6);
+			Math.random = realRandom;
+
+			// 7. split a pair of aces
+			CM.reset(true);
+			G.cookies = 1e7;
+			CM.betAmount = 1e4;
+			CM.hands = {dealer: {value: 0, cards: [CM.cards[2], CM.cards[0]]}, player: [{value: 0, splitFirstTurn: true, cards: [CM.cards[1], CM.cards[14]]}]};
+			bj.getHandValue(CM.hands.player[0]);
+			bj.getHandValue(CM.hands.dealer);
+			bj.hiddenCard = CM.cards[2];
+			bj.phase = bj.phases.playerTurn;
+			bj.split();
+			chk('split aces into two 2-card hands (splits ' + bj.splits + ')', CM.hands.player.length === 2 && CM.hands.player[0].cards.length === 2 && CM.hands.player[1].cards.length === 2 && bj.splits === 2);
+
+			// 8. bet toggles
+			G.Upgrades['Raise the stakes'].bought = 1;
+			G.Upgrades['High roller!'].bought = 1;
+			CM.bankPercentage = false;
+			CM.betMode = 1;
+			bj.toggleBetMode();
+			const m2 = CM.betMode;
+			bj.toggleBetMode();
+			const m3 = CM.betMode;
+			bj.toggleBetMode();
+			chk('bet mode cycles 1 -> 2 -> 3 -> 1 with the upgrades', m2 === 2 && m3 === 3 && CM.betMode === 1);
+			CM.betMode = 1;
+			G.cookiesPsRawHighest = 50;
+			CM.betChoice = 2;
+			bj.phase = bj.phases.inactive; //recompute only runs in the inactive phase
+			CM.logic(); //inactive-phase recompute
+			chk('CPS bet = min(cookies*0.1, peakCPS*choice) = ' + CM.betAmount, Math.abs(CM.betAmount - Math.min(1e7 * 0.1, 50 * 2)) < 1e-9);
+
+			// 9. the menus
+			G.onMenu = 'prefs';
+			G.UpdateMenu();
+			chk('options menu: bank-percentage toggle + beat slider', !!l('Casino_bankPercentageButton') && !!l('beatLengthSlider'));
+			CM.bankPercentage = true; //start from "on" so the first click flips it off
+			l('Casino_bankPercentageButton').click();
+			chk('toggle flips bankPercentage off (sidebar shows CPS bets)', CM.bankPercentage === false && l('casinoMoney').innerHTML.indexOf('of CPS') !== -1);
+			l('Casino_bankPercentageButton').click();
+			chk('toggle flips it back on', CM.bankPercentage === true && l('casinoMoney').innerHTML.indexOf('percent of bank') !== -1);
+			(l('beatLengthSlider') as any).value = 500;
+			(l('beatLengthSlider') as any).oninput();
+			chk('beat slider updates M.beatLength + label', CM.beatLength === 500 && l('beatLengthSliderRightText').innerHTML === '500');
+			G.onMenu = 'stats';
+			G.UpdateMenu();
+			chk('stats menu shows version + earnings', l('menu').innerHTML.indexOf('Casino:</b>') !== -1 && l('menu').innerHTML.indexOf('Blackjack has earned you :') !== -1);
+
+			// 10. probability tooltips
+			G.Upgrades['Actually, do tell me the odds'].bought = 1;
+			chk('odds upgrade shows with "Card shark" won', G.Achievements['Card shark'].won === 1 ? !!G.Upgrades['Actually, do tell me the odds'].showIf() : G.Achievements['Card shark'].won === 0);
+			bj.phase = bj.phases.inactive;
+			CM.buildSidebar();
+			const dp = bj.dealProbabilities();
+			chk('deal probabilities render (deck-true, sums sane)', typeof dp === 'string' && dp.indexOf('Blackjack :') !== -1 && dp.indexOf('<div') === 0);
+
+			// 11. check hook (wins/loss thresholds)
+			bj.winsT = 21;
+			bj.tiesLost = 3;
+			G.runModHook('check');
+			chk('check hook: "Card minnow" won, "Raise the stakes" + "Standard push" unlocked', G.Achievements['Card minnow'].won === 1 && G.Upgrades['Raise the stakes'].unlocked === 1 && G.Upgrades['Standard push'].unlocked === 1);
+
+			// 12. save round-trip through the vanilla minigame save slot
+			CM.reshuffle(); //a full 208-card shoe in the save
+			bj.winsT = 21;
+			bj.wins = 7;
+			bj.netTotal = 12345.6;
+			CM.betMode = 3;
+			CM.betChoice = 5;
+			CM.bankPercentage = false;
+			const savedDeckLen = CM.Deck.length;
+			const saved = CM.save();
+			const groups = saved.split(' ');
+			chk('save string has the 7 vanilla minigame slots', groups.length === 7 && groups[0].split('_')[2] === '21' && groups[0].split('_')[5] === '3' && groups[0].split('_')[6] === '5');
+			CM.reset(true); //zero the session state (all-time totals survive by design)
+			bj.winsT = 999;
+			bj.netTotal = -1; //corrupt the fields reset does not touch, so load() must restore them
+			chk('state cleared before load (session stats + bet config)', bj.wins === 0 && bj.losses === 0 && CM.betMode === 1 && CM.betChoice === 1 && !!CM.bankPercentage && bj.phase === bj.phases.inactive);
+			CM.load(saved);
+			chk('load restores stats/bet config/deck (winsT ' + bj.winsT + ', betMode ' + CM.betMode + ')', bj.winsT === 21 && bj.wins === 7 && Math.abs(bj.netTotal - 12345.6) < 1e-9 && CM.betMode === 3 && CM.betChoice === 5 && !CM.bankPercentage && CM.Deck.length === savedDeckLen && bj.phase === bj.phases.inactive);
+
+			// 13. full engine save -> import round-trip (the real persistence path)
+			const saveCode = G.WriteSave(1);
+			bj.winsT = 0;
+			chk('state corrupted before import', bj.winsT === 0);
+			G.ImportSaveCode(saveCode);
+			chk('ImportSaveCode restored the minigame state through the Chancemaker save slot (winsT ' + bj.winsT + ')', bj.winsT === 21 && CM.betMode === 3);
+
+			out.textContent = lines.join('\n') + '\n[QA-casino] ' + (pass ? 'PASS: Casino verified end to end' : 'FAIL: see checks above');
+		} catch (e: any) {
+			out.textContent = '[QA-casino] ERROR: ' + e.constructor.name + ': ' + e.message;
 		}
 		window.clearInterval(tick);
 	}, 250);
@@ -1399,6 +1641,11 @@ const minigameModules: Record<string, () => Promise<unknown>> = {
 	'minigameGrimoire.js': () => import('./engine/minigameGrimoire'),
 	'minigameMarket.js': () => import('./engine/minigameMarket'),
 	'minigamePantheon.js': () => import('./engine/minigamePantheon'),
+	// CC3 extras mod (extras/casino.ts): the code is already in memory via
+	// the static import — this no-op module stands in for the original's
+	// remote "dummyFile.js" so the vanilla minigame machinery (LoadMinigames
+	// -> scriptLoaded -> M.launch) works unchanged.
+	'casino.js': () => Promise.resolve(null),
 };
 
 window.loadMinigameModule = function (url) {

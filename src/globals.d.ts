@@ -239,6 +239,8 @@ declare global {
 		__cc3DecideDestiny?: number;
 		/* Set by extras/americanSeason.ts once it has registered. */
 		__cc3AmericanSeason?: number;
+		/* Set by extras/casino.ts once it has registered. */
+		__cc3Casino?: number;
 		/* The American Season namespace (extras/americanSeason.ts): the
 		 * original mod's global, kept so the mod's inline menu handlers
 		 * (UpdatePref / Toggle / `config = defaultConfig()`) and other mods
@@ -264,6 +266,24 @@ declare global {
 			AllDestinies: unknown[];
 			AllDestiniesByName: Record<string, unknown>;
 			NewDestiny: (name: string, icon: [number, number], effect: string, other?: Record<string, unknown>) => void;
+		};
+		/* The Casino namespace (extras/casino.ts): the Blackjack minigame
+		 * object (the original mod's global), attached to the Chancemaker's
+		 * vanilla minigame slot; QA probes and other mods reach it here. */
+		Casino?: {
+			name: string;
+			version: string;
+			parent: any;
+			cards: any[];
+			Deck: any[];
+			hands: any;
+			games: { Blackjack: any };
+			betMode: number;
+			betChoice: number;
+			betAmount: number;
+			bankPercentage: boolean;
+			beatLength: number;
+			[key: string]: any;
 		};
 	}
 }
