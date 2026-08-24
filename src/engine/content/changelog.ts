@@ -41,6 +41,13 @@ export function declareVanillaChangelog(Game: EngineGame) {
 	(!App?('<div class="listing warning">'+loc("Warning: clearing your browser cache or cookies <small>(what else?)</small> will result in your save being wiped. Export your save and back it up first!")+'</div>'):'')+
 	
 	'</div><div class="subsection">'+
+	'<div class="title">Cookie Clicker 3</div>'+
+	'<div class="listing">'+loc("This is %1, a modern community rewrite of Cookie Clicker 2.048.",'<a href="https://github.com/giveen/cookie-clicker-3" target="_blank">Cookie Clicker 3</a>')+'</div>'+
+	'<div class="listing">'+loc("The 2.048 engine was rebuilt as strictly typed TypeScript ES modules on a zero-dependency Vite build. Behavior, numbers and the save format stay compatible with 2.048 — your existing save imports without changes.")+'</div>'+
+	'<div class="listing">'+loc("Compared to the original browser version: no ads, no trackers and no CDN requests (fonts included), an offline-capable PWA with a self-updating service worker, and a one-column layout for phones.")+'</div>'+
+	'<div class="listing">'+loc("Music by Bert Cole.")+'</div>'+
+	'<div class="listing">'+loc("Where the project is headed: %1.",'<a href="https://github.com/giveen/cookie-clicker-3/blob/master/ROADMAP.md" target="_blank" class="highlightHover smallBlackButton">the roadmap</a>')+'</div>'+
+	'</div><div class="subsection">'+
 	'<div class="title">'+loc("Version history")+'</div>';
 	
 	for (var i=0;i<locPatches.length;i++)
@@ -59,7 +66,23 @@ export function declareVanillaChangelog(Game: EngineGame) {
 	if (!EN) Game.updateLog+='<div class="listing" style="font-weight:bold;font-style:italic;opacity:0.5;">'+loc("Note: older update notes are in English.")+'</div>';
 	
 	Game.updateLog+=
-	
+
+	'</div><div class="subsection update">'+
+	'<div class="title">23/08/2026 - cookie clicker 3</div>'+
+	'<div class="listing">&bull; Cookie Clicker 3: the 2.048 engine, rebuilt as strictly typed TypeScript ES modules on a Vite build — same game, same numbers, same puns</div>'+
+	'<div class="listing">&bull; saves stay byte-compatible with Cookie Clicker 2.048 (verified by an automated export/import round-trip)</div>'+
+	'<div class="listing">&bull; no ads, no trackers, no CDN requests — every script, image, font and sound is self-hosted</div>'+
+	'<div class="listing">&bull; the game now boots offline (PWA), with a self-updating service worker</div>'+
+	'<div class="listing">&bull; added the Cats building (with roaming animated cats) and 24 cat upgrades</div>'+
+	'<div class="listing">&bull; added the Black Hole Inverter building, a native mod with 17 upgrades and 18 achievements</div>'+
+	'<div class="listing">&bull; added background music (8 tracks by Bert Cole) and interface tones, with Music and volume settings</div>'+
+	'<div class="listing">&bull; rebalanced the late-game building tail back onto the ~2.1x-per-store-step price curve, checked by a full building balance audit</div>'+
+	'<div class="listing">&bull; added economy analysis tooling (Game.AnalyzeEconomy / Game.SimulateStrategy) behind the ?qa=content probe</div>'+
+	'<div class="listing">&bull; added rolling save backups (history, restore and download from the Options menu)</div>'+
+	'<div class="listing">&bull; added one-column responsive mode for phones — the "todo!" Orteil left in the 2.048 CSS, now completed</div>'+
+	'<div class="listing">&bull; the v3.0 animation pass: display-rate smooth cookie counter, slide-in columns and notifications, ascend-intro flash + shake (all disabled by "Fancy graphics" off or the OS reduce-motion setting)</div>'+
+	'<div class="listing">&bull; added a Content-Security-Policy; deploys are gated by a 21-probe Playwright CI on GitHub Pages</div>'+
+
 	'</div><div class="subsection update">'+
 	'<div class="title">31/05/2022 - a mind of its own</div>'+
 	'<div class="listing">&bull; added a new building</div>'+
