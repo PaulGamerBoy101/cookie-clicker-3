@@ -1082,6 +1082,20 @@ export function declareVanillaAchievements(Game: EngineGame) {
 		new Game.Achievement('The five-hundred purr',loc("Own <b>%1</b> cats.",500),[9,26]);
 		new Game.Achievement('One thousand paws',loc("Own <b>%1</b> cats.",1000),[10,26]);
 		new Game.Achievement('The purr-fect match',loc("Own <b>%1</b> cat synergy upgrades.",8)+'<q>Every cat finds its building. Every building finds its cat.</q>',[4,26]);
-		
+
+		// CC3: Cat Colony minigame achievements, appended (not interleaved) so
+		// every existing achievement id stays stable for imported saves. Icons
+		// reuse existing cat-achievement cells rather than requesting new art
+		// (a pattern already used throughout this block, e.g. [0,26] above is
+		// shared with 'Freaky jazz hands'). Won directly from
+		// engine/minigameCatColony.ts on expedition resolve / Treats earned /
+		// all six colony upgrades bought.
+		order=1200;
+		new Game.Achievement('First expedition',loc("Complete your first Cat Colony expedition."),[0,26]);
+		new Game.Achievement('Seasoned adventurers',loc("Complete <b>%1</b> Cat Colony expeditions.",50),[1,26]);
+		new Game.Achievement('The nine-lives guild',loc("Complete <b>%1</b> Cat Colony expeditions.",250),[9,26]);
+		new Game.Achievement('Pocketful of treats',loc("Earn <b>%1</b> treats from the Cat Colony, lifetime.",1000),[10,26]);
+		new Game.Achievement('Fully catified',loc("Buy every Cat Colony upgrade."),[4,26]);
+
 		//end of achievements
 }

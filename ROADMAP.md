@@ -5,6 +5,18 @@ picked up, traded, or dropped as we go. Checked items are shipped.
 
 ## Recently shipped (context)
 
+- **Cat Colony minigame** — the fifth minigame (Cats' Farm/Temple/Wizard
+  tower/Bank counterpart): dispatch idle cats on timed expeditions for
+  Treats, occasionally a scuffle sends cats home to rest instead. Treats buy
+  6 new Cat Colony upgrades (`.earn()`-granted, not cookie-bought) that feed
+  the existing Cats catAdd/catMult formula, plus 5 new achievements. Built
+  entirely from assets already in the repo: the panel background reuses
+  `img/cats/Summer1.png` (the Cats building's own room backdrop), the roster
+  visualization reuses `img/cats/idle.png`/`sleep.png` via the same CSS
+  keyframe-stepping technique as the muted-Cats sleeping store icon, the
+  upgrade icons crop frame 0 of the previously-unused `attack-1.png`/
+  `hurt.png`/etc. strips, and every sound is one already shipped in
+  `public/snd/`. See `src/engine/minigameCatColony.ts`.
 - Cats building with roaming animated cats, 24 balanced cat upgrades; the muted
   Cats store icon now shows an animated sleeping cat (breathing + tail + zzz)
 - Cat synergy system (mirrors the grandma one): 8 cat upgrades — Kitten grandmas,
@@ -48,9 +60,6 @@ picked up, traded, or dropped as we go. Checked items are shipped.
 
 ## Content
 
-- [ ] **Cat minigame** — a fifth minigame alongside Garden/Grimoire/Market/
-      Pantheon, cat-themed (the minigame framework is already typed and
-      code-split; a cat colony / treat garden are natural fits).
 - [ ] **More achievements** — Cats now carry the full standard set (14
       tiered + 3 production + 1 level) plus cat-count milestones at 100,
       450, 500 and 1000; add cookie-collection and seasonal achievements.

@@ -50,14 +50,20 @@ export function declareCats(Game: EngineGame) {
 			var catAddUpgrades=['Cardboard box basics','Sunbeam training','Whisker refinement','Midnight zoomies',
 				'Tuna-grade nutrition','Claw-powered kneading','Purrfect production','Nine-lives efficiency',
 				'Feline assembly','Astral catnaps','Infinite yarn loop','Quantum litter boxes',
-				'Cosmic whisker arrays','Protein singularity'];
+				'Cosmic whisker arrays','Protein singularity',
+				// Cat Colony minigame rewards (Treats-bought via .earn(), not the
+				// cookie store) — feed the same additive formula as the base line.
+				'Cardboard fort training','Sunbeam napping technique','Nine-lives insurance',
+				'Legendary colony charter'];
 			for (var catAddIndex=0;catAddIndex<catAddUpgrades.length;catAddIndex++)
 			{
 				var catAddUpgrade=Game.Upgrades[catAddUpgrades[catAddIndex]];
 				if (catAddUpgrade && Game.Has(catAddUpgrades[catAddIndex]) && catAddUpgrade.catAdd) catAdd+=catAddUpgrade.catAdd;
 			}
 			var catMult=1;
-			var catMultUpgrades=['Protein-rich kibble','Feather wand drills','Sunbeam perches','Catnip cultivation','Scratching-post ovens','Climbing shelves','Nine lives logistics'];
+			var catMultUpgrades=['Protein-rich kibble','Feather wand drills','Sunbeam perches','Catnip cultivation','Scratching-post ovens','Climbing shelves','Nine lives logistics',
+				// Cat Colony minigame rewards (Treats-bought).
+				'Treat-sniffing whiskers','Golden collar bells'];
 			for (var catMultIndex=0;catMultIndex<catMultUpgrades.length;catMultIndex++)
 			{
 				if (Game.Has(catMultUpgrades[catMultIndex])) catMult*=1.02;
@@ -81,6 +87,8 @@ export function declareCats(Game: EngineGame) {
 			if (this.amount>=500) Game.Win('The five-hundred purr');
 			if (this.amount>=1000) Game.Win('One thousand paws');
 		});
+		Game.last.minigameUrl='minigameCatColony.js';
+		Game.last.minigameName=loc("Cat Colony");
 		// The automatic building curve is intentionally overridden: 500 cookies
 		// for 4 CpS sits between Grandma (100/1) and Farm (1100/8).
 		cats.basePrice=500;
