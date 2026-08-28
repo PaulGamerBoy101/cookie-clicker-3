@@ -1670,6 +1670,7 @@ const minigameModules: Record<string, () => Promise<unknown>> = {
 	'minigameGrimoire.js': () => import('./engine/minigameGrimoire'),
 	'minigameMarket.js': () => import('./engine/minigameMarket'),
 	'minigamePantheon.js': () => import('./engine/minigamePantheon'),
+	'minigameCatColony.js': () => import('./engine/minigameCatColony'),
 	// CC3 extras mod (extras/casino.ts): the code is already in memory via
 	// the static import — this no-op module stands in for the original's
 	// remote "dummyFile.js" so the vanilla minigame machinery (LoadMinigames
