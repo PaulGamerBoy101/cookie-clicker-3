@@ -22,6 +22,7 @@ import './extras/blackHoleInverter';
 import './extras/decideDestiny';
 import './extras/americanSeason';
 import './extras/casino';
+import './extras/tutorial';
 import './styles/main.css';
 import type { Cc3AnimStats, Game as EngineGame, LanguageData } from './engine/types';
 
