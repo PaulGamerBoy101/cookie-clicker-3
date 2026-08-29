@@ -105,5 +105,6 @@ export function GetTieredCpsMult(me: Building)
 			// ties Cats to Grandma (id 1) -- the plain (me.id-1) divisor above
 			// would be 0 -> Infinity/NaN for that one building.
 			if (me.cat && Game.Has(me.cat.name)) mult*=(1+Game.Objects['Cats'].amount*0.01*(1/Math.max(1,me.id-1)));
+			if (me.cat && Game.Has(me.cat.name) && Game.Has('Territorial pact')) mult*=(1+Game.Objects['Cats'].amount*0.01*(1/Math.max(1,me.id-1)));
 			return mult;
 		}

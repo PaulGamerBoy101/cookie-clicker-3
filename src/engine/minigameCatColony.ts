@@ -51,19 +51,25 @@ M.launch = function () {
 		M.away = []; //{uid,id (mission id),count,returnAt}
 		M.resting = []; //{uid,count,returnAt}
 		M.uidN = 1;
+		// Fractional treat accumulator for the 'Bottomless treat jar' heavenly
+		// upgrade (content/upgrades.ts). Intentionally not persisted in
+		// M.save/M.load: it never holds more than 1 treat's worth, so losing it
+		// across a save/reload is a sub-1-treat rounding error, not a real loss.
+		M.treatTrickle = 0;
 
 		M.awayCount = function () { var n = 0; for (var i = 0; i < M.away.length; i++) n += M.away[i].count; return n; };
 		M.restingCount = function () { var n = 0; for (var i = 0; i < M.resting.length; i++) n += M.resting[i].count; return n; };
 		M.idleCats = function () { return Math.max(0, Math.floor(M.parent.amount) - M.awayCount() - M.restingCount()); };
 
-		M.hurtChanceFor = function (mission: any) { return mission.hurtChance * (Game.Has('Nine-lives insurance') ? 0.7 : 1); };
+		M.hurtChanceFor = function (mission: any) { return mission.hurtChance * (Game.Has('Nine-lives insurance') ? 0.7 : 1) * (Game.Has('Nap discipline') ? 0.8 : 1); };
+		M.durationFor = function (mission: any) { return Game.Has('Efficient patrols') ? Math.ceil(mission.duration * 0.85) : mission.duration; };
 
 		M.dispatch = function (id: any) {
 			var mission = M.missionsById[id];
 			if (!mission) return false;
 			if (M.parent.amount < mission.unlock) return false;
 			if (M.idleCats() < mission.catCost) return false;
-			M.away.push({ uid: M.uidN++, id: id, count: mission.catCost, returnAt: Date.now() + mission.duration * 1000 });
+			M.away.push({ uid: M.uidN++, id: id, count: mission.catCost, returnAt: Date.now() + M.durationFor(mission) * 1000 });
 			PlaySound('snd/harvest2.mp3', 0.75);
 			M.refresh();
 			return true;
@@ -86,6 +92,7 @@ M.launch = function () {
 				}
 				else if (mission) {
 					var reward = Math.floor(Math.random() * (mission.treatsMax - mission.treatsMin + 1)) + mission.treatsMin;
+					if (Game.Has('Generous strangers')) reward = Math.ceil(reward * 1.2);
 					M.treats += reward;
 					M.treatsEarnedTotal += reward;
 					M.missionsCompleted++;
@@ -192,7 +199,7 @@ M.launch = function () {
 			str += '<div class="colonyRow' + (locked ? ' colonyLocked' : '') + '">';
 			str += '<div class="colonyRowText"><div class="colonyRowName">' + mission.name + '</div>' +
 				(locked ? ('Requires <b>' + mission.unlock + '</b> cats.') :
-					(mission.desc + '<br>' + mission.catCost + ' cat(s) &middot; ' + Game.sayTime(mission.duration * Game.fps, -1) + ' &middot; ' + mission.treatsMin + '-' + mission.treatsMax + ' treats &middot; ' + Math.round(M.hurtChanceFor(mission) * 100) + '% risk')) +
+					(mission.desc + '<br>' + mission.catCost + ' cat(s) &middot; ' + Game.sayTime(M.durationFor(mission) * Game.fps, -1) + ' &middot; ' + (Game.Has('Generous strangers') ? Math.ceil(mission.treatsMin * 1.2) + '-' + Math.ceil(mission.treatsMax * 1.2) : mission.treatsMin + '-' + mission.treatsMax) + ' treats &middot; ' + Math.round(M.hurtChanceFor(mission) * 100) + '% risk')) +
 				'</div>';
 			if (!locked) {
 				str += '<div class="colonyBtn' + (canGo ? '' : ' colonyBtnDisabled') + '" id="colonyDispatch' + mission.id + '">Dispatch</div>';
@@ -289,11 +296,22 @@ M.launch = function () {
 		M.treatsEarnedTotal = 0;
 		M.away = [];
 		M.resting = [];
+		M.treatTrickle = 0;
 		M.refresh();
 	};
 	M.logic = function () {
 		//run each game tick, whether or not the panel is open
 		M.resolveExpeditions();
+		if (Game.Has('Bottomless treat jar')) {
+			M.treatTrickle += 1 / (60 * Game.fps);
+			if (M.treatTrickle >= 1) {
+				var gained = Math.floor(M.treatTrickle);
+				M.treats += gained;
+				M.treatsEarnedTotal += gained;
+				M.treatTrickle -= gained;
+				M.refresh();
+			}
+		}
 	};
 	M.draw = function () {
 		//run each frame, only while the panel is visible
