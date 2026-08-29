@@ -241,6 +241,8 @@ declare global {
 		__cc3AmericanSeason?: number;
 		/* Set by extras/casino.ts once it has registered. */
 		__cc3Casino?: number;
+		/* Set by extras/tutorial.ts once it has registered. */
+		__cc3Tutorial?: number;
 		/* The American Season namespace (extras/americanSeason.ts): the
 		 * original mod's global, kept so the mod's inline menu handlers
 		 * (UpdatePref / Toggle / `config = defaultConfig()`) and other mods
@@ -284,6 +286,16 @@ declare global {
 			bankPercentage: boolean;
 			beatLength: number;
 			[key: string]: any;
+		};
+		/* The Tutorial namespace (extras/tutorial.ts): the coach-mark walkthrough
+		 * of the core loop, plus the "?" Help panel's "Replay tutorial" button —
+		 * both reach it here, the same way the other extras' inline HTML handlers
+		 * reach AmericanSeason/Casino/DecideDestiny bare (window globals resolve
+		 * unqualified inside inline event-attribute strings). */
+		Tutorial?: {
+			start: () => void;
+			skip: () => void;
+			advance: () => void;
 		};
 	}
 }

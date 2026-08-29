@@ -237,6 +237,7 @@ export default { id: "EN", name: "english", strings: {
 	"Rose milk": "/",
 	"Dragonfruit milk": "/",
 	"Info": "/",
+	"Help": "/",
 	"About": "/",
 	"This is %1, a modern community rewrite of Cookie Clicker 2.048.": "/",
 	"The 2.048 engine was rebuilt as strictly typed TypeScript ES modules on a zero-dependency Vite build. Behavior, numbers and the save format stay compatible with 2.048 — your existing save imports without changes.": "/",
@@ -3381,7 +3382,37 @@ export default { id: "EN", name: "english", strings: {
 	"Projectiles": "/",
 	"Stars": "/",
 	"Other": "/",
-	"Rockets exploded :": "/"
+	"Rockets exploded :": "/",
+
+	"Step %1 of %2": "/",
+
+	"Replay the tutorial": "/",
+	"Clicking": "/",
+	"Click the big cookie to bake cookies by hand. Each click bakes a small amount, plus a percentage of your cookies per second.": "/",
+	"Buildings & the Store": "/",
+	"Buy buildings from the Store, on the right, to bake cookies automatically — even while you're away. Each building gets more expensive the more you own, and later buildings produce far more per unit.": "/",
+	"Cookies per second (CpS)": "/",
+	"The small number under your cookie count shows your CpS: how many cookies you're baking automatically, every second.": "/",
+	"Upgrades appear in the Store as you buy buildings and bake more cookies. They boost production — often significantly — and are almost always worth buying as soon as you can afford them.": "/",
+	"Golden cookies": "/",
+	"A golden cookie occasionally appears on screen for a short time. Click it fast — it grants a random, temporary bonus (extra cookies, a production boost, and more).": "/",
+
+	"Click the cookie!": "/",
+	"This is your bakery. Click the giant cookie to bake cookies by hand.": "/",
+	"Buy buildings": "/",
+	"Spend cookies here on Cursors and other buildings — they bake cookies automatically, even while you’re away.": "/",
+	"Cookies per second": "/",
+	"The small number under your cookie count is your CpS — how fast you’re baking automatically. Watch it grow!": "/",
+	"As you buy buildings, upgrades will show up here. They boost your production — always worth grabbing when you can afford one.": "/",
+	"Golden cookies — and you’re set!": "/",
+	"Every so often a golden cookie appears on screen — click it fast for a temporary boost. That’s the core loop! There’s a lot more to find (prestige, minigames, seasonal events…) — click <b>Help</b> anytime to revisit this tour or browse a quick reference.": "/",
+	"Skip tour": "/",
+	"Next": "/",
+	"Finish": "/",
+	"Welcome to Cookie Clicker!": "/",
+	"Want a quick tour of the basics? It only takes a minute.": "/",
+	"Start the tour": "/",
+	"No thanks": "/"
 
 }
 } satisfies LanguageData;

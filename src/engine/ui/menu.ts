@@ -24,6 +24,7 @@ export function ShowMenu(what: any)
 	l('prefsButton').className=(Game.onMenu=='prefs')?'panelButton selected':'panelButton';
 	l('statsButton').className=(Game.onMenu=='stats')?'panelButton selected':'panelButton';
 	l('logButton').className=(Game.onMenu=='log')?'panelButton selected':'panelButton';
+	l('helpButton').className=(Game.onMenu=='help')?'panelButton selected':'panelButton';
 	
 	if (Game.onMenu=='') PlaySound('snd/back1.mp3',0.5);//CC3: interface back tone (interface-sfx-pack-1, CC0)
 	else PlaySound('snd/confirm1.mp3',0.5);//CC3: interface confirm tone (interface-sfx-pack-1, CC0)
@@ -190,6 +191,39 @@ export function UpdateMenu()
 		//str+=replaceAll('[bakeryName]',Game.bakeryName,Game.updateLog);
 		str+=Game.updateLog;
 		if (!Game.HasAchiev('Olden days')) str+='<div id="oldenDays" style="text-align:right;width:100%;"><div '+Game.clickStr+'="Game.SparkleAt(Game.mouseX,Game.mouseY);PlaySound(\'snd/tick.mp3\');PlaySound(\'snd/shimmerClick.mp3\');Game.Win(\'Olden days\');Game.UpdateMenu();" class="icon" style="display:inline-block;transform:scale(0.5);cursor:pointer;width:48px;height:48px;background-position:'+(-12*48)+'px '+(-3*48)+'px;"></div></div>';
+	}
+	else if (Game.onMenu=='help')
+	{
+		// CC3: the Help panel — a static core-loop reference, plus a way to
+		// replay the coach-mark tour (extras/tutorial.ts, reached bare as
+		// window.Tutorial the same way the other extras' inline handlers
+		// reach AmericanSeason/Casino/DecideDestiny). Extend this alongside
+		// new sections in tutorial.ts's STEPS as the tour grows past the
+		// core loop (prestige, minigames, seasons, ...).
+		str+='<div class="section">'+loc("Help")+'</div>'+
+		'<div class="block" style="text-align:center;padding:8px 4px;">'+
+			'<a class="option" '+Game.clickStr+'="Game.ShowMenu(\'help\');window.Tutorial.start();">'+loc("Replay the tutorial")+'</a>'+
+		'</div>'+
+		'<div class="subsection">'+
+			'<div class="title">'+loc("Clicking")+'</div>'+
+			'<div class="listing">'+loc("Click the big cookie to bake cookies by hand. Each click bakes a small amount, plus a percentage of your cookies per second.")+'</div>'+
+		'</div>'+
+		'<div class="subsection">'+
+			'<div class="title">'+loc("Buildings & the Store")+'</div>'+
+			'<div class="listing">'+loc("Buy buildings from the Store, on the right, to bake cookies automatically — even while you're away. Each building gets more expensive the more you own, and later buildings produce far more per unit.")+'</div>'+
+		'</div>'+
+		'<div class="subsection">'+
+			'<div class="title">'+loc("Cookies per second (CpS)")+'</div>'+
+			'<div class="listing">'+loc("The small number under your cookie count shows your CpS: how many cookies you're baking automatically, every second.")+'</div>'+
+		'</div>'+
+		'<div class="subsection">'+
+			'<div class="title">'+loc("Upgrades")+'</div>'+
+			'<div class="listing">'+loc("Upgrades appear in the Store as you buy buildings and bake more cookies. They boost production — often significantly — and are almost always worth buying as soon as you can afford them.")+'</div>'+
+		'</div>'+
+		'<div class="subsection">'+
+			'<div class="title">'+loc("Golden cookies")+'</div>'+
+			'<div class="listing">'+loc("A golden cookie occasionally appears on screen for a short time. Click it fast — it grants a random, temporary bonus (extra cookies, a production boost, and more).")+'</div>'+
+		'</div>';
 	}
 	else if (Game.onMenu=='stats')
 	{
