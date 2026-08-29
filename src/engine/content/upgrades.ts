@@ -184,7 +184,11 @@ export function declareVanillaUpgrades(Game: EngineGame) {
 		Game.CatSynergy=function(name: any,desc: any,building: any)
 		{
 			var building: any=Game.Objects[building];
-			var catNumber=loc("%1 cat",LBeautify(building.id-1));
+			// Math.max(1,...): 'Kitten grandmas' ties this to Grandma, whose
+			// building id is 1, so the naive (id-1) divisor used by every other
+			// cat/grandma synergy would be 0 here — this is the one tied
+			// building where that self-reference actually happens.
+			var catNumber=loc("%1 cat",LBeautify(Math.max(1,building.id-1)));
 			desc=loc("%1 are <b>twice</b> as efficient.",cap(Game.Objects['Cats'].plural))+' '+loc("%1 gain <b>+%2%</b> CpS per %3.",[cap(building.plural),1,catNumber])+'<q>'+desc+'</q>';
 			
 			var upgrade=new Game.Upgrade(name,desc,building.basePrice*Game.Tiers[2].price,[10,9],function(){Game.Objects['Cats'].redraw();});
@@ -2077,6 +2081,58 @@ export function declareVanillaUpgrades(Game: EngineGame) {
 			catColonyUpgrade.treatsPrice=catColony.treats;
 			catColonyUpgrade.buildingTie=Game.Objects['Cats'];
 		}
+
+		// Astral Reliquary: a themed heavenly sub-branch off 'Distilled essence of
+		// redoubled luck'. Declared here, after every vanilla Game.Upgrade() call,
+		// so these ids land past heavenlyPositions.ts's fixed id->position table
+		// (max key 805) instead of shifting it — inserting new upgrades earlier in
+		// this file bumps Game.UpgradesN for everything declared after them,
+		// which would scramble the whole vanilla ascend-tree layout. Manual
+		// posX/posY (not heavenlyPositions.ts) for the same reason ids here
+		// aren't stable across content edits — same technique as
+		// Game.NewUnshackleBuilding above. Coordinates were probed against a live
+		// Game.heavenlyBounds/Game.Upgrades dump to land in open canvas space
+		// (min ~100px clearance from every existing prestige-pool node).
+		new Game.Upgrade('Astral tribute',loc("Cookie production multiplier <b>+%1% permanently</b>.",5)+'<q>A small toll paid to whatever still listens up there.</q>',300000000,[25,12]);Game.last.pool='prestige';Game.last.parents=['Distilled essence of redoubled luck'];Game.last.power=5;Game.last.pseudoCookie=true;Game.last.posX=-680;Game.last.posY=600;
+
+		new Game.Upgrade('Reliquary embers',loc("Cookie production multiplier <b>+%1% permanently</b>.",5)+'<q>Every ember remembers the fire it came from.</q>',900000000,[26,12]);Game.last.pool='prestige';Game.last.parents=['Astral tribute'];Game.last.power=5;Game.last.pseudoCookie=true;Game.last.posX=-820;Game.last.posY=760;
+		new Game.Upgrade('Gilded aftertaste',loc("Golden cookies (and all other things that spawn, such as reindeer) have an additional <b>%1% chance of being doubled</b>.",1)+'<q>Fortune, it turns out, is an acquired taste.</q>',750000000,[27,6]);Game.last.pool='prestige';Game.last.parents=['Astral tribute'];Game.last.posX=-560;Game.last.posY=780;
+		new Game.Upgrade('Sepulchral crystallization',loc("Sugar lumps ripen <b>%1</b> sooner.",Game.sayTime(60*60*Game.fps))+'<q>Sweetness, given enough time and pressure, becomes something else entirely.</q>',800000000,[25,15]);Game.last.pool='prestige';Game.last.parents=['Astral tribute'];Game.last.posX=-950;Game.last.posY=560;
+		new Game.Upgrade('Ashen ichor',loc("Wrinklers explode into <b>%1% more cookies</b>.",5)+'<q>Even the most patient of parasites can be taught a few new tricks.</q>',700000000,[19,8]);Game.last.pool='prestige';Game.last.parents=['Astral tribute'];Game.last.posX=-680;Game.last.posY=850;
+
+		new Game.Upgrade('Everlasting embers',loc("Cookie production multiplier <b>+%1% permanently</b>.",5)+'<q>This one never quite seems to go out.</q>',2700000000,[25,12]);Game.last.pool='prestige';Game.last.parents=['Reliquary embers'];Game.last.power=5;Game.last.pseudoCookie=true;Game.last.posX=-980;Game.last.posY=920;
+		new Game.Upgrade('Prismatic aftertaste',loc("Golden cookie effects last <b>%1% longer</b>.",5)+'<q>The glow lingers a little longer than it should.</q>',2250000000,[28,6]);Game.last.pool='prestige';Game.last.parents=['Gilded aftertaste'];Game.last.posX=-460;Game.last.posY=950;
+		new Game.Upgrade('Frozen sepulcher',loc("Sugar lumps mature <b>%1</b> sooner.",Game.sayTime(60*60*Game.fps))+'<q>Preserved not by cold, but by sheer stubbornness.</q>',2400000000,[26,15]);Game.last.pool='prestige';Game.last.parents=['Sepulchral crystallization'];Game.last.posX=-1120;Game.last.posY=700;
+		new Game.Upgrade('Bloodless ichor',loc("You can attract <b>%1 more wrinklers</b>.",1)+'<q>Its brethren have taken notice.</q>',2100000000,[15,12]);Game.last.pool='prestige';Game.last.parents=['Ashen ichor'];Game.last.posX=-800;Game.last.posY=1020;
+
+		new Game.Upgrade('Convergence of the reliquary',loc("Cookie production multiplier <b>+%1% permanently</b>.",10)+'<q>Four paths, one hunger.</q>',9000000000,[26,12]);Game.last.pool='prestige';Game.last.parents=['Everlasting embers','Frozen sepulcher','Prismatic aftertaste','Bloodless ichor'];Game.last.power=10;Game.last.pseudoCookie=true;Game.last.posX=-850;Game.last.posY=1150;
+
+		// Nine Lives: a themed heavenly sub-branch off 'Five-finger discount',
+		// focused entirely on the Cats building (content/buildings/cats.ts),
+		// the cat-synergy bonus (systems/economy.ts's GetTieredCpsMult), and the
+		// Cat Colony minigame (minigameCatColony.ts). Declared here at the very
+		// end of upgrades.ts, same reasoning as the Astral Reliquary branch
+		// above: inserting earlier would shift every subsequent vanilla
+		// upgrade's id and corrupt heavenlyPositions.ts's fixed id->position
+		// table. Manual posX/posY for the same reason, probed against a live
+		// Game.Upgrades dump to clear every existing prestige-pool node by at
+		// least ~100px (in line with vanilla's own tightest spacing). Icons
+		// reuse frame [0,0] of existing Cats sprite sheets (img/cats/*.png at
+		// 64px cells) rather than any icons.webp cell, the same technique the
+		// Cat Colony minigame's own reward upgrades already use — no new art.
+		new Game.Upgrade('Communion of whiskers',"Cats gain <b>+10% CpS</b>."+'<q>Somewhere, a cat is purring in exactly your rhythm.</q>',700000,[0,0,'img/cats/idle.png',64]);Game.last.pool='prestige';Game.last.parents=['Five-finger discount'];Game.last.posX=-98;Game.last.posY=-773;
+		new Game.Upgrade('Nine lives, one purpose',"Cats gain <b>+10% CpS</b>."+'<q>All nine, pointed the same way: toward the food bowl.</q>',2000000,[0,0,'img/cats/walk.png',64]);Game.last.pool='prestige';Game.last.parents=['Communion of whiskers'];Game.last.posX=-98;Game.last.posY=-923;
+		new Game.Upgrade('Feline apex',"Cats gain <b>+15% CpS</b>."+'<q>The apex predator of your living room, and possibly your economy.</q>',6000000,[0,0,'img/cats/run.png',64]);Game.last.pool='prestige';Game.last.parents=['Nine lives, one purpose'];Game.last.posX=-28;Game.last.posY=-1044;
+
+		new Game.Upgrade('Territorial pact',"Cat synergies grant their tied building an additional <b>+1% CpS per cat</b>, on top of the usual bonus."+'<q>Cats don\'t share territory. They annex it, generously, on your behalf.</q>',1800000,[0,0,'img/cats/jump.png',64]);Game.last.pool='prestige';Game.last.parents=['Communion of whiskers'];Game.last.posX=-47;Game.last.posY=-632;
+		new Game.Upgrade('Alpha instincts',"Cats gain <b>+5% CpS</b> for every cat synergy upgrade owned."+'<q>Every colony needs a cat who\'s just a little more in charge.</q>',5000000,[0,0,'img/cats/running-jump.png',64]);Game.last.pool='prestige';Game.last.parents=['Territorial pact'];Game.last.posX=152;Game.last.posY=-615;
+
+		new Game.Upgrade('Nap discipline',"Cat Colony expeditions are <b>20% less likely</b> to send a cat home hurt."+'<q>A well-rested cat is a cat that comes home in one piece.</q>',1500000,[0,0,'img/cats/sleep.png',64]);Game.last.pool='prestige';Game.last.parents=['Communion of whiskers'];Game.last.posX=-295;Game.last.posY=-808;
+		new Game.Upgrade('Generous strangers',"Cat Colony expeditions yield <b>20% more treats</b>."+'<q>Turns out most of the neighborhood was willing to be robbed, gently.</q>',4000000,[0,0,'img/cats/attack-1.png',64]);Game.last.pool='prestige';Game.last.parents=['Nap discipline'];Game.last.posX=-493;Game.last.posY=-880;
+		new Game.Upgrade('Bottomless treat jar',"The Cat Colony slowly generates <b>1 treat per minute</b>, even with no expeditions underway."+'<q>Some jars refill themselves. Nobody asks questions.</q>',6000000,[0,0,'img/cats/hurt.png',64]);Game.last.pool='prestige';Game.last.parents=['Generous strangers'];Game.last.posX=-628;Game.last.posY=-719;
+		new Game.Upgrade('Efficient patrols',"Cat Colony expeditions take <b>15% less time</b>."+'<q>They\'ve stopped stopping to sniff every third leaf.</q>',9000000,[0,0,'img/cats/idle.png',64]);Game.last.pool='prestige';Game.last.parents=['Bottomless treat jar'];Game.last.posX=-682;Game.last.posY=-516;
+
+		new Game.Upgrade('The Nine Lives Convergence',"Cats gain <b>+20% CpS</b>."+'<q>Nine lives, one destiny: your cookie jar.</q>',25000000,[0,0,'img/cats/attack-1.png',64]);Game.last.pool='prestige';Game.last.parents=['Feline apex','Alpha instincts','Efficient patrols'];Game.last.posX=-285;Game.last.posY=-626;
 
 		//end of upgrades
 

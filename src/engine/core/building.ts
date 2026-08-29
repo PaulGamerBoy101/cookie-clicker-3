@@ -479,7 +479,10 @@ export class Building {
 							if (Game.Has(Game.CatSynergies[i]))
 							{
 								var other: any=Game.Upgrades[Game.CatSynergies[i]].buildingTie;//same pattern as the Grandma branch above
-								var mult=me.amount*0.01*(1/(other.id-1));
+								// Math.max(1,...): unlike GrandmaSynergies, CatSynergies includes
+								// 'Kitten grandmas' tied to Grandma itself (id 1), where the plain
+								// (id-1) divisor above would be 0 -> Infinity/NaN.
+								var mult=me.amount*0.01*(1/Math.max(1,other.id-1));
 								var boost=(other.storedTotalCps*Game.globalCpsMult)-(other.storedTotalCps*Game.globalCpsMult)/(1+mult);
 								synergyBoost+=boost;
 								if (!synergiesWith[other.plural]) synergiesWith[other.plural]=0;

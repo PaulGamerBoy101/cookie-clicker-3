@@ -69,6 +69,20 @@ export function declareCats(Game: EngineGame) {
 				if (Game.Has(catMultUpgrades[catMultIndex])) catMult*=1.02;
 			}
 			if (Game.Has('Grandma-approved recipes')) catMult*=1+Math.min(Game.Objects['Grandma'].amount*0.005,0.25);
+			// Nine Lives heavenly branch (content/upgrades.ts): flat, stronger-than-
+			// cookie-tier CpS bonuses, kept as dedicated checks rather than folded
+			// into catMultUpgrades above since their heavenly-chip price buys a much
+			// bigger jump (+10-20%) than that array's uniform +2% per entry.
+			if (Game.Has('Communion of whiskers')) catMult*=1.10;
+			if (Game.Has('Nine lives, one purpose')) catMult*=1.10;
+			if (Game.Has('Feline apex')) catMult*=1.15;
+			if (Game.Has('The Nine Lives Convergence')) catMult*=1.20;
+			if (Game.Has('Alpha instincts'))
+			{
+				var catSynergiesOwned=0;
+				for (var i2 in Game.CatSynergies) { if (Game.Has(Game.CatSynergies[i2])) catSynergiesOwned++; }
+				catMult*=1+0.05*catSynergiesOwned;
+			}
 			return (me.baseCps+catAdd)*mult*catMult;
 		},function (this: Building) {
 			Game.UnlockTiered(this);

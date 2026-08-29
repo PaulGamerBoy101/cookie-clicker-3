@@ -1334,6 +1334,8 @@ export default { id: "EN", name: "english", strings: {
 	"All upgrades are <b>%1% cheaper per %2</b>.": "/",
 	"Unlocks a new tier of upgrades that affect <b>2 buildings at the same time</b>.<br>Synergies appear once you have <b>%1</b> of both buildings.": "/",
 	"Golden cookies (and all other things that spawn, such as reindeer) have <b>%1% chance of being doubled</b>.": "/",
+	"Golden cookies (and all other things that spawn, such as reindeer) have an additional <b>%1% chance of being doubled</b>.": "/",
+	"Golden cookie effects last <b>%1% longer</b>.": "/",
 	"Cookie production <b>reduced to 0</b>.": "/",
 	"Sugar lumps coalesce <b>a whole lot faster</b>.": "/",
 	"<b>+%1%</b> prestige level effect on CpS.": "/",

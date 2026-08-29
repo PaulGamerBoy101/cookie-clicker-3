@@ -1267,7 +1267,7 @@ Game.Launch=function()
 		PRESTIGE
 		=======================================================================================*/
 		
-		Game.HCfactor=3;
+		Game.HCfactor=2.5;
 		Game.HowMuchPrestige=HowMuchPrestige;//CC3 rewrite (phase 4, slice 1): moved verbatim to systems/economy.ts; same Game slot, same Init position.
 		Game.HowManyCookiesReset=HowManyCookiesReset;//CC3 rewrite (phase 4, slice 1): moved verbatim to systems/economy.ts.
 		Game.gainedPrestige=0;
