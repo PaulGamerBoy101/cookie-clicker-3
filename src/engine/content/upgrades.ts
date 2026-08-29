@@ -184,7 +184,11 @@ export function declareVanillaUpgrades(Game: EngineGame) {
 		Game.CatSynergy=function(name: any,desc: any,building: any)
 		{
 			var building: any=Game.Objects[building];
-			var catNumber=loc("%1 cat",LBeautify(building.id-1));
+			// Math.max(1,...): 'Kitten grandmas' ties this to Grandma, whose
+			// building id is 1, so the naive (id-1) divisor used by every other
+			// cat/grandma synergy would be 0 here — this is the one tied
+			// building where that self-reference actually happens.
+			var catNumber=loc("%1 cat",LBeautify(Math.max(1,building.id-1)));
 			desc=loc("%1 are <b>twice</b> as efficient.",cap(Game.Objects['Cats'].plural))+' '+loc("%1 gain <b>+%2%</b> CpS per %3.",[cap(building.plural),1,catNumber])+'<q>'+desc+'</q>';
 			
 			var upgrade=new Game.Upgrade(name,desc,building.basePrice*Game.Tiers[2].price,[10,9],function(){Game.Objects['Cats'].redraw();});

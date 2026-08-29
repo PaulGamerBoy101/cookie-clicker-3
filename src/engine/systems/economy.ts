@@ -100,6 +100,10 @@ export function GetTieredCpsMult(me: Building)
 			}
 			if (me.fortune && Game.Has((me.fortune as any).name)) mult*=1.07;
 			if (me.grandma && Game.Has(me.grandma.name)) mult*=(1+Game.Objects['Grandma'].amount*0.01*(1/(me.id-1)));
-			if (me.cat && Game.Has(me.cat.name)) mult*=(1+Game.Objects['Cats'].amount*0.01*(1/(me.id-1)));
+			// Math.max(1,...): unlike me.grandma (never tied to Grandma itself, so
+			// me.id is always >=2 there), me.cat can be 'Kitten grandmas', which
+			// ties Cats to Grandma (id 1) -- the plain (me.id-1) divisor above
+			// would be 0 -> Infinity/NaN for that one building.
+			if (me.cat && Game.Has(me.cat.name)) mult*=(1+Game.Objects['Cats'].amount*0.01*(1/Math.max(1,me.id-1)));
 			return mult;
 		}
