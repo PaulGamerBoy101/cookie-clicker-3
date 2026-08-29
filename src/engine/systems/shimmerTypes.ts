@@ -187,6 +187,7 @@ type BoundsRect = { left: number; right: number; top: number; bottom: number };
 					if (Game.Has('Lucky number')) effectDurMod*=1.01;
 					if (Game.Has('Green yeast digestives')) effectDurMod*=1.01;
 					if (Game.Has('Lucky payout')) effectDurMod*=1.01;
+					if (Game.Has('Prismatic aftertaste')) effectDurMod*=1.05;
 					//if (Game.hasAura('Epoch Manipulator')) effectDurMod*=1.05;
 					effectDurMod*=1+Game.auraMult('Epoch Manipulator')*0.05;
 					if (!me.wrath) effectDurMod*=Game.eff('goldenCookieEffDur');

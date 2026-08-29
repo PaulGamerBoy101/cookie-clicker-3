@@ -34,6 +34,7 @@ function inRect(x: any,y: any,rect: any)
 		{
 			var n=10;
 			if (Game.Has('Elder spice')) n+=2;
+			if (Game.Has('Bloodless ichor')) n+=1;
 			return n;
 		}
 		export function ResetWrinklers()
@@ -226,6 +227,7 @@ function inRect(x: any,y: any,rect: any)
 					me.hp=3;
 					var toSuck=1.1;
 					if (Game.Has('Sacrilegious corruption')) toSuck*=1.05;
+					if (Game.Has('Ashen ichor')) toSuck*=1.05;
 					if (me.type==1) toSuck*=3;//shiny wrinklers are an elusive, profitable breed
 					me.sucked*=toSuck;//cookie dough does weird things inside wrinkler digestive tracts
 					if (Game.Has('Wrinklerspawn')) me.sucked*=1.05;

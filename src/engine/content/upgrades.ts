@@ -2078,6 +2078,31 @@ export function declareVanillaUpgrades(Game: EngineGame) {
 			catColonyUpgrade.buildingTie=Game.Objects['Cats'];
 		}
 
+		// Astral Reliquary: a themed heavenly sub-branch off 'Distilled essence of
+		// redoubled luck'. Declared here, after every vanilla Game.Upgrade() call,
+		// so these ids land past heavenlyPositions.ts's fixed id->position table
+		// (max key 805) instead of shifting it — inserting new upgrades earlier in
+		// this file bumps Game.UpgradesN for everything declared after them,
+		// which would scramble the whole vanilla ascend-tree layout. Manual
+		// posX/posY (not heavenlyPositions.ts) for the same reason ids here
+		// aren't stable across content edits — same technique as
+		// Game.NewUnshackleBuilding above. Coordinates were probed against a live
+		// Game.heavenlyBounds/Game.Upgrades dump to land in open canvas space
+		// (min ~100px clearance from every existing prestige-pool node).
+		new Game.Upgrade('Astral tribute',loc("Cookie production multiplier <b>+%1% permanently</b>.",5)+'<q>A small toll paid to whatever still listens up there.</q>',300000000,[25,12]);Game.last.pool='prestige';Game.last.parents=['Distilled essence of redoubled luck'];Game.last.power=5;Game.last.pseudoCookie=true;Game.last.posX=-680;Game.last.posY=600;
+
+		new Game.Upgrade('Reliquary embers',loc("Cookie production multiplier <b>+%1% permanently</b>.",5)+'<q>Every ember remembers the fire it came from.</q>',900000000,[26,12]);Game.last.pool='prestige';Game.last.parents=['Astral tribute'];Game.last.power=5;Game.last.pseudoCookie=true;Game.last.posX=-820;Game.last.posY=760;
+		new Game.Upgrade('Gilded aftertaste',loc("Golden cookies (and all other things that spawn, such as reindeer) have an additional <b>%1% chance of being doubled</b>.",1)+'<q>Fortune, it turns out, is an acquired taste.</q>',750000000,[27,6]);Game.last.pool='prestige';Game.last.parents=['Astral tribute'];Game.last.posX=-560;Game.last.posY=780;
+		new Game.Upgrade('Sepulchral crystallization',loc("Sugar lumps ripen <b>%1</b> sooner.",Game.sayTime(60*60*Game.fps))+'<q>Sweetness, given enough time and pressure, becomes something else entirely.</q>',800000000,[25,15]);Game.last.pool='prestige';Game.last.parents=['Astral tribute'];Game.last.posX=-950;Game.last.posY=560;
+		new Game.Upgrade('Ashen ichor',loc("Wrinklers explode into <b>%1% more cookies</b>.",5)+'<q>Even the most patient of parasites can be taught a few new tricks.</q>',700000000,[19,8]);Game.last.pool='prestige';Game.last.parents=['Astral tribute'];Game.last.posX=-680;Game.last.posY=850;
+
+		new Game.Upgrade('Everlasting embers',loc("Cookie production multiplier <b>+%1% permanently</b>.",5)+'<q>This one never quite seems to go out.</q>',2700000000,[25,12]);Game.last.pool='prestige';Game.last.parents=['Reliquary embers'];Game.last.power=5;Game.last.pseudoCookie=true;Game.last.posX=-980;Game.last.posY=920;
+		new Game.Upgrade('Prismatic aftertaste',loc("Golden cookie effects last <b>%1% longer</b>.",5)+'<q>The glow lingers a little longer than it should.</q>',2250000000,[28,6]);Game.last.pool='prestige';Game.last.parents=['Gilded aftertaste'];Game.last.posX=-460;Game.last.posY=950;
+		new Game.Upgrade('Frozen sepulcher',loc("Sugar lumps mature <b>%1</b> sooner.",Game.sayTime(60*60*Game.fps))+'<q>Preserved not by cold, but by sheer stubbornness.</q>',2400000000,[26,15]);Game.last.pool='prestige';Game.last.parents=['Sepulchral crystallization'];Game.last.posX=-1120;Game.last.posY=700;
+		new Game.Upgrade('Bloodless ichor',loc("You can attract <b>%1 more wrinklers</b>.",1)+'<q>Its brethren have taken notice.</q>',2100000000,[15,12]);Game.last.pool='prestige';Game.last.parents=['Ashen ichor'];Game.last.posX=-800;Game.last.posY=1020;
+
+		new Game.Upgrade('Convergence of the reliquary',loc("Cookie production multiplier <b>+%1% permanently</b>.",10)+'<q>Four paths, one hunger.</q>',9000000000,[26,12]);Game.last.pool='prestige';Game.last.parents=['Everlasting embers','Frozen sepulcher','Prismatic aftertaste','Bloodless ichor'];Game.last.power=10;Game.last.pseudoCookie=true;Game.last.posX=-850;Game.last.posY=1150;
+
 		//end of upgrades
 
 		Game.seasons={

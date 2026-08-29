@@ -118,6 +118,7 @@ export function updateShimmers()//run shimmer functions, kill overtimed shimmers
 							var newShimmer=new Game.shimmer(i);
 							newShimmer.spawnLead=1;
 							if (Game.Has('Distilled essence of redoubled luck') && Math.random()<0.01) var newShimmer=new Game.shimmer(i);
+							if (Game.Has('Gilded aftertaste') && Math.random()<0.01) var newShimmer=new Game.shimmer(i);
 							me.spawned=1;
 						}
 					}
