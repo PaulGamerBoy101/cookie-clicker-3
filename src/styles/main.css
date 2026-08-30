@@ -522,6 +522,10 @@ a.orangeLink,#topBar a.orangeLink
 {color:#f65f4d;}
 a.orangeLink:hover,#topBar a.orangeLink:hover
 {color:#ff9580;text-shadow:0px 0px 3px #f65f4d;}
+#topBar a#helpButton:hover
+{color:#ffe28a;text-shadow:0px 0px 3px #ffe28a;}
+#topBar a#helpButton.selected
+{color:#ffe28a;text-decoration:underline;}
 
 
 #offGameMessageWrap
@@ -2531,8 +2535,12 @@ from {background-position:0px 0px;}
 }
 /* Muted Cats icon: the asset pack's sleeping-cat sheet, breathing in a slow
    loop. Each frame is 80x64; the 64px icon window shows each frame centered
-   (x offset +8), so the hold keyframes step 80px per frame. Gated on
-   body:not(.noMotion) like the rest of the v3.0 animation pass. */
+   (x offset +8), so the hold keyframes step 80px per frame. steps(1) is
+   required (see .colonyCat in minigameCatColony.ts for the same idiom) —
+   without it the duplicate-offset keyframe pairs cascade into a continuous
+   background-position slide across the whole sheet instead of discrete
+   frame holds. Gated on body:not(.noMotion) like the rest of the v3.0
+   animation pass. */
 .tinyProductIcon.catSleepIcon
 {
 	background-image:url(img/cats/sleep.png?v=1);
@@ -2551,7 +2559,7 @@ from {background-position:0px 0px;}
 }
 body:not(.noMotion) #buildingsMaster .tinyProductIcon.catSleepIcon
 {
-	animation:cc3CatSleep 1.6s infinite;
+	animation:cc3CatSleep 1.6s steps(1) infinite;
 }
 
 

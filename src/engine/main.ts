@@ -3328,12 +3328,11 @@ window.loadMinigameModule!(me.minigameUrl).then(function(){
 			l('prefsButton').firstChild.innerHTML=loc("Options");
 			l('statsButton').firstChild.innerHTML=loc("Stats");
 			l('logButton').firstChild.innerHTML=loc("Info");
-			l('helpButton').firstChild.innerHTML=loc("Help");
+			l('helpButton').innerHTML=loc("Help");
 			l('legacyButton').firstChild.innerHTML=loc("Legacy");
 			adaptWidth(l('prefsButton'));
 			adaptWidth(l('statsButton'));
 			adaptWidth(l('logButton'));
-			adaptWidth(l('helpButton'));
 			adaptWidth(l('legacyButton'));
 			l('checkForUpdate').childNodes[0].textContent=loc("New update!");
 			l('buildingsTitle').childNodes[0].textContent=loc("Buildings");

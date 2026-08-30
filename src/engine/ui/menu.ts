@@ -24,7 +24,7 @@ export function ShowMenu(what: any)
 	l('prefsButton').className=(Game.onMenu=='prefs')?'panelButton selected':'panelButton';
 	l('statsButton').className=(Game.onMenu=='stats')?'panelButton selected':'panelButton';
 	l('logButton').className=(Game.onMenu=='log')?'panelButton selected':'panelButton';
-	l('helpButton').className=(Game.onMenu=='help')?'panelButton selected':'panelButton';
+	l('helpButton').className=(Game.onMenu=='help')?'selected':'';
 	
 	if (Game.onMenu=='') PlaySound('snd/back1.mp3',0.5);//CC3: interface back tone (interface-sfx-pack-1, CC0)
 	else PlaySound('snd/confirm1.mp3',0.5);//CC3: interface confirm tone (interface-sfx-pack-1, CC0)
