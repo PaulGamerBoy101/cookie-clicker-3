@@ -2088,6 +2088,37 @@ export function declareVanillaUpgrades(Game: EngineGame) {
 			catColonyUpgrade.buildingTie=Game.Objects['Cats'];
 		}
 
+		// CC3 Grandma's Sitting Room minigame rewards: REPEATABLE upgrades bought
+		// with Yarn from inside the minigame panel (stacks in
+		// minigameGrandmaSittingRoom.ts M.upgradeStacks; the main-save bought
+		// flag is only set on the first stack, via Game.Upgrades[name].earn(),
+		// for save continuity), never through the cookie store — the cookie
+		// price here is unused and kept at 0 for clarity. Icons crop frame 0 of
+		// existing grandma sprite icons (img/grandmaIcon*.webp + grandma
+		// variants) via the standard [col,row,path,size] icon form — no new
+		// art. yarnPrice is a minigame-only field the shop panel reads; the
+		// flat price never changes, every stack costs the same and adds the
+		// full per-stack effect (grandmaAdd = per-grandma CpS, grandmaMult =
+		// per-stack ×1.02 multiplier), so the six rows are the sitting room's
+		// endless yarn sink.
+		var sittingRoomUpgrades=[
+			{name:'Lap blanket weaving',desc:'Grandmas gain <b>+0.15 CpS each</b> (per stack).',yarn:25,grandmaAdd:0.15,icon:'grandmaIcon.webp'},
+			{name:'Rocking chair maintenance',desc:'Grandmas gain <b>+0.15 CpS each</b> (per stack).',yarn:60,grandmaAdd:0.15,icon:'grandmaIconB.webp'},
+			{name:'Tea leaf cultivation',desc:'Grandmas gain <b>+2% CpS</b> (per stack).',yarn:120,grandmaMult:1,icon:'grandmaIconC.webp'},
+			{name:'Elder shawl',desc:'Grandmas gain <b>+0.2 CpS each</b> (per stack).',yarn:250,grandmaAdd:0.2,icon:'grandmaIconD.webp'},
+			{name:'Chamomile incense',desc:'Grandmas gain <b>+2% CpS</b> (per stack).',yarn:500,grandmaMult:1,icon:'grandmaIconOff.webp'},
+			{name:'The Grandmother Tree',desc:'Grandmas gain <b>+0.5 CpS each</b> (per stack).',yarn:1000,grandmaAdd:0.5,icon:'metaGrandma.webp'}
+		];
+		order=357;
+		for (var sittingRoomIndex=0;sittingRoomIndex<sittingRoomUpgrades.length;sittingRoomIndex++)
+		{
+			var sittingRoomUpgrade=sittingRoomUpgrades[sittingRoomIndex];
+			var sittingRoomUpgradeObj=new Game.Upgrade(sittingRoomUpgrade.name,sittingRoomUpgrade.desc+'<q>Bought with yarn from the Sitting Room, not with cookies.</q>',0,[0,0,'img/'+sittingRoomUpgrade.icon,64]);
+			if (sittingRoomUpgrade.grandmaAdd) sittingRoomUpgradeObj.grandmaAdd=sittingRoomUpgrade.grandmaAdd;
+			sittingRoomUpgradeObj.yarnPrice=sittingRoomUpgrade.yarn;
+			sittingRoomUpgradeObj.buildingTie=Game.Objects['Grandma'];
+		}
+
 		// Astral Reliquary: a themed heavenly sub-branch off 'Distilled essence of
 		// redoubled luck'. Declared here, after every vanilla Game.Upgrade() call,
 		// so these ids land past heavenlyPositions.ts's fixed id->position table
@@ -2163,6 +2194,16 @@ export function declareVanillaUpgrades(Game: EngineGame) {
 		new Game.Upgrade('Angelic recipe',getStrCookieProductionMultiplierPlus(2)+'<q>Annotated in at least three celestial languages. The margins are just doodles of cookies.</q>',25,[19,11]);Game.last.pool='prestige';Game.last.parents=['Angels'];Game.last.power=2;Game.last.pseudoCookie=true;Game.last.posX=450;Game.last.posY=-448;
 		new Game.Upgrade('Demonic hustle',loc("Clicking is <b>%1% stronger</b>.",5)+'<q>Why click when you can claw? (You still have to click.)</q>',25,[24,7]);Game.last.pool='prestige';Game.last.parents=['Belphegor'];Game.last.posX=211;Game.last.posY=-526;
 		new Game.Upgrade('Tidy pantry',loc("All upgrades are <b>%1% cheaper</b>.",1)+'<q>Everything in its place, and its place marked with a little label. Satisfying, really.</q>',30,[24,8]);Game.last.pool='prestige';Game.last.parents=['Classic dairy selection'];Game.last.posX=-41;Game.last.posY=337;
+
+		// Grandma's Sitting Room: a heavenly prestige branch off 'Starter kitchen'
+		// (the grandmas-themed node), extending up-left into the open area of the
+		// prestige tree (~x=-550 to -705, y=-415 to -365). These upgrades enhance the
+		// Sitting Room minigame (Grandma building's Grandmapocalypse-management
+		// minigame). Manual posX/posY probed against the live tree (same reasoning as
+		// the Cat Colony and Astral reliquary branches above).
+		order=21500;
+		new Game.Upgrade('Grandma\'s knitting circle',"The Sitting Room generates yarn <b>50% faster</b>."+'<q>The needles click in perfect rhythm, and the yarn pile grows faster than you can knit it.</q>',2000000,[0,0,'img/grandmaIcon.webp',64]);Game.last.pool='prestige';Game.last.parents=['Starter kitchen'];Game.last.posX=-550;Game.last.posY=-415;
+		new Game.Upgrade('Elder hospitality',"The Sitting Room's comfort affects the Grandmapocalypse <b>twice as strongly</b>."+'<q>The elders appreciate a well-kept sitting room. Who knew that a fresh pot of tea could soothe an eldritch horror?</q>',5000000,[0,0,'img/grandmaIconB.webp',64]);Game.last.pool='prestige';Game.last.parents=['Grandma\'s knitting circle'];Game.last.posX=-705;Game.last.posY=-365;
 
 		//end of upgrades
 

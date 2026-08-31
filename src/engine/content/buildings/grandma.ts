@@ -70,8 +70,38 @@ export function declareGrandma(Game: EngineGame) {
 			mult*=1+Game.auraMult('Elder Battalion')*0.01*num;
 			
 			mult*=Game.magicCpS(me.name);
+			// Grandma's Sitting Room minigame rewards (REPEATABLE stacks bought
+			// with Yarn, stored in minigameGrandmaSittingRoom.ts M.upgradeStacks).
+			// Additive upgrades add per-grandma CpS per stack (grandmaAdd);
+			// multiplicative upgrades apply their per-stack multiplier
+			// (grandmaMult). effectiveStacks covers the minigame-not-loaded-yet
+			// boot window (it falls back to the main-save bought flag, which the
+			// first stack always sets), so the fallback below only matters if
+			// the script never loaded.
+			var sittingRoomMG=Game.Objects['Grandma']&&Game.Objects['Grandma'].minigame;
+			var yarnStacks=function (name: any){
+				if (sittingRoomMG&&sittingRoomMG.effectiveStacks) return sittingRoomMG.effectiveStacks(name);
+				return Game.Has(name)?1:0;
+			};
+			var grandmaAdd=0;
+			var grandmaAddUpgrades=['Lap blanket weaving','Rocking chair maintenance','Elder shawl','The Grandmother Tree'];
+			for (var ga=0;ga<grandmaAddUpgrades.length;ga++)
+			{
+				var gu=Game.Upgrades[grandmaAddUpgrades[ga]];
+				if (gu && gu.grandmaAdd)
+				{
+					var gaCount=yarnStacks(grandmaAddUpgrades[ga]);
+					if (gaCount>0) grandmaAdd+=gu.grandmaAdd*gaCount;
+				}
+			}
+			var grandmaMult=1;
+			var grandmaMultUpgrades=['Tea leaf cultivation','Chamomile incense'];
+			for (var gm=0;gm<grandmaMultUpgrades.length;gm++)
+			{
+				grandmaMult*=Math.pow(1.02,yarnStacks(grandmaMultUpgrades[gm]));
+			}
 			
-			return (me.baseCps+add)*mult;
+			return (me.baseCps+add+grandmaAdd)*mult*grandmaMult;
 		},function (this: Building) {
 			Game.UnlockTiered(this);
 			if (this.amount>=Game.SpecialCatUnlock && Game.Objects['Cats'].amount>0 && this.cat) Game.Unlock(this.cat!.name);
@@ -92,4 +122,9 @@ export function declareGrandma(Game: EngineGame) {
 			if (Game.prefs.notScary && Game.elderWrath>0) return [3,2];
 			return grandmaIcons[Game.elderWrath];
 		};
+		// Grandma's Sitting Room minigame (CC3): same wiring as the Cats
+		// building (minigameCatColony.ts) — the engine's LoadMinigames loads
+		// this chunk when Grandma is leveled to 1, then calls M.launch.
+		Game.last.minigameUrl='minigameGrandmaSittingRoom.js';
+		Game.last.minigameName=loc("Sitting Room");
 }

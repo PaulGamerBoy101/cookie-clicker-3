@@ -1097,5 +1097,18 @@ export function declareVanillaAchievements(Game: EngineGame) {
 		new Game.Achievement('Pocketful of treats',loc("Earn <b>%1</b> treats from the Cat Colony, lifetime.",1000),[10,26]);
 		new Game.Achievement('Fully catified',loc("Buy every Cat Colony upgrade."),[4,26]);
 
+		// CC3: Grandma's Sitting Room minigame achievements, appended (not
+		// interleaved) so every existing achievement id stays stable for
+		// imported saves. Icons reuse existing achievement cells (the same
+		// "shared cell" pattern used throughout this block). Won directly from
+		// engine/minigameGrandmaSittingRoom.ts on yarn earned / comfort dial /
+		// all six sitting-room upgrades bought.
+		order=1200;
+		new Game.Achievement('First knit',loc("Earn your first yarn in the Sitting Room."),[12,26]);
+		new Game.Achievement('Yarn hoard',loc("Earn <b>%1</b> yarn from the Sitting Room, lifetime.",1000),[18,26]);
+		new Game.Achievement("Grandma's peace",loc("Reach <b>+6 comfort</b> in the Sitting Room (every seat cozy)."),[24,26]);
+		new Game.Achievement('The elders sing',loc("Reach <b>-6 comfort</b> in the Sitting Room (every seat eldritch)."),[25,26]);
+		new Game.Achievement('Fully furnished',loc("Buy every Sitting Room upgrade."),[26,26]);
+
 		//end of achievements
 }
