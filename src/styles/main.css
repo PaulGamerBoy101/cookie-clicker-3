@@ -2534,28 +2534,35 @@ from {background-position:0px 0px;}
 	opacity:1;
 }
 /* Muted Cats icon: the asset pack's sleeping-cat sheet, breathing in a slow
-   loop. Each frame is 80x64; the 64px icon window shows each frame centered
-   (x offset +8), so the hold keyframes step 80px per frame. steps(1) is
-   required (see .colonyCat in minigameCatColony.ts for the same idiom) —
-   without it the duplicate-offset keyframe pairs cascade into a continuous
-   background-position slide across the whole sheet instead of discrete
-   frame holds. Gated on body:not(.noMotion) like the rest of the v3.0
-   animation pass. */
+   loop. Each frame is 80x64, but the sleeping cat's body is only 42x35
+   inside it (x21, y26) — at native scale the muted cat looked clearly
+   smaller than the other buildings' ~40x56 muted icons. The sheet renders
+   1.5x (960x96) so the body is ~63x52, and each hold keyframe centers that
+   body in the 64px icon window: frame width 120, body center at
+   x62.25/y64.5, window offset 30.25/32.5. background-position offsets are
+   negative to reveal a region of the oversized sheet (positive values push
+   it out of the element). steps(1) is required (see .colonyCat in
+   minigameCatColony.ts for the same idiom) — without it the duplicate-
+   offset keyframe pairs cascade into a continuous background-position
+   slide across the whole sheet instead of discrete frame holds. Gated on
+   body:not(.noMotion) like the rest of the v3.0 animation pass. */
 .tinyProductIcon.catSleepIcon
 {
 	background-image:url(img/cats/sleep.png?v=1);
-	background-position:-8px 0px;
+	background-size:960px 96px;
+	background-position:-30.25px -32.5px;
+	image-rendering:pixelated;
 }
 @keyframes cc3CatSleep
 {
-	0%,12.5%{background-position:-8px 0px;}
-	12.5%,25%{background-position:-88px 0px;}
-	25%,37.5%{background-position:-168px 0px;}
-	37.5%,50%{background-position:-248px 0px;}
-	50%,62.5%{background-position:-328px 0px;}
-	62.5%,75%{background-position:-408px 0px;}
-	75%,87.5%{background-position:-488px 0px;}
-	87.5%,100%{background-position:-568px 0px;}
+	0%,12.5%{background-position:-30.25px -32.5px;}
+	12.5%,25%{background-position:-150.25px -32.5px;}
+	25%,37.5%{background-position:-270.25px -32.5px;}
+	37.5%,50%{background-position:-390.25px -32.5px;}
+	50%,62.5%{background-position:-510.25px -32.5px;}
+	62.5%,75%{background-position:-630.25px -32.5px;}
+	75%,87.5%{background-position:-750.25px -32.5px;}
+	87.5%,100%{background-position:-870.25px -32.5px;}
 }
 body:not(.noMotion) #buildingsMaster .tinyProductIcon.catSleepIcon
 {
