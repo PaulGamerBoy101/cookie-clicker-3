@@ -32,10 +32,23 @@ export function declareCats(Game: EngineGame) {
 			{pic:'img/cats/attack-1.png',frames:8,width:80},
 			{pic:'img/cats/hurt.png',frames:4,width:80}
 		];
+		// Store icon sizing: the idle sheet is 640x64 (eight 80x64 frames),
+		// but the cat's visible body is only ~29x28 inside each frame (x26,
+		// y20), while the other buildings' 64px icon frames hold ~40x56
+		// bodies — at native scale the store cat looked half the size of its
+		// neighbors. Scaling the whole sheet 2x (1280x128) puts the cat body
+		// at ~58x56, filling the 64x64 icon window like every other
+		// building. background-position offsets are NEGATIVE to reveal a
+		// region of an oversized image (positive values push the image out
+		// of the element, leaving it blank): -48px/-35px places the 2x body
+		// (centered at x80/y67 in frame coordinates) at the window center;
+		// building.ts applies image-rendering:pixelated so the upscale
+		// stays crisp pixel art.
 		var catArt:any={
 			pic:'img/cats/idle.png',
 			storeIcon:'img/cats/idle.png',
-			storeIconSize:'480px 48px'
+			storeIconSize:'1280px 128px',
+			storeIconPosition:'-48px -35px'
 		};
 		var cats=new Game.Object('Cats','cat|cats|adopted|[X] extra cat|[X] extra cats','A cozy room full of curious cats that happily bake cookies.',0,1,catArt,500,function (me: Building) {
 			var mult=1;

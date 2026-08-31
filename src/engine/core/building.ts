@@ -633,13 +633,22 @@ export class Building {
 				if (customStoreIcon)
 				{
 					var customStoreSize=(me.art as any).storeIconSize||'48px 48px';
+					//storeIconPosition centers multi-frame sheets whose frames are
+					//wider than the 64px icon window (e.g. the Cats strips, 80px
+					//frames) the same way the muted .catSleepIcon does.
+					var customStorePosition=(me.art as any).storeIconPosition||'0px 0px';
 					var customStoreUrl="url('"+customStoreIcon.replace(/'/g,"\\'")+"')";
+					//pixelated keeps 2x-upscaled pixel-art strips (Cats) crisp
+					//instead of bilinearly blurring them
+					var customStoreImageRendering=(me.art as any).storeIconRendering||'pixelated';
 					l('productIcon'+me.id).style.backgroundImage=customStoreUrl;
 					l('productIconOff'+me.id).style.backgroundImage=customStoreUrl;
 					l('productIcon'+me.id).style.backgroundSize=customStoreSize;
 					l('productIconOff'+me.id).style.backgroundSize=customStoreSize;
-					l('productIcon'+me.id).style.backgroundPosition='0px 0px';
-					l('productIconOff'+me.id).style.backgroundPosition='0px 0px';
+					l('productIcon'+me.id).style.backgroundPosition=customStorePosition;
+					l('productIconOff'+me.id).style.backgroundPosition=customStorePosition;
+					l('productIcon'+me.id).style.imageRendering=customStoreImageRendering;
+					l('productIconOff'+me.id).style.imageRendering=customStoreImageRendering;
 				}
 				l('productName'+me.id).innerHTML=displayName;
 				if (name.length>12/Langs[locId].w && (Game.season=='fools' || !EN)) l('productName'+me.id).classList.add('longProductName'); else l('productName'+me.id).classList.remove('longProductName');
