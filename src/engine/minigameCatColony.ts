@@ -199,9 +199,15 @@ M.launch = function () {
 			'@keyframes colonyCatIdleAnim{0%,12.5%{background-position:0px 0px;}12.5%,25%{background-position:-40px 0px;}25%,37.5%{background-position:-80px 0px;}37.5%,50%{background-position:-120px 0px;}50%,62.5%{background-position:-160px 0px;}62.5%,75%{background-position:-200px 0px;}75%,87.5%{background-position:-240px 0px;}87.5%,100%{background-position:-280px 0px;}}' +
 			'body:not(.noMotion) .colonyCat{animation:colonyCatIdleAnim 1.6s steps(1) infinite;}' +
 			'.colonyEmpty{font-size:11px;opacity:0.6;font-style:italic;}' +
+			'.colonyHelpBtn{cursor:pointer;padding:1px 7px;border-radius:4px;background:rgba(255,255,255,0.12);font-size:10px;font-weight:bold;margin-left:6px;white-space:nowrap;}' +
+			'.colonyHelpBtn:hover{background:rgba(255,255,255,0.3);}' +
+			'.colonyTutorial{margin:0px auto 8px;max-width:520px;background:rgba(0,0,0,0.85);border-radius:12px;padding:8px 12px;color:rgba(255,255,255,0.9);}' +
+			'.colonyTutorial ul{margin:6px 0 4px 16px;padding:0;font-size:11px;line-height:1.5;}' +
+			'.colonyTutorial li{margin-bottom:6px;}' +
 			'</style>';
 		str += '<div id="colonyBG"></div>';
 		str += '<div id="colonyContent">';
+		str += '<div id="colonyTutorial" style="display:none;"></div>';
 		str += '<div id="colonyRoster"></div>';
 		str += '<div id="colonyMissions"></div>';
 		str += '<div id="colonyShop"></div>';
@@ -216,7 +222,7 @@ M.launch = function () {
 		var away = M.awayCount();
 		var resting = M.restingCount();
 		var str = '<div class="colonyBox">';
-		str += '<div class="colonyTitle">Cat Colony</div>';
+		str += '<div class="colonyTitle">Cat Colony <span id="colonyHelpBtn" class="colonyHelpBtn" title="How to play" style="float:right;">How to play</span></div>';
 		str += '<div class="colonyStats">Treats: <b>' + Beautify(M.treats) + '</b> &nbsp;|&nbsp; Idle: <b>' + idle + '</b> &nbsp;|&nbsp; Away: <b>' + away + '</b> &nbsp;|&nbsp; Resting: <b>' + resting + '</b></div>';
 		str += '<div class="colonyCatStrip">';
 		var idleShown = Math.min(idle, 24);
@@ -230,6 +236,39 @@ M.launch = function () {
 		}
 		str += '</div>';
 		return str;
+	};
+
+	M.tutorialOpen = false;
+
+	// How-to-play panel, toggled by the "How to play" button in the roster header.
+	M.renderTutorial = function () {
+		var str = '<div class="colonyBox" style="margin:0;max-width:none;">';
+		str += '<div class="colonyTitle">How to play <span id="colonyHelpClose" class="colonyHelpBtn" title="Close" style="float:right;">✕</span></div>';
+		str += '<ul>';
+		str += '<li><b>Dispatch expeditions</b> — click Dispatch on a mission to send its cats out. They return after the listed duration and bring home treats. A few of the cats shown are resting (sleeping) — they come back on their own.</li>';
+		str += '<li><b>Cat capacity</b> — a mission only dispatches if you have enough <b>idle</b> cats (total cats − away − resting). Buy more cats to keep more expeditions running at once.</li>';
+		str += '<li><b>Risk</b> — each mission has a small chance its cats come home scuffed up and need a nap. <b>Nine-lives insurance</b> stacks each cut that risk by 30%.</li>';
+		str += '<li><b>Unlock missions</b> — bigger expeditions unlock at more owned cats (1, 10, 25, 50, 100, 200); the bigger ones are slower but pay far more treats.</li>';
+		str += '<li><b>Spend treats</b> — buy the colony upgrades below; each is repeatable at a flat price, and every stack adds its full effect to your cats, with stacks kept in your save.</li>';
+		str += '<li><b>Goals</b> — complete 1 / 50 / 250 expeditions ("First expedition", "Seasoned adventurers", "The nine-lives guild"), bank 1000 treats ("Pocketful of treats"), and buy every upgrade to become "Fully catified".</li>';
+		str += '</ul>';
+		str += '</div>';
+		return str;
+	};
+
+	M.toggleTutorial = function () {
+		M.tutorialOpen = !M.tutorialOpen;
+		var t = l('colonyTutorial');
+		if (!t) return;
+		if (M.tutorialOpen) {
+			t.innerHTML = M.renderTutorial();
+			t.style.display = 'block';
+			var close = l('colonyHelpClose');
+			if (close) AddEvent(close, 'click', function () { M.toggleTutorial(); });
+		} else {
+			t.innerHTML = '';
+			t.style.display = 'none';
+		}
 	};
 
 	M.renderMissions = function () {
@@ -278,6 +317,9 @@ M.launch = function () {
 		l('colonyRoster').innerHTML = M.renderRoster();
 		l('colonyMissions').innerHTML = M.renderMissions();
 		l('colonyShop').innerHTML = M.renderShop();
+		// Bind the How-to-play button (the roster re-renders every refresh).
+		var helpBtn = l('colonyHelpBtn');
+		if (helpBtn) AddEvent(helpBtn, 'click', function () { M.toggleTutorial(); });
 		for (var i = 0; i < M.missions.length; i++) {
 			var mission = M.missions[i];
 			var btn = l('colonyDispatch' + mission.id);
@@ -356,7 +398,10 @@ M.launch = function () {
 		M.resting = [];
 		M.treatTrickle = 0;
 		M.upgradeStacks = [0,0,0,0,0,0];
+		M.tutorialOpen = false;
 		M.refresh();
+		var t = l('colonyTutorial');
+		if (t) { t.innerHTML = ''; t.style.display = 'none'; }
 	};
 	M.logic = function () {
 		//run each game tick, whether or not the panel is open

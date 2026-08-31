@@ -1995,6 +1995,18 @@ if (debugSurface && params.get('qa') === 'sittingroom') {
 			M.load(saved);
 			chk('load restored yarn, stacks and seats (' + saved + ')', M.yarn === 123 && M.yarnEarned === 456 && M.upgradeStacks.join(':') === '2:0:1:0:0:3' && M.seats.join(':') === '0:1:-1:-1:4:-1');
 
+			// 7. How-to-play button + tutorial panel
+			const helpBtn = document.getElementById('roomHelpBtn') as HTMLElement | null;
+			chk('the header has a "How to play" button', !!helpBtn);
+			if (helpBtn) {
+				helpBtn.click();
+				const tut = document.getElementById('roomTutorial');
+				chk('clicking it opens the tutorial (with content + close button)', !!tut && tut.style.display !== 'none' && !!document.getElementById('roomHelpClose') && (tut.textContent || '').includes('Comfort dial'));
+				const closeBtn = document.getElementById('roomHelpClose') as HTMLElement | null;
+				if (closeBtn) closeBtn.click();
+				chk('the close button hides the tutorial', !!tut && tut.style.display === 'none' && tut.innerHTML === '');
+			}
+
 			// cleanup: the QA page is disposable, but leave the wrath state sane
 			setSeats([-1, -1, -1, -1, -1, -1]);
 			G.elderWrath = 0;
@@ -2180,6 +2192,18 @@ if (debugSurface && params.get('qa') === 'catcolony') {
 			U('Legendary colony charter').bought = 1;
 			M.load('5 5 5 - - 0:0:0:0:0:0');
 			chk('load migrates the bought flag of a pre-stacking save to one stack', M.treats === 5 && M.missionsCompleted === 5 && M.upgradeStacks.join(':') === '0:0:0:0:0:1');
+
+			// 8. How-to-play button + tutorial panel
+			const helpBtn = document.getElementById('colonyHelpBtn') as HTMLElement | null;
+			chk('the roster has a "How to play" button', !!helpBtn);
+			if (helpBtn) {
+				helpBtn.click();
+				const tut = document.getElementById('colonyTutorial');
+				chk('clicking it opens the tutorial (with content + close button)', !!tut && tut.style.display !== 'none' && !!document.getElementById('colonyHelpClose') && (tut.textContent || '').includes('Dispatch expeditions'));
+				const closeBtn = document.getElementById('colonyHelpClose') as HTMLElement | null;
+				if (closeBtn) closeBtn.click();
+				chk('the close button hides the tutorial', !!tut && tut.style.display === 'none' && tut.innerHTML === '');
+			}
 
 			// cleanup: the QA page is disposable, but leave the colony state sane
 			M.away.length = 0;

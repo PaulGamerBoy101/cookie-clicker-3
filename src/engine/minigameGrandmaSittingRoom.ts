@@ -182,9 +182,15 @@ M.launch = function () {
 			'.roomComfortFill{height:100%;border-radius:4px;transition:width 0.3s;}' +
 			'.roomComfortLabel{font-size:10px;text-align:center;margin:2px 0;}' +
 			'.roomWrathLabel{font-size:10px;text-align:center;opacity:0.7;}' +
+			'.roomHelpBtn{cursor:pointer;padding:1px 7px;border-radius:4px;background:rgba(255,255,255,0.12);font-size:10px;font-weight:bold;margin-left:6px;white-space:nowrap;}' +
+			'.roomHelpBtn:hover{background:rgba(255,255,255,0.3);}' +
+			'.roomTutorial{margin:0px auto 8px;max-width:520px;background:rgba(0,0,0,0.85);border-radius:12px;padding:8px 12px;color:rgba(255,255,255,0.9);}' +
+			'.roomTutorial ul{margin:6px 0 4px 16px;padding:0;font-size:11px;line-height:1.5;}' +
+			'.roomTutorial li{margin-bottom:6px;}' +
 			'</style>';
 		str += '<div id="roomBG"></div>';
 		str += '<div id="roomContent">';
+		str += '<div id="roomTutorial" style="display:none;"></div>';
 		str += '<div id="roomHeader"></div>';
 		str += '<div id="roomSeats"></div>';
 		str += '<div id="roomShop"></div>';
@@ -200,7 +206,7 @@ M.launch = function () {
 		var wrathLabel = 'Elder Wrath: ' + Game.elderWrath + '/' + maxWrath;
 		if (Game.Has('Elder Covenant')) wrathLabel = 'Elder Covenant (wrath suppressed)';
 		var str = '<div class="roomBox">';
-		str += '<div class="roomTitle">' + M.name + '</div>';
+		str += '<div class="roomTitle">' + M.name + ' <span id="roomHelpBtn" class="roomHelpBtn" title="How to play" style="float:right;">How to play</span></div>';
 		str += '<div class="roomStats">Yarn: <b>' + Beautify(M.yarn) + '</b> &nbsp;|&nbsp; Rate: <b>' + Beautify(M.yarnPerSecond(), 2) + '</b>/s</div>';
 		// Comfort bar: -6 to +6, centered at 0
 		var pct = 50 + (comfort / 6) * 50;
@@ -215,6 +221,40 @@ M.launch = function () {
 		str += '<div class="roomWrathLabel">' + wrathLabel + '</div>';
 		str += '</div>';
 		return str;
+	};
+
+	M.tutorialOpen = false;
+
+	// How-to-play panel, toggled by the "How to play" button in the header.
+	M.renderTutorial = function () {
+		var str = '<div class="roomBox" style="margin:0;max-width:none;">';
+		str += '<div class="roomTitle">How to play <span id="roomHelpClose" class="roomHelpBtn" title="Close" style="float:right;">✕</span></div>';
+		str += '<ul>';
+		str += '<li><b>Assign activities</b> — click an activity chip on a seat row to place it there; click ✕ to empty the seat. Dimmed chips show what is needed to unlock them.</li>';
+		str += '<li><b>Unlock seats and activities</b> — each of the 6 seats and each activity unlocks at a higher number of owned Grandmas (1, 10, 25, 50, 100, 200).</li>';
+		str += '<li><b>Earn yarn</b> — every assigned seat produces yarn per second; the total is shown at the top.</li>';
+		str += '<li><b>Comfort dial</b> — cozy activities (green, +) boost Grandma CpS and calm the Grandmapocalypse; eldritch activities (red, −) cut Grandma CpS but amplify wrath-cookie and wrinkler effects while the Grandmapocalypse is active.</li>';
+		str += '<li><b>Eldritch activities</b> (Eldritch chant, Grandmapocalypse choir) can only be assigned while the Grandmapocalypse is active — own the <b>One mind</b> upgrade to get wrath.</li>';
+		str += '<li><b>Spend yarn</b> — buy the sitting room upgrades below; each is repeatable and every stack boosts Grandma output, and stacks are kept in your save.</li>';
+		str += '<li><b>Goals</b> — reach <b>+6 comfort</b> ("Grandma\'s peace") or <b>−6</b> ("The elders sing"); buy every upgrade to become "Fully furnished".</li>';
+		str += '</ul>';
+		str += '</div>';
+		return str;
+	};
+
+	M.toggleTutorial = function () {
+		M.tutorialOpen = !M.tutorialOpen;
+		var t = l('roomTutorial');
+		if (!t) return;
+		if (M.tutorialOpen) {
+			t.innerHTML = M.renderTutorial();
+			t.style.display = 'block';
+			var close = l('roomHelpClose');
+			if (close) AddEvent(close, 'click', function () { M.toggleTutorial(); });
+		} else {
+			t.innerHTML = '';
+			t.style.display = 'none';
+		}
 	};
 
 	M.renderSeats = function () {
@@ -279,6 +319,9 @@ M.launch = function () {
 		l('roomHeader').innerHTML = M.renderHeader();
 		l('roomSeats').innerHTML = M.renderSeats();
 		l('roomShop').innerHTML = M.renderShop();
+		// Bind the How-to-play button (the header re-renders every refresh).
+		var helpBtn = l('roomHelpBtn');
+		if (helpBtn) AddEvent(helpBtn, 'click', function () { M.toggleTutorial(); });
 		// Bind seat activity buttons
 		for (var s = 0; s < M.seats.length; s++) {
 			for (var a = 0; a < M.activities.length; a++) {
@@ -343,8 +386,11 @@ M.launch = function () {
 		M.seats = [-1, -1, -1, -1, -1, -1];
 		M.upgradeStacks = [0, 0, 0, 0, 0, 0];
 		M.yarnTrickle = 0;
+		M.tutorialOpen = false;
 		M.computeEffs();
 		M.refresh();
+		var t = l('roomTutorial');
+		if (t) { t.innerHTML = ''; t.style.display = 'none'; }
 	};
 
 	M.logic = function () {
