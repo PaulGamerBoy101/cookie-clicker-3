@@ -2076,7 +2076,7 @@ export function declareVanillaUpgrades(Game: EngineGame) {
 		for (var catColonyIndex=0;catColonyIndex<catColonyUpgrades.length;catColonyIndex++)
 		{
 			var catColony=catColonyUpgrades[catColonyIndex];
-			var catColonyUpgrade=new Game.Upgrade(catColony.name,catColony.desc+'<q>Earned by the colony, not bought with cookies.</q>',0,[0,0,'img/cats/'+catColony.icon+'.png',64]);
+			var catColonyUpgrade=new Game.Upgrade(catColony.name,catColony.desc+'<q>Bought with treats earned by the colony, not with cookies.</q>',0,[0,0,'img/cats/'+catColony.icon+'.png',64]);
 			if (catColony.catAdd) catColonyUpgrade.catAdd=catColony.catAdd;
 			catColonyUpgrade.treatsPrice=catColony.treats;
 			catColonyUpgrade.buildingTie=Game.Objects['Cats'];
