@@ -649,3 +649,15 @@ test('reduced-motion: the whole CC3 polish is disabled, the game still runs', as
 	expect(await page.locator('#sectionMiddle').evaluate((el) => getComputedStyle(el).animationName)).toBe('none');
 	await context.close();
 });
+
+test('?qa=sittingroom: Grandma\'s Sitting Room + Grandmapocalypse integration verified end to end', async ({ page }) => {
+	await boot(page, '&qa=sittingroom');
+	const report = await qaReport(
+		page,
+		/PASS: Grandma's Sitting Room/,
+		60_000
+	);
+	expect(report).not.toMatch(/FAIL/);
+	expect(report).not.toMatch(/ERROR/);
+	await assertNoUncaughtErrors(page);
+});

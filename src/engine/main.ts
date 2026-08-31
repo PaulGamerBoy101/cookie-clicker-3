@@ -2855,13 +2855,31 @@ window.loadMinigameModule!(me.minigameUrl).then(function(){
 			}
 			else
 			{
-				if (Game.Has('One mind') && Game.elderWrath==0)
+				// CC3: Grandma's Sitting Room (engine/minigameGrandmaSittingRoom.ts)
+				// feeds its comfort dial into this canonical drift — the minigame
+				// itself never touches Game.elderWrath. A sufficiently cozy room
+				// (comfort >= 2) calms the elders, one stage per tick, and holds
+				// them at 0 (floor and climb suppressed) while the room stays cozy;
+				// a sufficiently eldritch room (comfort <= -2) adds to the per-tick
+				// drift that climbs the wrath. 'Elder hospitality' (heavenly)
+				// doubles the comfort-driven rates.
+				var sittingRoomMg=(Game.isMinigameReady(Game.Objects['Grandma'])&&Game.Objects['Grandma'].minigame)?Game.Objects['Grandma'].minigame:0;
+				var sittingComfort=sittingRoomMg&&sittingRoomMg.currentComfort?sittingRoomMg.currentComfort():0;
+				var sittingDriftMult=Game.Has('Elder hospitality')?2:1;
+				if (sittingComfort>=2 && Game.elderWrath>0 && Math.random()<0.0015*(sittingComfort-1)*sittingDriftMult)
 				{
-					Game.elderWrath=1;
+					Game.elderWrath--;//a cozy sitting room calms the elders
 				}
-				if (Math.random()<0.001 && Game.elderWrath<Game.Has('One mind')+Game.Has('Communal brainsweep')+Game.Has('Elder Pact'))
+				if (sittingComfort<2)
 				{
-					Game.elderWrath++;//have we already pledged? make the elder wrath shift between different stages
+					if (Game.Has('One mind') && Game.elderWrath==0)
+					{
+						Game.elderWrath=1;
+					}
+					if (Math.random()<0.001+((sittingComfort<=-2)?0.0015*(-sittingComfort-1)*sittingDriftMult:0) && Game.elderWrath<Game.Has('One mind')+Game.Has('Communal brainsweep')+Game.Has('Elder Pact'))
+					{
+						Game.elderWrath++;//have we already pledged? make the elder wrath shift between different stages
+					}
 				}
 				if (Game.Has('Elder Pact') && Game.Upgrades['Elder Pledge'].unlocked==0)
 				{

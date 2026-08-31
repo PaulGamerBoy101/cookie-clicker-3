@@ -14,6 +14,15 @@
  * feed into the Grandma CpS formula via grandmaAdd/grandmaMult arrays in
  * content/buildings/grandma.ts.
  *
+ * Grandmapocalypse integration: the minigame only REPORTS its comfort dial
+ * (M.currentComfort(), -6..+6); it never mutates Game.elderWrath itself. The
+ * canonical updater Game.UpdateGrandmapocalypse (engine/main.ts) reads the
+ * comfort every tick and does all the wrath mutation: cozy rooms (>= +2)
+ * calm the elders and hold wrath at 0, eldritch rooms (<= -2) add to the
+ * per-tick drift that climbs it, and the 'Elder hospitality' heavenly upgrade
+ * doubles the comfort-driven rates. This keeps the Elder Pledge / Elder
+ * Covenant bookkeeping (same function) in charge of the wrath state.
+ *
  * Deliberately reuses only assets already in the repo: the background is
  * img/grandmaBackground.webp (the same scene the Grandma building room already
  * draws), the activity icons are grandma-variant 64x64 webp icons (already
@@ -353,20 +362,11 @@ M.launch = function () {
 				M.refresh();
 			}
 		}
-		// 2. ElderWrath drift
-		var comfort = M.currentComfort();
-		var cap = (Game.Has('One mind') ? 1 : 0) + (Game.Has('Communal brainsweep') ? 1 : 0) + (Game.Has('Elder Pact') ? 1 : 0);
-		var driftMult = Game.Has('Elder hospitality') ? 2 : 1;
-		if (comfort >= 2 && Game.elderWrath > 0) {
-			if (Math.random() < 0.0015 * (comfort - 1) * driftMult) {
-				Game.elderWrath = Math.max(0, Game.elderWrath - 1);
-			}
-		}
-		if (comfort <= -2 && Game.elderWrath < cap) {
-			if (Math.random() < 0.0015 * (-comfort - 1) * driftMult) {
-				Game.elderWrath = Math.min(cap, Game.elderWrath + 1);
-			}
-		}
+		// 2. Wrath drift no longer happens here: Game.UpdateGrandmapocalypse
+		// (engine/main.ts) reads M.currentComfort() every tick and nudges the
+		// wrath to match the room (cozy calms + holds at 0, eldritch accelerates
+		// the climb, 'Elder hospitality' doubles it) — all wrath mutation stays
+		// in the canonical updater so the pledge/covenant logic stays in charge.
 		// 3. Periodically recompute effs so the engine picks up changes
 		M.computeEffs();
 	};

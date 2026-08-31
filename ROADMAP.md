@@ -5,6 +5,21 @@ picked up, traded, or dropped as we go. Checked items are shipped.
 
 ## Recently shipped (context)
 
+- **Grandma's Sitting Room minigame** — the sixth minigame (Grandma
+  building counterpart), following the Cat Colony shape: seat grandmas in six
+  activities on a cozy↔eldritch comfort dial. Cozy activities (knitting, tea)
+  produce Yarn and calm the Grandmapocalypse; eldritch ones (chant, choir)
+  produce more Yarn and accelerate the wrath, boosting wrath-cookie and
+  wrinkler economy via the minigame `effs`. Yarn buys REPEATABLE flat-price
+  stacks of six Grandma upgrades that feed the existing CpS formula
+  (grandmaAdd/grandmaMult in content/buildings/grandma.ts), plus 5
+  achievements and a 2-node heavenly branch off 'Starter kitchen' (yarn +50%,
+  'Elder hospitality' doubling the comfort-driven wrath rates). The minigame
+  only reports `M.currentComfort()` — all `Game.elderWrath` mutation stays in
+  the canonical `Game.UpdateGrandmapocalypse` updater (cozy rooms hold wrath
+  at 0, eldritch rooms speed up the climb), so Elder Pledge/Covenant
+  bookkeeping stays in charge. Verified by the ?qa=sittingroom probe. See
+  `src/engine/minigameGrandmaSittingRoom.ts`.
 - Browse-only heavenly upgrade tree: the Ascend confirmation gained a
   "Browse the tree" option (Game.AscendBrowseView/AscendBrowseClose) that
   opens the ascend view without the intro, without earning chips and without

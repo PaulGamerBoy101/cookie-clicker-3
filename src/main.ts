@@ -1853,6 +1853,164 @@ if (debugSurface && params.get('qa') === 'anim') {
 	}, 250);
 }
 
+// QA: verify Grandma's Sitting Room (engine/minigameGrandmaSittingRoom.ts),
+// in particular the Grandmapocalypse integration: the minigame reports
+// M.currentComfort() and the canonical Game.UpdateGrandmapocalypse does all
+// the wrath mutation — a cozy room (comfort >= 2) suppresses the 'One mind'
+// floor and calms the elders to 0 (and holds), an eldritch room (comfort
+// <= -2) accelerates the wrath climb, and 'Elder hospitality' doubles the
+// comfort-driven rates. The rate comparisons draw from identical seeded
+// random streams, so they are deterministic run to run. Also covers the yarn
+// economy, the repeatable-stack upgrade path, the save/load round-trip and
+// the achievements. Usage: ?debug=1&qa=sittingroom
+if (debugSurface && params.get('qa') === 'sittingroom') {
+	const tick = window.setInterval(() => {
+		const G = window.Game;
+		if (!G || !G.ready || !G.Upgrades) return;
+		const gm: any = G.Objects['Grandma'];
+		if (!gm.minigameLoaded) {
+			// Phase 1: kick off the lazy minigame load (needs level > 0).
+			if (!G.__qaSittingKick) {
+				G.__qaSittingKick = 1;
+				gm.level = 300;
+				gm.amount = 300;
+				G.BuildingsOwned = Math.max(G.BuildingsOwned, 1);
+				G.LoadMinigames();
+			}
+			return; // wait for loadMinigameModule -> scriptLoaded -> M.launch
+		}
+		if (G.__qaSitting) return;
+		G.__qaSitting = 1;
+		const out = document.createElement('div');
+		out.id = '__dbgqa';
+		out.style.cssText = 'position:fixed;top:0;left:0;z-index:99999;background:#fff;color:#060;font:12px monospace;white-space:pre-wrap;max-width:640px;';
+		document.body.appendChild(out);
+		try {
+			const lines: string[] = [];
+			let pass = true;
+			const chk = (label: string, cond: boolean) => { lines.push((cond ? 'PASS: ' : 'FAIL: ') + label); if (!cond) pass = false; };
+			const M: any = gm.minigame;
+			const U = (n: string) => G.Upgrades[n];
+			const realRandom = Math.random;
+			const setSeats = (arr: number[]) => { M.seats = arr.slice(); M.computeEffs(); };
+
+			// 1. content declarations
+			chk('minigame attached to the Grandma (name "Sitting Room")', M.parent === gm && M.name === 'Sitting Room' && gm.minigameUrl === 'minigameGrandmaSittingRoom.js');
+			chk('6 yarn upgrades tied to the Grandma with a flat .yarnPrice', ['Lap blanket weaving', 'Rocking chair maintenance', 'Tea leaf cultivation', 'Elder shawl', 'Chamomile incense', 'The Grandmother Tree'].every((n) => { const u = U(n); return !!u && u.buildingTie === gm && typeof u.yarnPrice === 'number' && u.yarnPrice > 0; }));
+			chk('2 heavenly upgrades in the prestige pool off Starter kitchen', U('Grandma\'s knitting circle').pool === 'prestige' && (U('Grandma\'s knitting circle').parents[0] as any).name === 'Starter kitchen' && U('Elder hospitality').pool === 'prestige' && (U('Elder hospitality').parents[0] as any).name === 'Grandma\'s knitting circle');
+			chk('5 sitting-room achievements declared', ['First knit', 'Yarn hoard', "Grandma's peace", 'The elders sing', 'Fully furnished'].every((n) => !!G.Achievements[n]));
+
+			// 2. wrath integration — deterministic beats (Math.random=()=>0
+			//    makes every drift roll succeed, so only the gating matters)
+			U('One mind').bought = 1;
+			G.pledgeT = 0;
+			G.cookies = 1e15;
+			setSeats([0, 1, 1, 0, 0, 1]); // knitting/tea mix, comfort +6
+			chk('cozy room comfort is +6', M.currentComfort() === 6);
+			G.elderWrath = 0;
+			Math.random = () => 0;
+			G.UpdateGrandmapocalypse();
+			chk('cozy room HOLDS wrath at 0 (One mind floor + climb suppressed)', G.elderWrath === 0);
+			setSeats([4, 4, 4, 4, 4, 4]); // six chants, comfort -6
+			chk('eldritch room comfort is -6', M.currentComfort() === -6);
+			G.elderWrath = 0;
+			G.UpdateGrandmapocalypse();
+			chk('eldritch room does NOT suppress the floor (wrath back to 1)', G.elderWrath === 1);
+			Math.random = realRandom;
+
+			// 3. wrath integration — drift rates (identical seeded LCG streams,
+			//    so each pair of runs sees the same rolls and the comparison
+			//    is deterministic)
+			const lcg = (base: number) => { let s = base; return () => { s = (s * 1103515245 + 12345) & 0x7fffffff; return s / 0x80000000; }; };
+			const runTo = (target: (wrath: number) => boolean, cap: number) => { let t = 0; while (!target(G.elderWrath) && t < cap) { G.UpdateGrandmapocalypse(); t++; } return t; };
+			U('Communal brainsweep').bought = 1;
+			U('Elder Pact').bought = 1; // wrath cap 3
+			setSeats([0, 1, 1, 0, 0, 1]);
+			U('Elder hospitality').bought = 0;
+			Math.random = lcg(12345);
+			G.elderWrath = 3;
+			const cozyTicks = runTo((w) => w === 0, 20000);
+			chk('cozy room calmed wrath 3 -> 0 in ' + cozyTicks + ' ticks (< 2000)', G.elderWrath === 0 && cozyTicks < 2000);
+			for (let i = 0; i < 300; i++) G.UpdateGrandmapocalypse();
+			chk('cozy room holds the elders at 0', G.elderWrath === 0);
+			U('Elder hospitality').bought = 1;
+			Math.random = lcg(12345);
+			G.elderWrath = 3;
+			const hospTicks = runTo((w) => w === 0, 20000);
+			chk("'Elder hospitality' calmed it faster (" + hospTicks + ' vs ' + cozyTicks + ' ticks, ~half)', G.elderWrath === 0 && hospTicks <= cozyTicks / 2 + 100 && hospTicks < 2000);
+			U('Elder hospitality').bought = 0;
+			setSeats([4, 4, 4, 4, 4, 4]);
+			Math.random = lcg(12345);
+			G.elderWrath = 1;
+			const eldritchTicks = runTo((w) => w === 3, 20000);
+			chk('eldritch room climbed wrath 1 -> 3 in ' + eldritchTicks + ' ticks (< 1500)', G.elderWrath === 3 && eldritchTicks < 1500);
+			setSeats([-1, -1, -1, -1, -1, -1]);
+			Math.random = lcg(12345);
+			G.elderWrath = 1;
+			const neutralTicks = runTo((w) => w === 3, 40000);
+			chk('neutral room took ' + neutralTicks + ' ticks to the same climb (>= 3x the eldritch room)', G.elderWrath === 3 && neutralTicks >= eldritchTicks * 3);
+			Math.random = realRandom;
+
+			// 4. effs contract (what CalculateGains aggregates)
+			setSeats([0, 1, 1, 0, 0, 1]);
+			chk('cozy +6 effs (grandmaCps +12%, wrath cookies rarer)', Math.abs(M.effs.grandmaCps - 1.12) < 1e-12 && Math.abs(M.effs.wrathCookieFreq - 1.06) < 1e-12);
+			setSeats([4, 4, 4, 4, 4, 4]);
+			chk('eldritch -6 effs (wrath gain +18%, wrinklers +18%, grandmaCps -6%)', Math.abs(M.effs.wrathCookieGain - 1.18) < 1e-12 && Math.abs(M.effs.wrinklerSpawn - 1.18) < 1e-12 && Math.abs(M.effs.grandmaCps - 0.94) < 1e-12 && Math.abs(M.effs.wrathCookieFreq - 1 / 1.12) < 1e-12);
+
+			// 5. yarn economy, repeatable stacks, CpS hookup
+			setSeats([-1, -1, -1, -1, -1, -1]); // neutral: comfort 0
+			// Grandma is a DYNAMIC building: me.cps is a function evaluated as me.cps(me)
+			const gmCps = () => (typeof gm.cps === 'function' ? (gm.cps as any)(gm) : (gm.cps as number));
+			const cpsBefore = gmCps();
+			M.yarn = 10000;
+			M.yarnEarned = 10;
+			M.checkAchievements();
+			chk('achievement "First knit" wins at 1+ yarn earned', G.Achievements['First knit'].won === 1);
+			M.buyUpgrade('Lap blanket weaving');
+			chk('yarn purchase adds a stack, marks the first one in the main save, deducts 25 yarn', M.effectiveStacks('Lap blanket weaving') === 1 && U('Lap blanket weaving').bought === 1 && M.yarn === 10000 - 25);
+			chk('Grandma CpS rose after the stack (' + cpsBefore.toFixed(2) + ' -> ' + gmCps().toFixed(2) + ')', gmCps() > cpsBefore);
+			M.yarn = 100000;
+			for (const n of M.upgradeNames) M.buyUpgrade(n);
+			chk('buying every upgrade wins "Fully furnished"', G.Achievements['Fully furnished'].won === 1);
+			setSeats([0, 1, 1, 0, 0, 1]);
+			M.checkAchievements();
+			chk('"Grandma\'s peace" wins at comfort +6', G.Achievements["Grandma's peace"].won === 1);
+			setSeats([4, 4, 4, 4, 4, 4]);
+			M.checkAchievements();
+			chk('"The elders sing" wins at comfort -6', G.Achievements['The elders sing'].won === 1);
+
+			// 6. save / load round-trip
+			M.yarn = 123;
+			M.yarnEarned = 456;
+			setSeats([0, 1, -1, -1, 4, -1]);
+			M.upgradeStacks = [2, 0, 1, 0, 0, 3];
+			const saved = M.save();
+			// A real hard reset clears the main-save bought flags BEFORE the
+			// minigame reset runs (systems/reset.ts), so mirror that order —
+			// otherwise effectiveStacks' main-save fallback would correctly
+			// regrow one stack per still-bought upgrade.
+			for (const n of M.upgradeNames) U(n).bought = 0;
+			M.reset(true);
+			chk('reset cleared the room state', M.yarn === 0 && M.yarnEarned === 0 && M.upgradeStacks.every((n: number) => n === 0) && M.seats.every((n: number) => n === -1));
+			M.load(saved);
+			chk('load restored yarn, stacks and seats (' + saved + ')', M.yarn === 123 && M.yarnEarned === 456 && M.upgradeStacks.join(':') === '2:0:1:0:0:3' && M.seats.join(':') === '0:1:-1:-1:4:-1');
+
+			// cleanup: the QA page is disposable, but leave the wrath state sane
+			setSeats([-1, -1, -1, -1, -1, -1]);
+			G.elderWrath = 0;
+			G.pledgeT = 0;
+			U('One mind').bought = 0;
+			U('Communal brainsweep').bought = 0;
+			U('Elder Pact').bought = 0;
+			G.killShimmers();
+			out.textContent = lines.join('\n') + '\n[QA-sittingroom] ' + (pass ? 'PASS: Grandma\'s Sitting Room + Grandmapocalypse integration verified end to end' : 'FAIL: see checks above');
+		} catch (e: any) {
+			out.textContent = '[QA-sittingroom] ERROR: ' + e.constructor.name + ': ' + e.message;
+		}
+		window.clearInterval(tick);
+	}, 250);
+}
+
 /* ----------------------------------------------------------------- i18n */
 // Language files are ESM modules; Vite code-splits each into its own chunk.
 /* Generic = the module namespace shape at runtime: each loc file is
