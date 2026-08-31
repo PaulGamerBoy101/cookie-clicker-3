@@ -16,7 +16,7 @@ import { CaptureSave, ListBackups, RestoreBackup, DownloadBackup, RefreshBackupL
 import { CreateMusic } from "./systems/music";
 import { Shimmer, updateShimmers, killShimmers } from "./systems/shimmer";
 import { getWrinklersMax, ResetWrinklers, CollectWrinklers, playWrinklerSquishSound, SpawnWrinkler, PopRandomWrinkler, UpdateWrinklers, DrawWrinklers, SaveWrinklers, LoadWrinklers } from "./systems/wrinkler";
-import { UpdateAscensionModePrompt, PickAscensionMode, UpdateAscendIntro, UpdateReincarnateIntro, Reincarnate, Ascend, AscendBrowseView, AscendBrowseClose, UpdateAscend, AscendRefocus, PurchaseHeavenlyUpgrade, BuildAscendTree, lumpTooltip, computeLumpTimes, loadLumps, gainLumps, clickLump, harvestLumps, computeLumpType, canLumps, getLumpRefillMax, getLumpRefillRemaining, canRefillLump, refillLump, spendLump, doLumps } from "./systems/ascend";
+import { UpdateAscensionModePrompt, PickAscensionMode, UpdateAscendIntro, UpdateReincarnateIntro, Reincarnate, Ascend, AscendBrowseView, AscendBrowseClose, UpdateAscend, AscendRefocus, PurchaseHeavenlyUpgrade, BuildAscendTree, lumpTooltip, computeLumpTimes, loadLumps, gainLumps, clickLump, harvestLumps, computeLumpType, canLumps, getLumpRefillMax, getLumpRefillRemaining, canRefillLump, refillLump, spendLump, doLumps, SaveHeavenlyLayout, ToggleArrangeHeavenly, ResetHeavenlyLayout } from "./systems/ascend";
 /* CC3 rewrite (phase 6, slice 2): pure utils extracted to engine/utils/. */
 import { l, choose, escapeRegExp, replaceAll, cap, romanize, randomFloor, shuffle } from "./utils/helpers";
 import { formatEveryThirdPower, rawFormatter, formatLong, prefixes, suffixes, formatShort, numberFormatters, Beautify, shortenNumber, SimpleBeautify, beautifyInTextFilter, BeautifyInTextFunction, BeautifyInText, BeautifyAll } from "./utils/format";
@@ -1296,6 +1296,10 @@ Game.Launch=function()
 							'<div style="min-width:300px;text-align:center;font-size:11px;padding:8px;" id="tooltipReincarnate">'+loc("Click this once you've bought<br>everything you need!")+'</div>'
 							,'bottom-right')+' style="font-size:16px;margin-top:0px;"><span class="fancyText" style="font-size:20px;">'+loc("Reincarnate")+'</span></a>'+
 			'<div id="ascendModeButton" style="position:absolute;right:34px;bottom:25px;display:none;"></div>'+
+			'<div id="arrangeTreeBox" style="position:absolute;left:10px;bottom:25px;">'+
+			'<a id="arrangeTreeButton" class="option framed small" style="font-size:11px;" '+Game.clickStr+'="Game.ToggleArrangeHeavenly();" '+Game.getTooltip('<div style="min-width:220px;text-align:center;font-size:11px;padding:8px;">'+loc("Turn on arrange mode to drag heavenly upgrades wherever you want.<br>Your layout is saved and kept between ascensions.")+'</div>','bottom-right')+'>'+loc("Arrange")+'</a>'+
+			' <a id="arrangeTreeReset" class="option framed small" style="font-size:11px;display:none;" '+Game.clickStr+'="Game.ResetHeavenlyLayout();" '+Game.getTooltip('<div style="min-width:180px;text-align:center;font-size:11px;padding:8px;">'+loc("Restore the default heavenly tree layout.")+'</div>','bottom-right')+'>'+loc("Reset layout")+'</a>'+
+			'</div>'+
 			'<input type="text" style="display:block;" id="upgradePositions"/></div>'+
 			
 			'<div id="ascendInfo"><div class="ascendData smallFramed" style="margin-top:22px;width:75%;font-size:11px;">'+loc("You are ascending.<br>Drag the screen around<br>or use arrow keys!<br>When you're ready,<br>click Reincarnate.")+'</div></div>';
@@ -1342,12 +1346,20 @@ Game.Launch=function()
 		Game.AscendZoomT=1;
 		Game.AscendDragging=0;
 		Game.AscendGridSnap=24;
+		Game.ArrangeHeavenly=0;//CC3: player arrange mode — drag heavenly upgrades into place; overrides persist in localStorage
+		Game.AscendDragStartX=0;//CC3: click-origin tracking for arrange mode (a <6px jiggle is a click, not a drag)
+		Game.AscendDragStartY=0;
+		Game.AscendDragMoved=0;
+		Game.ArrangeLayout={};//CC3: upgrade id -> [x,y] overrides the player has set
 		Game.heavenlyBounds={left:0,right:0,top:0,bottom:0};
 		Game.UpdateAscend=UpdateAscend;//CC3 rewrite (phase 4, slice 6).
 		Game.AscendRefocus=AscendRefocus;//CC3 rewrite (phase 4, slice 6).
 		Game.SelectedHeavenlyUpgrade=0;
 		Game.PurchaseHeavenlyUpgrade=PurchaseHeavenlyUpgrade;//CC3 rewrite (phase 4, slice 6).
 		Game.BuildAscendTree=BuildAscendTree;//CC3 rewrite (phase 4, slice 6): the ~409-line heavenly tree renderer moved verbatim.
+		Game.SaveHeavenlyLayout=SaveHeavenlyLayout;//CC3: arrange-mode persistence.
+		Game.ToggleArrangeHeavenly=ToggleArrangeHeavenly;//CC3: arrange-mode toggle.
+		Game.ResetHeavenlyLayout=ResetHeavenlyLayout;//CC3: arrange-mode reset.
 			/*===============================================================
 			COALESCING SUGAR LUMPS
 			=======================================================
@@ -2740,6 +2752,18 @@ window.loadMinigameModule!(me.minigameUrl).then(function(){
 		declareHeavenlyUpgradePositions(Game as any);//CC3 rewrite (phase 6, slice 5): the heavenly-upgrade position map moved verbatim to content/heavenlyPositions.ts; same Init position.
 		
 		for (var iKey in Game.UpgradePositions) {Game.UpgradesById[iKey].posX=Game.UpgradePositions[iKey][0];Game.UpgradesById[iKey].posY=Game.UpgradePositions[iKey][1];}
+		
+		//CC3: player-arranged heavenly layout — snapshot the canonical positions
+		//(vanilla table + declared CC3 spots), then apply any saved overrides so
+		//the player's drag arrangement survives reloads and ascensions.
+		Game._heavenlyLayoutDefaults={};
+		for (var iKey in Game.PrestigeUpgrades) {Game._heavenlyLayoutDefaults[Game.PrestigeUpgrades[iKey].id]=[Game.PrestigeUpgrades[iKey].posX,Game.PrestigeUpgrades[iKey].posY];}
+		try {Game.ArrangeLayout=JSON.parse(window.localStorage.getItem('cc3_heavenly_layout')||'{}')||{};} catch(e){Game.ArrangeLayout={};}
+		for (var iKey in Game.ArrangeLayout)
+		{
+			var u=Game.UpgradesById[iKey];
+			if (u && Game.ArrangeLayout[iKey]) {u.posX=Game.ArrangeLayout[iKey][0];u.posY=Game.ArrangeLayout[iKey][1];}
+		}
 		
 		
 		/*=====================================================================================

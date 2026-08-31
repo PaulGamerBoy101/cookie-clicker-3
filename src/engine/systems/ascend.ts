@@ -182,13 +182,20 @@
 				}
 				Game.AscendDragging=1;
 				
-				if (Game.DebuggingPrestige)
+				if (Game.DebuggingPrestige || Game.ArrangeHeavenly)
 				{
 					if (Game.SelectedHeavenlyUpgrade)
 					{
 						Game.tooltip.hide();
 						//drag upgrades around
 						var me=Game.SelectedHeavenlyUpgrade;
+						if (Game.ArrangeHeavenly && !Game.AscendDragMoved && Math.abs(Game.mouseX-Game.AscendDragStartX)+Math.abs(Game.mouseY-Game.AscendDragStartY)<=6)
+						{
+							//CC3: in player arrange mode, a small mouse jiggle is a click, not a drag — don't move yet
+						}
+						else
+						{
+						Game.AscendDragMoved=1;
 						me.posX+=(Game.mouseX-Game.AscendDragX)*(1/Game.AscendZoomT);
 						me.posY+=(Game.mouseY-Game.AscendDragY)*(1/Game.AscendZoomT);
 						var posX=me.posX;//Math.round(me.posX/Game.AscendGridSnap)*Game.AscendGridSnap;
@@ -208,6 +215,7 @@
 							
 							l('heavenlyLink'+me.id+'-'+ii).style='width:'+dist+'px;transform:rotate('+rot+'deg);left:'+(origX)+'px;top:'+(origY)+'px;';
 						}
+					}
 					}
 				}
 				if (!Game.SelectedHeavenlyUpgrade)
@@ -339,7 +347,9 @@
 				var ghosted=0;
 				if (me.canBePurchased || Game.Has('Neuromancy'))
 				{
-					str+=Game.crate(me,'ascend','Game.PurchaseHeavenlyUpgrade('+me.id+');','heavenlyUpgrade'+me.id,toPop.indexOf(me)!=-1?('animation:pucker 0.2s ease-out;animation-delay:'+(toPop.indexOf(me)*0.1+0.2)+'s;'):'');
+					var buyClickStr='Game.PurchaseHeavenlyUpgrade('+me.id+');';
+					if (Game.ArrangeHeavenly) buyClickStr='if(!Game.AscendDragMoved){Game.PurchaseHeavenlyUpgrade('+me.id+');}Game.AscendDragMoved=0;';//CC3: player arrange mode — a real drag must not buy; reset the flag so the next click buys normally
+					str+=Game.crate(me,'ascend',buyClickStr,'heavenlyUpgrade'+me.id,toPop.indexOf(me)!=-1?('animation:pucker 0.2s ease-out;animation-delay:'+(toPop.indexOf(me)*0.1+0.2)+'s;'):'');
 				}
 				else
 				{
@@ -385,14 +395,16 @@
 			str+='</div>';
 			Game.ascendUpgradesl.innerHTML=str;
 			
-			if (Game.DebuggingPrestige)
+			if (Game.DebuggingPrestige || Game.ArrangeHeavenly)
 			{
 				for (var i in Game.PrestigeUpgrades)
 				{
 					var me=Game.PrestigeUpgrades[i];
-					AddEvent(l('heavenlyUpgrade'+me.id),'mousedown',function(me){return function(){
-						if (!Game.DebuggingPrestige) return;
-						if (Game.keys[16] && typeof LASTHEAVENLYSELECTED!=='undefined' && me!=LASTHEAVENLYSELECTED)
+					var upEl=l('heavenlyUpgrade'+me.id);
+					if (!upEl) continue;//CC3: upgrades without a rendered div (fully hidden) aren't draggable
+					AddEvent(upEl,'mousedown',function(me){return function(){
+						if (!Game.DebuggingPrestige && !Game.ArrangeHeavenly) return;
+						if (Game.DebuggingPrestige && Game.keys[16] && typeof LASTHEAVENLYSELECTED!=='undefined' && me!=LASTHEAVENLYSELECTED)
 						{
 							//when clicking an upgrade with ctrl, set it as reference point; clicking any sibling upgrade with shift will align it in a nice arc around their shared parent
 							var parent: any=0;//CC3 rewrite: later assigned an Upgrade
@@ -411,15 +423,55 @@
 							}
 							LASTHEAVENLYSELECTED=me;console.log('Set reference point to',me.name,'.');
 						}
-						if (Game.keys[17]) {LASTHEAVENLYSELECTED=me;console.log('Set reference point to',me.name,'.');}
+						if (Game.DebuggingPrestige && Game.keys[17]) {LASTHEAVENLYSELECTED=me;console.log('Set reference point to',me.name,'.');}
 						Game.SelectedHeavenlyUpgrade=me;
+						Game.AscendDragStartX=Game.mouseX;//CC3: player arrange mode records the click origin so a tiny jiggle isn't a drag
+						Game.AscendDragStartY=Game.mouseY;
+						Game.AscendDragMoved=0;
 					}}(me));
-					AddEvent(l('heavenlyUpgrade'+me.id),'mouseup',function(me){return function(){
-						if (Game.SelectedHeavenlyUpgrade==me) {Game.SelectedHeavenlyUpgrade=0;Game.BuildAscendTree();}
+					AddEvent(upEl,'mouseup',function(me){return function(){
+						if (Game.SelectedHeavenlyUpgrade==me)
+						{
+							var wasDrag=Game.ArrangeHeavenly && Game.AscendDragMoved;
+							Game.SelectedHeavenlyUpgrade=0;
+							if (wasDrag) {Game.SaveHeavenlyLayout(me);Game.BuildAscendTree();}//CC3: player arrange mode — a real drag re-renders at the new spot; rebuild also replaces the node so the pending click can't buy it
+							else if (Game.DebuggingPrestige) Game.BuildAscendTree();
+						}
 					}}(me));
 				}
 			}
 			setTimeout(function(){Game.tooltip.shouldHide=true;},100);
+		}
+		
+		//CC3: player-facing "arrange mode" for the heavenly tree. Dragging an
+		//upgrade moves it in place and persists the override (localStorage, not
+		//the save file — it's a layout preference, and the save format forbids
+		//new fields). Overrides are applied in main.ts right after the vanilla
+		//positions load, so a reload/ascension keeps the player's layout.
+		export function SaveHeavenlyLayout(me: any)
+		{
+			if (!Game.ArrangeLayout) Game.ArrangeLayout={};
+			Game.ArrangeLayout[me.id]=[Math.round(me.posX),Math.round(me.posY)];
+			try{window.localStorage.setItem('cc3_heavenly_layout',JSON.stringify(Game.ArrangeLayout));}catch(e){}
+		}
+		export function ToggleArrangeHeavenly()
+		{
+			Game.ArrangeHeavenly=Game.ArrangeHeavenly?0:1;
+			var btn=l('arrangeTreeButton');
+			if (btn) btn.innerHTML=Game.ArrangeHeavenly?loc('Done arranging'):loc('Arrange');
+			Game.BuildAscendTree();
+		}
+		export function ResetHeavenlyLayout()
+		{
+			Game.ArrangeLayout={};
+			try{window.localStorage.removeItem('cc3_heavenly_layout');}catch(e){}
+			for (var i in Game.PrestigeUpgrades)
+			{
+				var me=Game.PrestigeUpgrades[i];
+				var d=Game._heavenlyLayoutDefaults && Game._heavenlyLayoutDefaults[me.id];
+				if (d) {me.posX=d[0];me.posY=d[1];}
+			}
+			Game.BuildAscendTree();
 		}
 		
 		export function lumpTooltip()

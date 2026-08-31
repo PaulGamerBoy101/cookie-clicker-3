@@ -499,6 +499,21 @@ test('?qa=ascendbrowse: heavenly tree browsed without triggering an ascension', 
 	expect(report).not.toMatch(/FAIL/);
 });
 
+test('?qa=arrange: heavenly-tree arrange mode (drag, save, reset) verified', async ({ page }) => {
+	await boot(page, '&qa=arrange');
+	const report = await qaReport(
+		page,
+		/PASS: arrange mode verified end to end/,
+		90_000
+	);
+	expect(report).not.toMatch(/FAIL/);
+	expect(report).not.toMatch(/ERROR/);
+	expect(report).toMatch(/no accidental purchase during drag: OK/);
+	expect(report).toMatch(/localStorage override after drag: OK/);
+	expect(report).toMatch(/reset restores default positions: OK/);
+	expect(report).toMatch(/reset clears localStorage: OK/);
+});
+
 test('?qa=offline: offline gain (timeOffline x CpS) granted on load', async ({ page }) => {
 	await boot(page, '&qa=offline');
 	// Phase 1 seeds + reloads the page; phase 2 (fresh load, language persisted)

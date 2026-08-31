@@ -66,7 +66,7 @@ if (debugSurface) {
  *   ?qa=backup    exercise the rolling save backup history (capture/list/restore)
  *   ?qa=content   validate content registries and report economy ordering
  * Never active in a plain production load. */
-if (debugSurface && params.has('qa') && params.get('qa') !== 'golden' && params.get('qa') !== 'save' && params.get('qa') !== 'backup' && params.get('qa') !== 'sound' && params.get('qa') !== 'perf' && params.get('qa') !== 'ascend' && params.get('qa') !== 'ascendbrowse' && params.get('qa') !== 'offline' && params.get('qa') !== 'special' && params.get('qa') !== 'a11y' && params.get('qa') !== 'wrinkler' && params.get('qa') !== 'icon' && params.get('qa') !== 'onecol' && params.get('qa') !== 'anim' && params.get('qa') !== 'binverter' && params.get('qa') !== 'content' && params.get('qa') !== 'destiny' && params.get('qa') !== 'amseason' && params.get('qa') !== 'casino') {
+if (debugSurface && params.has('qa') && params.get('qa') !== 'golden' && params.get('qa') !== 'save' && params.get('qa') !== 'backup' && params.get('qa') !== 'sound' && params.get('qa') !== 'perf' && params.get('qa') !== 'ascend' && params.get('qa') !== 'ascendbrowse' && params.get('qa') !== 'arrange' && params.get('qa') !== 'offline' && params.get('qa') !== 'special' && params.get('qa') !== 'a11y' && params.get('qa') !== 'wrinkler' && params.get('qa') !== 'icon' && params.get('qa') !== 'onecol' && params.get('qa') !== 'anim' && params.get('qa') !== 'binverter' && params.get('qa') !== 'content' && params.get('qa') !== 'destiny' && params.get('qa') !== 'amseason' && params.get('qa') !== 'casino') {
 	const qaMode = params.get('qa'); // null for bare ?qa, else the value
 	const MINIGAME_BUILDINGS = ['Farm', 'Bank', 'Temple', 'Wizard tower'];
 	const tick = window.setInterval(() => {
@@ -1186,6 +1186,138 @@ if (debugSurface && params.get('qa') === 'ascendbrowse') {
 	}, 250);
 }
 
+// QA: verify heavenly-tree arrange mode — drag to move upgrades, suppress
+// accidental purchase, persist to localStorage, reset to defaults.
+// Usage: ?debug=1&qa=arrange
+if (debugSurface && params.get('qa') === 'arrange') {
+	const tick = window.setInterval(() => {
+		const G = window.Game;
+		if (!G || !G.ready || !G.Objects || typeof G.AscendBrowseView !== 'function' || typeof G.ToggleArrangeHeavenly !== 'function') return;
+		if (!G.__qaArrange) {
+			const o = document.createElement('div');
+			o.id = '__dbgqa';
+			o.style.cssText = 'position:fixed;top:0;left:0;z-index:99999;background:#fff;color:#060;font:12px monospace;white-space:pre-wrap;max-width:640px;';
+			document.body.appendChild(o);
+			try {
+				// Mark the full purchase chain bought so the drag target renders as a crate:
+				// Legacy -> Heavenly cookies -> {Tin of british tea biscuits, Box of macarons,
+				// Box of brand biscuits, Tin of butter cookies} -> Starter kit -> Starter kitchen
+				const chain = ['Legacy', 'Heavenly cookies', 'Tin of british tea biscuits', 'Box of macarons', 'Box of brand biscuits', 'Tin of butter cookies', 'Starter kit', 'Starter kitchen'];
+				for (const c of chain) { if (G.Upgrades[c]) { G.Upgrades[c].bought = 1; G.Upgrades[c].unlocked = 1; } }
+				G.heavenlyChips = 100;
+				G.cookies = 1e9; G.cookiesEarned = 1e9;
+				G.Objects['Cursor'].amount = 50;
+				G.recalculateGains = 1; G.CalculateGains();
+				// Pick known purchasable upgrade as drag target
+				const target = G.Upgrades['Starter kitchen'];
+				if (!target) throw new Error('Starter kitchen upgrade missing');
+				G.__qaArrange = {
+					phase: 1, out: o, t: Date.now(),
+					target: target,
+					posX0: target.posX, posY0: target.posY,
+					bought0: target.bought,
+					hc0: G.heavenlyChips,
+				};
+				o.textContent = '[QA-arrange] seeded, opening browse view...';
+				G.AscendBrowseView();
+			} catch (e: any) {
+				o.textContent = '[QA-arrange] ERROR seed: ' + e.message;
+				window.clearInterval(tick);
+			}
+			return;
+		}
+		const a = G.__qaArrange as any;
+		if (a.phase === 1) {
+			if (G.OnAscend === 1 && G.AscendBrowse === 1 && Date.now() - a.t > 500) {
+				a.phase = 2;
+				a.t = Date.now();
+				a.out.textContent = '[QA-arrange] browse view open, toggling arrange mode...';
+				G.ToggleArrangeHeavenly();
+				// Verify toggle state
+				const btn = document.getElementById('arrangeTreeButton');
+				if (G.ArrangeHeavenly !== 1) a.out.textContent = '[QA-arrange] FAIL: ArrangeHeavenly not 1 after toggle';
+				else if (!btn) a.out.textContent = '[QA-arrange] FAIL: arrangeTreeButton missing';
+				else if (btn.innerHTML.indexOf('Done') === -1) a.out.textContent = '[QA-arrange] FAIL: button label not "Done arranging"';
+				else a.out.textContent = '[QA-arrange] arrange mode ON, verifying crate clickStr guard...';
+			}
+		} else if (a.phase === 2) {
+			if (Date.now() - a.t > 300) {
+				// Verify the crate for a purchasable upgrade has the clickStr guard
+				const el = document.getElementById('heavenlyUpgrade' + a.target.id);
+				if (!el) { a.out.textContent = '[QA-arrange] FAIL: heavenlyUpgrade element not found'; return; }
+				const attr = el.getAttribute(G.clickStr) || '';
+				if (attr.indexOf('AscendDragMoved') === -1) { a.out.textContent = '[QA-arrange] FAIL: clickStr guard missing: ' + attr; return; }
+				a.out.textContent = '[QA-arrange] clickStr guard OK, simulating drag...';
+				// Simulate drag: dispatch mousedown on the element
+				const rect = el.getBoundingClientRect();
+				const cx = rect.left + rect.width / 2;
+				const cy = rect.top + rect.height / 2;
+				el.dispatchEvent(new MouseEvent('mousedown', { bubbles: true, clientX: cx, clientY: cy }));
+				if (!G.SelectedHeavenlyUpgrade) { a.out.textContent = '[QA-arrange] FAIL: SelectedHeavenlyUpgrade not set after mousedown'; return; }
+				if (G.AscendDragMoved !== 0) { a.out.textContent = '[QA-arrange] FAIL: AscendDragMoved not 0 at mousedown'; return; }
+				// First UpdateAscend frame at the original position — establishes AscendDragX = mousedown position
+				G.mouseDown = 1;
+				G.UpdateAscend();
+				// "Move" the mouse beyond the 6px threshold
+				G.mouseX = G.mouseX + 40;
+				G.mouseY = G.mouseY + 40;
+				// Second UpdateAscend frame — the delta from frame 1 now moves the upgrade
+				G.UpdateAscend();
+				if (G.AscendDragMoved !== 1) { a.out.textContent = '[QA-arrange] FAIL: AscendDragMoved not 1 after drag step'; return; }
+				// Release mouse — mouseup on the element
+				G.mouseDown = 0;
+				el.dispatchEvent(new MouseEvent('mouseup', { bubbles: true, clientX: G.mouseX, clientY: G.mouseY }));
+				// Check: posX changed, not bought, localStorage has override
+				if (Math.abs(a.target.posX - a.posX0) < 5 && Math.abs(a.target.posY - a.posY0) < 5) { a.out.textContent = '[QA-arrange] FAIL: posX/posY barely changed (drag did not move the upgrade)'; return; }
+				if (a.target.bought !== a.bought0) { a.out.textContent = '[QA-arrange] FAIL: upgrade was accidentally bought during drag'; return; }
+				if (G.heavenlyChips !== a.hc0) { a.out.textContent = '[QA-arrange] FAIL: heavenlyChips changed (accidental purchase)'; return; }
+				const saved = window.localStorage.getItem('cc3_heavenly_layout');
+				if (!saved) { a.out.textContent = '[QA-arrange] FAIL: localStorage key not set after drag'; return; }
+				const parsed = JSON.parse(saved);
+				if (!parsed[a.target.id] || parsed[a.target.id][0] !== Math.round(a.target.posX) || parsed[a.target.id][1] !== Math.round(a.target.posY)) { a.out.textContent = '[QA-arrange] FAIL: localStorage override mismatch'; return; }
+				a.movedPosX = a.target.posX; a.movedPosY = a.target.posY;//capture the dragged position BEFORE reset restores defaults
+				a.phase = 3;
+				a.t = Date.now();
+				a.out.textContent = '[QA-arrange] drag OK (pos changed, not bought, saved), toggling arrange off...';
+			}
+		} else if (a.phase === 3) {
+			if (Date.now() - a.t > 300) {
+				G.ToggleArrangeHeavenly();
+				if (G.ArrangeHeavenly !== 0) { a.out.textContent = '[QA-arrange] FAIL: ArrangeHeavenly not 0 after toggle off'; return; }
+				// Verify clickStr is plain purchase after toggle off
+				const el = document.getElementById('heavenlyUpgrade' + a.target.id);
+				if (el) {
+					const attr = el.getAttribute(G.clickStr) || '';
+					if (attr.indexOf('AscendDragMoved') !== -1) { a.out.textContent = '[QA-arrange] FAIL: clickStr still has guard after arrange off'; return; }
+				}
+				a.phase = 4;
+				a.t = Date.now();
+				a.out.textContent = '[QA-arrange] arrange off, clickStr plain, resetting layout...';
+				G.ResetHeavenlyLayout();
+			}
+		} else {
+			if (Date.now() - a.t > 300) {
+				// After reset, posX/posY should be back to defaults
+				const posOk = Math.abs(a.target.posX - a.posX0) < 1 && Math.abs(a.target.posY - a.posY0) < 1;
+				const lsOk = !window.localStorage.getItem('cc3_heavenly_layout');
+				const pass = posOk && lsOk;
+				a.out.textContent =
+					'[QA-arrange] results\n' +
+					'[QA-arrange] arrange mode toggle: OK\n' +
+					'[QA-arrange] clickStr guard present when arranging: OK\n' +
+					'[QA-arrange] drag moved upgrade: ' + (Math.abs(a.movedPosX - a.posX0) >= 5 || Math.abs(a.movedPosY - a.posY0) >= 5 ? 'OK' : 'FAIL (barely moved)') + '\n' +
+					'[QA-arrange] no accidental purchase during drag: ' + (a.target.bought === a.bought0 && G.heavenlyChips === a.hc0 ? 'OK' : 'FAIL') + '\n' +
+					'[QA-arrange] localStorage override after drag: OK\n' +
+					'[QA-arrange] clickStr reverts to plain when arrange off: OK\n' +
+					'[QA-arrange] reset restores default positions: ' + (posOk ? 'OK' : 'FAIL') + '\n' +
+					'[QA-arrange] reset clears localStorage: ' + (lsOk ? 'OK' : 'FAIL') + '\n' +
+					'[QA-arrange] ' + (pass ? 'PASS: arrange mode verified end to end' : 'FAIL');
+				window.clearInterval(tick);
+			}
+		}
+	}, 250);
+}
+
 // QA: verify offline gains (cookies earned while the game was closed). Desktop
 // offline CpS only runs with the "Perfect idling" upgrade (100%, no cap), so the
 // probe grants it, seeds a known CpS (100 cursors = 10 CpS), persists a save whose
@@ -1755,6 +1887,7 @@ const minigameModules: Record<string, () => Promise<unknown>> = {
 	'minigameMarket.js': () => import('./engine/minigameMarket'),
 	'minigamePantheon.js': () => import('./engine/minigamePantheon'),
 	'minigameCatColony.js': () => import('./engine/minigameCatColony'),
+	'minigameGrandmaSittingRoom.js': () => import('./engine/minigameGrandmaSittingRoom'),
 	// CC3 extras mod (extras/casino.ts): the code is already in memory via
 	// the static import — this no-op module stands in for the original's
 	// remote "dummyFile.js" so the vanilla minigame machinery (LoadMinigames
