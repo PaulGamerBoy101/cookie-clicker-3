@@ -2057,20 +2057,26 @@ export function declareVanillaUpgrades(Game: EngineGame) {
 		Game.CatSynergy('Altered cats','It went through the portal. It came back a little different. Mostly naps.','Portal');
 		Game.CatSynergy('Time cats','Always napping exactly one second into the past, so the cookies are warm when they wake.','Time machine');
 
-		// CC3 Cat Colony minigame rewards: bought with Treats from inside the
-		// minigame panel (Game.Upgrades[name].earn()), never through the cookie
-		// store — the cookie price here is unused (these are never unlocked via
-		// Game.Unlock/UnlockTiered, so the store never offers them) and kept at
-		// 0 for clarity. Icons crop frame 0 of the existing cat sprite strips
-		// (img/cats/*.png) via the standard [col,row,path,size] icon form — no
-		// new art. treatsPrice is a minigame-only field the shop panel reads.
+		// CC3 Cat Colony minigame rewards: REPEATABLE upgrades bought with
+		// Treats from inside the minigame panel (stacks in
+		// minigameCatColony.ts M.upgradeStacks; the main-save bought flag is
+		// only set on the first stack, via Game.Upgrades[name].earn(), for
+		// save continuity), never through the cookie store — the cookie price
+		// here is unused (these are never unlocked via
+		// Game.Unlock/UnlockTiered, so the store never offers them) and kept
+		// at 0 for clarity. Icons crop frame 0 of the existing cat sprite
+		// strips (img/cats/*.png) via the standard [col,row,path,size] icon
+		// form — no new art. treatsPrice is a minigame-only field the shop
+		// panel reads; the flat price never changes, every stack costs the
+		// same and adds the full per-stack effect, so the six rows are the
+		// colony's endless treat sink.
 		var catColonyUpgrades=[
-			{name:'Cardboard fort training',desc:'Cats gain <b>+0.15 CpS each</b>.',treats:15,catAdd:0.15,icon:'idle'},
-			{name:'Sunbeam napping technique',desc:'Cats gain <b>+0.15 CpS each</b>.',treats:35,catAdd:0.15,icon:'walk'},
-			{name:'Treat-sniffing whiskers',desc:'Cats gain <b>+2% CpS</b>.',treats:70,icon:'run'},
-			{name:'Nine-lives insurance',desc:'Cats gain <b>+0.2 CpS each</b>,<br>and colony expeditions are 30% less likely to send a cat home hurt.',treats:150,catAdd:0.2,icon:'jump'},
-			{name:'Golden collar bells',desc:'Cats gain <b>+2% CpS</b>.',treats:300,icon:'running-jump'},
-			{name:'Legendary colony charter',desc:'Cats gain <b>+0.5 CpS each</b>.',treats:600,catAdd:0.5,icon:'attack-1'}
+			{name:'Cardboard fort training',desc:'Cats gain <b>+0.15 CpS each</b> (per stack).',treats:15,catAdd:0.15,icon:'idle'},
+			{name:'Sunbeam napping technique',desc:'Cats gain <b>+0.15 CpS each</b> (per stack).',treats:35,catAdd:0.15,icon:'walk'},
+			{name:'Treat-sniffing whiskers',desc:'Cats gain <b>+2% CpS</b> (per stack).',treats:70,icon:'run'},
+			{name:'Nine-lives insurance',desc:'Per stack: Cats gain <b>+0.2 CpS each</b>,<br>and colony expeditions are 30% less likely to send a cat home hurt.',treats:150,catAdd:0.2,icon:'jump'},
+			{name:'Golden collar bells',desc:'Cats gain <b>+2% CpS</b> (per stack).',treats:300,icon:'running-jump'},
+			{name:'Legendary colony charter',desc:'Cats gain <b>+0.5 CpS each</b> (per stack).',treats:600,catAdd:0.5,icon:'attack-1'}
 		];
 		order=356;
 		for (var catColonyIndex=0;catColonyIndex<catColonyUpgrades.length;catColonyIndex++)

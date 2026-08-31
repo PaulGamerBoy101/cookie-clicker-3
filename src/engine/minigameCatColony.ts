@@ -8,10 +8,14 @@
  *
  * Concept: dispatch idle colony cats on timed expeditions; they come home
  * with Treats (a minigame-local currency) or, occasionally, a scuffle that
- * needs a nap to sleep off. Treats buy the six Cat Colony upgrades declared
- * in content/upgrades.ts (via .earn() — never the cookie store), which feed
- * straight into the Cats CpS formula's existing catAdd/catMult arrays
- * (content/buildings/cats.ts).
+ * needs a nap to sleep off. Treats buy REPEATABLE stacks of the six Cat
+ * Colony upgrades declared in content/upgrades.ts (flat price every stack,
+ * each stack adds its full effect — the stacks are this minigame's endless
+ * treat sink), which feed straight into the Cats CpS formula's existing
+ * catAdd/catMult arrays (content/buildings/cats.ts, which read
+ * M.effectiveStacks rather than Game.Has for these six). The first stack of
+ * an upgrade still marks it bought in the main save (via .earn()), so
+ * pre-stacking saves migrate cleanly.
  *
  * Deliberately reuses only assets already in the repo: the background is
  * img/cats/Summer1.png (the same scene the Cats building room already
@@ -29,13 +33,19 @@ M.launch = function () {
 	M.init = function (div: any) {
 		//populate div with html and initialize values
 
+		// Long-grind tuning: durations are ~4x the launch values and rewards
+		// roughly halved, so a colony that used to run out of things to do in
+		// a couple of hours now takes days of slow expeditions to work off —
+		// and the (now repeatable) upgrade shop below is the treat sink that
+		// keeps it meaningful. Net treat throughput lands at ~45-50/hour per
+		// dispatched cat.
 		M.missions = [
-			{ id: 'yarn', name: 'Yarn Ball Retrieval', desc: 'Send cats to liberate a yarn ball from the neighbor\'s porch. Low risk, low reward.', catCost: 1, duration: 20, hurtChance: 0.05, treatsMin: 1, treatsMax: 3, unlock: 1 },
-			{ id: 'sunbeam', name: 'The Great Sunbeam Hunt', desc: 'A perfect patch of sunlight has been sighted two yards over. Time is of the essence.', catCost: 2, duration: 45, hurtChance: 0.08, treatsMin: 3, treatsMax: 6, unlock: 10 },
-			{ id: 'pantry', name: 'Pantry Reconnaissance', desc: 'Scout the kitchen pantry for unattended treats.', catCost: 3, duration: 90, hurtChance: 0.12, treatsMin: 6, treatsMax: 12, unlock: 25 },
-			{ id: 'wrinkler', name: 'Wrinkler Standoff', desc: 'A wrinkler has been spotted near the cookie stash. Someone has to deal with it.', catCost: 4, duration: 180, hurtChance: 0.25, treatsMin: 14, treatsMax: 24, unlock: 50 },
-			{ id: 'alley', name: 'Back-Alley Turf Summit', desc: 'Negotiate territory with the alley cat coalition.', catCost: 5, duration: 300, hurtChance: 0.18, treatsMin: 24, treatsMax: 40, unlock: 100 },
-			{ id: 'ninelives', name: 'The Nine Lives Expedition', desc: 'A legendary trek said to grant a cat back one of its nine lives.', catCost: 6, duration: 600, hurtChance: 0.15, treatsMin: 50, treatsMax: 80, unlock: 200 }
+			{ id: 'yarn', name: 'Yarn Ball Retrieval', desc: 'Send cats to liberate a yarn ball from the neighbor\'s porch. Low risk, low reward.', catCost: 1, duration: 80, hurtChance: 0.05, treatsMin: 1, treatsMax: 1, unlock: 1 },
+			{ id: 'sunbeam', name: 'The Great Sunbeam Hunt', desc: 'A perfect patch of sunlight has been sighted two yards over. Time is of the essence.', catCost: 2, duration: 180, hurtChance: 0.08, treatsMin: 1, treatsMax: 3, unlock: 10 },
+			{ id: 'pantry', name: 'Pantry Reconnaissance', desc: 'Scout the kitchen pantry for unattended treats.', catCost: 3, duration: 360, hurtChance: 0.12, treatsMin: 3, treatsMax: 6, unlock: 25 },
+			{ id: 'wrinkler', name: 'Wrinkler Standoff', desc: 'A wrinkler has been spotted near the cookie stash. Someone has to deal with it.', catCost: 4, duration: 720, hurtChance: 0.25, treatsMin: 7, treatsMax: 12, unlock: 50 },
+			{ id: 'alley', name: 'Back-Alley Turf Summit', desc: 'Negotiate territory with the alley cat coalition.', catCost: 5, duration: 1200, hurtChance: 0.18, treatsMin: 12, treatsMax: 20, unlock: 100 },
+			{ id: 'ninelives', name: 'The Nine Lives Expedition', desc: 'A legendary trek said to grant a cat back one of its nine lives.', catCost: 6, duration: 2400, hurtChance: 0.15, treatsMin: 25, treatsMax: 40, unlock: 200 }
 		];
 		M.missionsById = {};
 		for (var mi = 0; mi < M.missions.length; mi++) { M.missionsById[M.missions[mi].id] = M.missions[mi]; }
@@ -56,12 +66,35 @@ M.launch = function () {
 		// M.save/M.load: it never holds more than 1 treat's worth, so losing it
 		// across a save/reload is a sub-1-treat rounding error, not a real loss.
 		M.treatTrickle = 0;
+		// Repeatable stacks per colony upgrade (parallel to M.upgradeNames):
+		// each purchase adds one stack, each stack adds its full effect, and
+		// the price never changes. This is what keeps the colony relevant for
+		// days — expeditions are slow now, so treats flow into an endless
+		// upgrade sink instead of a six-item checklist. Persisted as the
+		// final M.save field; pre-stacking saves migrate bought upgrades to
+		// one stack each in M.load.
+		M.upgradeStacks = [0,0,0,0,0,0];
+		// Effective stack count for CpS/risk/purchase lookups. Also the lazy
+		// migration: pre-stacking saves only know about an upgrade through its
+		// main-save bought flag, and M.load can run BEFORE that flag is
+		// restored (buildings load ahead of upgrades in Game.Load), so a
+		// one-time-bought upgrade with 0 stacks self-migrates to 1 the first
+		// time anything asks. After that the stacks array and the flag agree.
+		M.effectiveStacks = function (name: any) {
+			var i = M.upgradeNames.indexOf(name);
+			var n = i >= 0 ? (M.upgradeStacks[i] || 0) : 0;
+			var up = Game.Upgrades[name];
+			if (up && up.bought && n < 1) { n = 1; if (i >= 0) M.upgradeStacks[i] = 1; }
+			return n;
+		};
 
 		M.awayCount = function () { var n = 0; for (var i = 0; i < M.away.length; i++) n += M.away[i].count; return n; };
 		M.restingCount = function () { var n = 0; for (var i = 0; i < M.resting.length; i++) n += M.resting[i].count; return n; };
 		M.idleCats = function () { return Math.max(0, Math.floor(M.parent.amount) - M.awayCount() - M.restingCount()); };
 
-		M.hurtChanceFor = function (mission: any) { return mission.hurtChance * (Game.Has('Nine-lives insurance') ? 0.7 : 1) * (Game.Has('Nap discipline') ? 0.8 : 1); };
+		// Each Nine-lives insurance stack multiplies risk by 0.7 (0.7^n —
+		// it approaches zero but never hits it, so no floor needed).
+		M.hurtChanceFor = function (mission: any) { return mission.hurtChance * Math.pow(0.7, M.effectiveStacks('Nine-lives insurance')) * (Game.Has('Nap discipline') ? 0.8 : 1); };
 		M.durationFor = function (mission: any) { return Game.Has('Efficient patrols') ? Math.ceil(mission.duration * 0.85) : mission.duration; };
 
 		M.dispatch = function (id: any) {
@@ -116,17 +149,26 @@ M.launch = function () {
 			if (M.treatsEarnedTotal >= 1000) Game.Win('Pocketful of treats');
 		};
 
+		// Repeatable: no bought check, flat price every time. The main-save
+		// bought flag (via earn) is only set on the first stack — it exists
+		// for save continuity (the pre-stacking effect code path reads it),
+		// not as a purchase cap.
 		M.buyUpgrade = function (name: any) {
 			var up = Game.Upgrades[name];
-			if (!up || up.bought) return false;
+			var i = M.upgradeNames.indexOf(name);
+			if (!up || i < 0) return false;
 			var price = up.treatsPrice || 0;
 			if (M.treats < price) return false;
 			M.treats -= price;
-			up.earn();
+			// Increment from the effective count so a lazily-migrated
+			// one-time purchase (bought flag, 0 stacks) counts as stack 1.
+			var n = M.effectiveStacks(name);
+			if (n < 1) up.earn(); // first-ever stack → mark in the main save
+			M.upgradeStacks[i] = n + 1;
 			PlaySound('snd/buy' + (Math.floor(Math.random() * 4) + 1) + '.mp3', 0.75);
-			var allBought = true;
-			for (var i = 0; i < M.upgradeNames.length; i++) { if (!Game.Has(M.upgradeNames[i])) allBought = false; }
-			if (allBought) Game.Win('Fully catified');
+			var allOwned = true;
+			for (var j = 0; j < M.upgradeNames.length; j++) { if (M.effectiveStacks(M.upgradeNames[j]) < 1) allOwned = false; }
+			if (allOwned) Game.Win('Fully catified');
 			M.refresh();
 			return true;
 		};
@@ -217,13 +259,14 @@ M.launch = function () {
 			var up = Game.Upgrades[name];
 			if (!up) continue;
 			var price = up.treatsPrice || 0;
-			var owned = !!up.bought;
-			var canBuy = !owned && M.treats >= price;
+			var stacks = M.effectiveStacks(name);
+			var canBuy = M.treats >= price;
 			str += '<div class="colonyRow">';
 			str += '<div class="icon shadowFilter" style="flex:none;' + writeIcon(up.icon) + '"></div>';
-			str += '<div class="colonyRowText"><div class="colonyRowName">' + name + '</div>' + up.baseDesc + '</div>';
-			if (owned) { str += '<div class="colonyBtn colonyBtnDisabled">Owned</div>'; }
-			else { str += '<div class="colonyBtn' + (canBuy ? '' : ' colonyBtnDisabled') + '" id="colonyBuy' + i + '">' + price + ' treats</div>'; }
+			str += '<div class="colonyRowText"><div class="colonyRowName">' + name + (stacks > 0 ? ' <span style="font-weight:normal;opacity:0.75;">×' + stacks + '</span>' : '') + '</div>' + up.baseDesc + '</div>';
+			// Repeatable: every row always offers the flat treat price, and
+			// owned stacks show as a ×N badge on the name.
+			str += '<div class="colonyBtn' + (canBuy ? '' : ' colonyBtnDisabled') + '" id="colonyBuy' + i + '">' + price + ' treats</div>';
 			str += '</div>';
 		}
 		str += '</div>';
@@ -260,7 +303,9 @@ M.launch = function () {
 			for (var j = 0; j < M.resting.length; j++) { restParts.push(M.resting[j].count + ':' + M.resting[j].returnAt); }
 			restStr = restParts.join('/');
 		}
-		return parseFloat(M.treats) + ' ' + parseFloat(M.missionsCompleted) + ' ' + parseFloat(M.treatsEarnedTotal) + ' ' + awayStr + ' ' + restStr;
+		// stacks last: appended after the launch-era fields so pre-stacking
+		// save strings (5 fields) still parse with spl[5] undefined.
+		return parseFloat(M.treats) + ' ' + parseFloat(M.missionsCompleted) + ' ' + parseFloat(M.treatsEarnedTotal) + ' ' + awayStr + ' ' + restStr + ' ' + M.upgradeStacks.join(':');
 	};
 	M.load = function (str: any) {
 		//interpret str; called after .init
@@ -288,6 +333,19 @@ M.launch = function () {
 				M.resting.push({ uid: M.uidN++, count: parseFloat(rbits[0]), returnAt: parseFloat(rbits[1]) });
 			}
 		}
+		var stackStr = spl[i++] || '';
+		M.upgradeStacks = [0,0,0,0,0,0];
+		if (stackStr) {
+			var stackParts = stackStr.split(':');
+			for (var s = 0; s < M.upgradeStacks.length; s++) { M.upgradeStacks[s] = Math.floor(parseFloat(stackParts[s] || 0) || 0); }
+		}
+		// Pre-stacking saves: each one-time-bought colony upgrade migrates to
+		// exactly one stack, so old saves keep their effect value. Runs after
+		// the stack field (usually absent) has been read.
+		for (var u = 0; u < M.upgradeNames.length; u++) {
+			var mUp = Game.Upgrades[M.upgradeNames[u]];
+			if (mUp && mUp.bought && M.upgradeStacks[u] < 1) M.upgradeStacks[u] = 1;
+		}
 		M.refresh();
 	};
 	M.reset = function (_hard: any) {
@@ -297,6 +355,7 @@ M.launch = function () {
 		M.away = [];
 		M.resting = [];
 		M.treatTrickle = 0;
+		M.upgradeStacks = [0,0,0,0,0,0];
 		M.refresh();
 	};
 	M.logic = function () {

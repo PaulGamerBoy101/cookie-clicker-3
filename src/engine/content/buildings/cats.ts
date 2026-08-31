@@ -59,27 +59,46 @@ export function declareCats(Game: EngineGame) {
 			mult*=Game.GetTieredCpsMult(me);
 			mult*=Game.magicCpS(me.name);
 			// Cat-specific additive bonuses from the custom upgrade collection.
+			// Stack count per upgrade: the four Cat Colony entries are
+			// REPEATABLE (stacks live in the minigame state,
+			// minigameCatColony.ts M.upgradeStacks), so their effects scale
+			// per stack; the cookie/heavenly entries are one-shot and resolve
+			// to 0/1 through the same lookup. effectiveStacks also covers the
+			// minigame-not-loaded-yet boot window (it falls back to the
+			// main-save bought flag, which the first stack always sets), so
+			// the fallback below only matters if the script never loaded.
+			var colonyMG=Game.Objects['Cats']&&Game.Objects['Cats'].minigame;
+			var upgradeStacks=function (name:any){
+				if (colonyMG&&colonyMG.effectiveStacks) return colonyMG.effectiveStacks(name);
+				return Game.Has(name)?1:0;
+			};
 			var catAdd=0;
 			var catAddUpgrades=['Cardboard box basics','Sunbeam training','Whisker refinement','Midnight zoomies',
 				'Tuna-grade nutrition','Claw-powered kneading','Purrfect production','Nine-lives efficiency',
 				'Feline assembly','Astral catnaps','Infinite yarn loop','Quantum litter boxes',
 				'Cosmic whisker arrays','Protein singularity',
-				// Cat Colony minigame rewards (Treats-bought via .earn(), not the
-				// cookie store) — feed the same additive formula as the base line.
+				// Cat Colony minigame rewards (repeatable stacks bought with
+				// Treats, never the cookie store) — feed the same additive
+				// formula as the base line, scaled per stack.
 				'Cardboard fort training','Sunbeam napping technique','Nine-lives insurance',
 				'Legendary colony charter'];
 			for (var catAddIndex=0;catAddIndex<catAddUpgrades.length;catAddIndex++)
 			{
 				var catAddUpgrade=Game.Upgrades[catAddUpgrades[catAddIndex]];
-				if (catAddUpgrade && Game.Has(catAddUpgrades[catAddIndex]) && catAddUpgrade.catAdd) catAdd+=catAddUpgrade.catAdd;
+				if (catAddUpgrade && catAddUpgrade.catAdd)
+				{
+					var catAddCount=upgradeStacks(catAddUpgrades[catAddIndex]);
+					if (catAddCount>0) catAdd+=catAddUpgrade.catAdd*catAddCount;
+				}
 			}
 			var catMult=1;
 			var catMultUpgrades=['Protein-rich kibble','Feather wand drills','Sunbeam perches','Catnip cultivation','Scratching-post ovens','Climbing shelves','Nine lives logistics',
-				// Cat Colony minigame rewards (Treats-bought).
+				// Cat Colony minigame rewards (repeatable stacks, Treats-bought).
 				'Treat-sniffing whiskers','Golden collar bells'];
 			for (var catMultIndex=0;catMultIndex<catMultUpgrades.length;catMultIndex++)
 			{
-				if (Game.Has(catMultUpgrades[catMultIndex])) catMult*=1.02;
+				var catMultCount=upgradeStacks(catMultUpgrades[catMultIndex]);
+				if (catMultCount>0) catMult*=Math.pow(1.02,catMultCount);
 			}
 			if (Game.Has('Grandma-approved recipes')) catMult*=1+Math.min(Game.Objects['Grandma'].amount*0.005,0.25);
 			// Nine Lives heavenly branch (content/upgrades.ts): flat, stronger-than-
