@@ -661,3 +661,15 @@ test('?qa=sittingroom: Grandma\'s Sitting Room + Grandmapocalypse integration ve
 	expect(report).not.toMatch(/ERROR/);
 	await assertNoUncaughtErrors(page);
 });
+
+test('?qa=catcolony: Cat Colony minigame + repeatable treat upgrades verified end to end', async ({ page }) => {
+	await boot(page, '&qa=catcolony');
+	const report = await qaReport(
+		page,
+		/PASS: Cat Colony minigame/,
+		60_000
+	);
+	expect(report).not.toMatch(/FAIL/);
+	expect(report).not.toMatch(/ERROR/);
+	await assertNoUncaughtErrors(page);
+});

@@ -35,15 +35,21 @@ picked up, traded, or dropped as we go. Checked items are shipped.
 - **Cat Colony minigame** — the fifth minigame (Cats' Farm/Temple/Wizard
   tower/Bank counterpart): dispatch idle cats on timed expeditions for
   Treats, occasionally a scuffle sends cats home to rest instead. Treats buy
-  6 new Cat Colony upgrades (`.earn()`-granted, not cookie-bought) that feed
-  the existing Cats catAdd/catMult formula, plus 5 new achievements. Built
-  entirely from assets already in the repo: the panel background reuses
+  REPEATABLE flat-price stacks of six Cat Colony upgrades (not
+  cookie-bought; the first stack is `.earn()`-granted for save continuity)
+  that feed the existing Cats catAdd/catMult formula, plus 5 achievements
+  and a 4-node heavenly branch off 'Communion of whiskers' (Bottomless
+  treat jar, Nap discipline, Efficient patrols, Generous strangers) that
+  tune the trickle, expedition duration and reward. Built entirely from
+  assets already in the repo: the panel background reuses
   `img/cats/Summer1.png` (the Cats building's own room backdrop), the roster
   visualization reuses `img/cats/idle.png`/`sleep.png` via the same CSS
   keyframe-stepping technique as the muted-Cats sleeping store icon, the
   upgrade icons crop frame 0 of the previously-unused `attack-1.png`/
   `hurt.png`/etc. strips, and every sound is one already shipped in
-  `public/snd/`. See `src/engine/minigameCatColony.ts`.
+  `public/snd/`. Verified by the ?qa=catcolony probe (deterministic
+  dispatch/resolve, the heavenly modifiers, the treat economy and
+  save/load round-trip). See `src/engine/minigameCatColony.ts`.
 - Cats building with roaming animated cats, 24 balanced cat upgrades; the muted
   Cats store icon now shows an animated sleeping cat (breathing + tail + zzz)
 - Cat synergy system (mirrors the grandma one): 8 cat upgrades — Kitten grandmas,

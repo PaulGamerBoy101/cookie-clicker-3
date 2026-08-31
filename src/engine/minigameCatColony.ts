@@ -368,6 +368,10 @@ M.launch = function () {
 				M.treats += gained;
 				M.treatsEarnedTotal += gained;
 				M.treatTrickle -= gained;
+				// Mirror the sitting-room yarn trickle: a threshold crossed
+				// purely by jar drip (no expedition in flight) still fires
+				// its achievement on the spot, not at the next resolution.
+				M.checkExpeditionAchievements();
 				M.refresh();
 			}
 		}

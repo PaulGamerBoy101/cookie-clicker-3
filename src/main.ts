@@ -2011,6 +2011,195 @@ if (debugSurface && params.get('qa') === 'sittingroom') {
 	}, 250);
 }
 
+// QA: verify the Cat Colony minigame (engine/minigameCatColony.ts): mission
+// unlock gating, dispatch/resolve with pinned deterministic rolls (0.9999 =
+// no hurt, max treats; 0 = always hurt; 0.045/0.03 = land on either side of
+// the heavenly risk modifiers), the four heavenly modifiers
+// ('Nap discipline', 'Nine-lives insurance' stacks, 'Efficient patrols',
+// 'Generous strangers'), the 'Bottomless treat jar' trickle (including the
+// achievement firing from jar drip alone), the treat economy with repeatable
+// stacks feeding the Cats dynamic CpS formula, the five achievements, and
+// the save/load round-trip (mirroring the real hard-reset order, where the
+// main-save bought flags clear before the minigame reset runs).
+// Usage: ?debug=1&qa=catcolony
+if (debugSurface && params.get('qa') === 'catcolony') {
+	const tick = window.setInterval(() => {
+		const G = window.Game;
+		if (!G || !G.ready || !G.Upgrades) return;
+		const cats: any = G.Objects['Cats'];
+		if (!cats.minigameLoaded) {
+			// Phase 1: kick off the lazy minigame load (needs level > 0).
+			if (!G.__qaCatColKick) {
+				G.__qaCatColKick = 1;
+				cats.level = 250;
+				cats.amount = 250;
+				G.BuildingsOwned = Math.max(G.BuildingsOwned, 1);
+				G.LoadMinigames();
+			}
+			return; // wait for loadMinigameModule -> scriptLoaded -> M.launch
+		}
+		if (G.__qaCatCol) return;
+		G.__qaCatCol = 1;
+		const out = document.createElement('div');
+		out.id = '__dbgqa';
+		out.style.cssText = 'position:fixed;top:0;left:0;z-index:99999;background:#fff;color:#060;font:12px monospace;white-space:pre-wrap;max-width:640px;';
+		document.body.appendChild(out);
+		try {
+			const lines: string[] = [];
+			let pass = true;
+			const chk = (label: string, cond: boolean) => { lines.push((cond ? 'PASS: ' : 'FAIL: ') + label); if (!cond) pass = false; };
+			const M: any = cats.minigame;
+			const U = (n: string) => G.Upgrades[n];
+			const realRandom = Math.random;
+			const now = () => Date.now();
+			const yarn = M.missionsById['yarn'];
+			const resolveNow = () => { for (const a of M.away) a.returnAt = now() - 1; M.resolveExpeditions(); };
+
+			// 1. content declarations
+			chk('minigame attached to the Cats (name "Cat Colony")', M.parent === cats && M.name === 'Cat Colony' && cats.minigameUrl === 'minigameCatColony.js');
+			chk('6 treat upgrades tied to the Cats with a flat .treatsPrice', M.upgradeNames.length === 6 && M.upgradeNames.every((n: string) => { const u = U(n); return !!u && u.buildingTie === cats && typeof u.treatsPrice === 'number' && u.treatsPrice > 0; }));
+			chk('4 heavenly upgrades in the prestige pool off the whisker chain', U('Nap discipline').pool === 'prestige' && (U('Nap discipline').parents[0] as any).name === 'Communion of whiskers' && U('Generous strangers').pool === 'prestige' && (U('Generous strangers').parents[0] as any).name === 'Nap discipline' && U('Bottomless treat jar').pool === 'prestige' && (U('Bottomless treat jar').parents[0] as any).name === 'Generous strangers' && U('Efficient patrols').pool === 'prestige' && (U('Efficient patrols').parents[0] as any).name === 'Bottomless treat jar');
+			chk('5 colony achievements declared', ['First expedition', 'Seasoned adventurers', 'The nine-lives guild', 'Pocketful of treats', 'Fully catified'].every((n: string) => !!G.Achievements[n]));
+
+			// 2. unlock gating (mission.unlock vs the Cats count)
+			cats.amount = 5;
+			chk('missions gate on the Cats count (5 cats: pantry/ninelives refused)', M.dispatch('pantry') === false && M.dispatch('ninelives') === false && M.away.length === 0);
+			cats.amount = 250;
+
+			// 3. dispatch + resolve, best-case rolls (0.9999: no hurt, max treats)
+			Math.random = () => 0.9999;
+			M.treats = 0; M.treatsEarnedTotal = 0; M.missionsCompleted = 0;
+			chk('dispatching yarn + sunbeam uses 3 idle cats (247 of 250 idle)', M.dispatch('yarn') === true && M.dispatch('sunbeam') === true && M.away.length === 2 && M.idleCats() === 247);
+			chk('away entries keep id/count and a future returnAt', M.away[0].id === 'yarn' && M.away[0].count === 1 && M.away[1].id === 'sunbeam' && M.away[1].count === 2 && M.away.every((a: any) => a.returnAt > now()));
+			resolveNow();
+			chk('best-case resolution: 1 + 3 treats, 2 missions, no hurt', M.away.length === 0 && M.resting.length === 0 && M.treats === 4 && M.treatsEarnedTotal === 4 && M.missionsCompleted === 2);
+			chk('"First expedition" wins on the first resolution', G.Achievements['First expedition'].won === 1);
+
+			// 4. scuffle — worst-case roll (0: every expedition comes home hurt)
+			Math.random = () => 0;
+			const t0 = now();
+			const dispatched = M.dispatch('yarn');
+			resolveNow();
+			chk('a hurt expedition rests the cat (15..40s window) and pays no treats', dispatched === true && M.treats === 4 && M.missionsCompleted === 2 && M.resting.length === 1 && M.resting[0].count === 1 && M.resting[0].returnAt - t0 >= 15000 && M.resting[0].returnAt - t0 <= 40500);
+			M.resting.length = 0; //probe housekeeping; the rest would resolve itself
+
+			// 5. heavenly modifiers, each against a pinned roll
+			U('Nap discipline').bought = 1;
+			chk("'Nap discipline' cuts the yarn risk to 0.05 * 0.8", Math.abs(M.hurtChanceFor(yarn) - 0.04) < 1e-9);
+			Math.random = () => 0.045; //< 0.05 (hurt bare) but >= 0.04 (safe with it)
+			M.dispatch('yarn');
+			resolveNow();
+			chk('a 0.045 roll stays safe under Nap discipline (+1 treat)', M.resting.length === 0 && M.treats === 5 && M.missionsCompleted === 3);
+			U('Nap discipline').bought = 0;
+
+			M.upgradeStacks[3] = 2; //two stacks of 'Nine-lives insurance'
+			chk("'Nine-lives insurance' stacks multiply the risk by 0.7 each", Math.abs(M.hurtChanceFor(yarn) - 0.05 * 0.49) < 1e-9);
+			Math.random = () => 0.03; //< 0.05 (hurt bare) but >= 0.05*0.49 (safe stacked)
+			M.dispatch('yarn');
+			resolveNow();
+			chk('two insurance stacks carry a 0.03 roll (+1 treat)', M.resting.length === 0 && M.treats === 6 && M.missionsCompleted === 4);
+			M.upgradeStacks[3] = 0;
+			M.dispatch('yarn');
+			resolveNow();
+			chk('the same 0.03 roll hurts without the insurance', M.resting.length === 1 && M.treats === 6);
+			M.resting.length = 0;
+
+			U('Efficient patrols').bought = 1;
+			chk("'Efficient patrols' shortens the yarn 80s -> 68s", M.durationFor(yarn) === 68);
+			M.dispatch('yarn');
+			const d = M.away[0].returnAt - now();
+			chk('a dispatched expedition honors the shortened duration (~68s out)', d > 67500 && d < 68500);
+			M.away.length = 0;
+			U('Efficient patrols').bought = 0;
+
+			Math.random = () => 0.9999;
+			const baseTreats = M.treats;
+			M.dispatch('pantry');
+			resolveNow();
+			chk('the pantry maxes at 6 treats without the modifier', M.treats - baseTreats === 6);
+			U('Generous strangers').bought = 1;
+			M.dispatch('pantry');
+			resolveNow();
+			chk("'Generous strangers' rounds the 6 up to ceil(6*1.2) = 8", M.treats - baseTreats === 14);
+			U('Generous strangers').bought = 0;
+
+			U('Bottomless treat jar').bought = 1;
+			const ticks = G.fps * 60 + 10; //a minute of game ticks, +10 float margin
+			M.treats = 0; M.treatsEarnedTotal = 0; M.treatTrickle = 0;
+			for (let i = 0; i < ticks; i++) M.logic();
+			chk('the jar trickles 1 treat per minute and counts it toward the lifetime total', M.treats === 1 && M.treatsEarnedTotal === 1);
+			M.treats = 0; M.treatsEarnedTotal = 999; M.treatTrickle = 0;
+			for (let i = 0; i < ticks; i++) M.logic();
+			chk('a threshold crossed by jar drip alone still fires "Pocketful of treats"', M.treatsEarnedTotal === 1000 && G.Achievements['Pocketful of treats'].won === 1);
+			U('Bottomless treat jar').bought = 0;
+
+			// 6. treat economy, repeatable stacks, CpS hookup
+			// Cats is a DYNAMIC building: me.cps is a function evaluated as me.cps(me)
+			const catsCps = () => (typeof cats.cps === 'function' ? (cats.cps as any)(cats) : (cats.cps as number));
+			const cpsBefore = catsCps();
+			M.treats = 10000;
+			M.buyUpgrade('Cardboard fort training');
+			chk('treat purchase adds a stack, marks the first one in the main save, deducts 15 treats', M.effectiveStacks('Cardboard fort training') === 1 && U('Cardboard fort training').bought === 1 && M.treats === 10000 - 15);
+			chk('Cats CpS rose after the stack (' + cpsBefore.toFixed(2) + ' -> ' + catsCps().toFixed(2) + ')', catsCps() > cpsBefore);
+			M.treats = 100000;
+			for (const n of M.upgradeNames) M.buyUpgrade(n);
+			chk('buying every upgrade wins "Fully catified"', G.Achievements['Fully catified'].won === 1);
+			M.missionsCompleted = 50;
+			M.checkExpeditionAchievements();
+			chk('"Seasoned adventurers" wins at 50 missions', G.Achievements['Seasoned adventurers'].won === 1);
+			M.missionsCompleted = 250;
+			M.checkExpeditionAchievements();
+			chk('"The nine-lives guild" wins at 250 missions', G.Achievements['The nine-lives guild'].won === 1);
+
+			// 7. save / load round-trip
+			// Clear the main-save bought flags first: with them still set,
+			// effectiveStacks' fallback (exercised by refresh() -> renderShop)
+			// would correctly self-migrate any 0-stack row back to 1 before
+			// M.save runs. The bought-flag migration itself is tested below.
+			for (const n of M.upgradeNames) U(n).bought = 0;
+			M.treats = 77;
+			M.missionsCompleted = 9;
+			M.treatsEarnedTotal = 1234;
+			M.upgradeStacks = [2, 0, 1, 0, 0, 3];
+			M.dispatch('yarn');
+			M.resting.push({ uid: M.uidN++, count: 2, returnAt: now() + 30000 });
+			const saved = M.save();
+			// A real hard reset clears the main-save bought flags BEFORE the
+			// minigame reset runs (systems/reset.ts), so mirror that order —
+			// otherwise effectiveStacks' main-save fallback would correctly
+			// regrow one stack per still-bought upgrade.
+			for (const n of M.upgradeNames) U(n).bought = 0;
+			M.reset(true);
+			chk('reset cleared the colony state', M.treats === 0 && M.missionsCompleted === 0 && M.treatsEarnedTotal === 0 && M.away.length === 0 && M.resting.length === 0 && M.upgradeStacks.every((n: number) => n === 0));
+			M.load(saved);
+			chk('load restored treats, counters, stacks and in-flight expeditions (' + saved + ')', M.treats === 77 && M.missionsCompleted === 9 && M.treatsEarnedTotal === 1234 && M.upgradeStacks.join(':') === '2:0:1:0:0:3' && M.away.length === 1 && M.away[0].id === 'yarn' && M.away[0].count === 1 && M.away[0].returnAt - now() > 60000 && M.resting.length === 1 && M.resting[0].count === 2);
+			M.reset(true);
+			U('Cardboard fort training').bought = 1; //pre-stacking save: bought flag, 0 stacks
+			chk('effectiveStacks self-migrates a pre-stacking bought upgrade to 1', M.effectiveStacks('Cardboard fort training') === 1 && M.upgradeStacks[0] === 1);
+			U('Cardboard fort training').bought = 0;
+			U('Legendary colony charter').bought = 1;
+			M.load('5 5 5 - - 0:0:0:0:0:0');
+			chk('load migrates the bought flag of a pre-stacking save to one stack', M.treats === 5 && M.missionsCompleted === 5 && M.upgradeStacks.join(':') === '0:0:0:0:0:1');
+
+			// cleanup: the QA page is disposable, but leave the colony state sane
+			M.away.length = 0;
+			M.resting.length = 0;
+			M.treats = 0; M.missionsCompleted = 0; M.treatsEarnedTotal = 0; M.treatTrickle = 0;
+			M.upgradeStacks = [0, 0, 0, 0, 0, 0];
+			for (const n of M.upgradeNames) U(n).bought = 0;
+			U('Nap discipline').bought = 0;
+			U('Generous strangers').bought = 0;
+			U('Efficient patrols').bought = 0;
+			U('Bottomless treat jar').bought = 0;
+			Math.random = realRandom;
+			out.textContent = lines.join('\n') + '\n[QA-catcolony] ' + (pass ? 'PASS: Cat Colony minigame + repeatable treat upgrades verified end to end' : 'FAIL: see checks above');
+		} catch (e: any) {
+			out.textContent = '[QA-catcolony] ERROR: ' + e.constructor.name + ': ' + e.message;
+		}
+		window.clearInterval(tick);
+	}, 250);
+}
+
 /* ----------------------------------------------------------------- i18n */
 // Language files are ESM modules; Vite code-splits each into its own chunk.
 /* Generic = the module namespace shape at runtime: each loc file is
