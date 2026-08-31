@@ -68,6 +68,10 @@ export function declareVanillaChangelog(Game: EngineGame) {
 	Game.updateLog+=
 
 	'</div><div class="subsection update">'+
+	'<div class="title">31/08/2026 - a fuller heavenly chip shop</div>'+
+	'<div class="listing">&bull; added 12 low-tier heavenly upgrades (2-30 chips): Blessed apron, Second helping and Angelic recipe (+cookie production), Firm handshake and Demonic hustle (+clicking), Morning bells (golden cookies appear more often), Sugar glaze (golden cookie effects last longer), Patient tongue (golden cookies stay longer), Night watch (offline earnings), Bargaining table (buildings 1% cheaper), Tidy pantry (upgrades 1% cheaper) and Lucky start (start each run with 3 free cursors)</div>'+
+	'<div class="listing">&bull; the Ascend confirmation now offers a "Browse the tree" option: view the heavenly upgrades without ascending (nothing resets, no chips earned) — and you can even buy upgrades with the chips you already have. The Reincarnate button becomes a "Back to game" button while browsing</div>'+
+	'</div><div class="subsection update">'+
 	'<div class="title">23/08/2026 - cookie clicker 3</div>'+
 	'<div class="listing">&bull; Cookie Clicker 3: the 2.048 engine, rebuilt as strictly typed TypeScript ES modules on a Vite build — same game, same numbers, same puns</div>'+
 	'<div class="listing">&bull; saves stay byte-compatible with Cookie Clicker 2.048 (verified by an automated export/import round-trip)</div>'+

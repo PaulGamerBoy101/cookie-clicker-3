@@ -2134,6 +2134,30 @@ export function declareVanillaUpgrades(Game: EngineGame) {
 
 		new Game.Upgrade('The Nine Lives Convergence',"Cats gain <b>+20% CpS</b>."+'<q>Nine lives, one destiny: your cookie jar.</q>',25000000,[0,0,'img/cats/attack-1.png',64]);Game.last.pool='prestige';Game.last.parents=['Feline apex','Alpha instincts','Efficient patrols'];Game.last.posX=-285;Game.last.posY=-626;
 
+		// CC3: low-tier heavenly upgrades ("the mortal staircase"), declared
+		// after the CC3 branches above (still the very end of the upgrade list) so
+		// existing save ids stay stable — upgrade ids are the registration index and
+		// saves store purchases by id. Cheap (2-30 chips) so players with a handful of
+		// heavenly chips have real options in the prestige tree instead of only the
+		// offline-earnings chain. Manual posX/posY (not heavenlyPositions.ts) for the
+		// same reason the CC3 branches above use it. Effect hooks: main.ts (click
+		// mult), shimmerTypes.ts (golden cookie frequency / lifespan / effect duration),
+		// save.ts (offline CpS % + free starters on load), reset.ts (free starters on
+		// ascension), ui/store.ts (building prices) and core/upgrade.ts (upgrade prices).
+		order=21000;
+		new Game.Upgrade('Blessed apron',getStrCookieProductionMultiplierPlus(2)+'<q>A well-worn apron, blessed by a saint. Or several. It depends on who you ask.</q>',2,[24,6]);Game.last.pool='prestige';Game.last.parents=['Legacy'];Game.last.power=2;Game.last.pseudoCookie=true;Game.last.posX=-30;Game.last.posY=60;
+		new Game.Upgrade('Firm handshake',loc("Clicking is <b>%1% stronger</b>.",5)+'<q>Some people say it\'s the elbow. We say it\'s the follow-through.</q>',4,[0,13]);Game.last.pool='prestige';Game.last.parents=['Legacy'];Game.last.posX=80;Game.last.posY=20;
+		new Game.Upgrade('Morning bells',loc("Golden cookies appear <b>%1%</b> more often.",5)+'<q>Wake up, sleepyhead. It\'s a good day to be golden.</q>',5,[17,10]);Game.last.pool='prestige';Game.last.parents=['Twin Gates of Transcendence'];Game.last.posX=290;Game.last.posY=-160;
+		new Game.Upgrade('Night watch',loc("You gain another <b>+%1%</b> of your regular CpS while the game is closed.",2)+' <small>('+loc("Must own the %1 upgrade.",getUpgradeName("Twin Gates of Transcendence"))+')</small><q>Someone has to watch the oven while you sleep. It turns out you are that someone.</q>',6,[17,0]);Game.last.pool='prestige';Game.last.parents=['Twin Gates of Transcendence'];Game.last.posX=110;Game.last.posY=-160;
+		new Game.Upgrade('Second helping',getStrCookieProductionMultiplierPlus(3)+'<q>There\'s room on the plate. There\'s always room on the plate.</q>',8,[34,6]);Game.last.pool='prestige';Game.last.parents=['Heavenly cookies'];Game.last.power=3;Game.last.pseudoCookie=true;Game.last.posX=-235;Game.last.posY=-60;
+		new Game.Upgrade('Sugar glaze',loc("Golden cookie effects last <b>%1%</b> longer.",5)+'<q>Everything tastes better with a little more stickiness.</q>',10,[21,14]);Game.last.pool='prestige';Game.last.parents=['Heavenly cookies'];Game.last.posX=-143;Game.last.posY=-50;
+		new Game.Upgrade('Patient tongue',loc("Golden cookies stay <b>%1%</b> longer.",5)+'<q>They\'re not going anywhere. You\'re welcome.</q>',12,[8,13]);Game.last.pool='prestige';Game.last.parents=['Heavenly luck'];Game.last.posX=-300;Game.last.posY=260;
+		new Game.Upgrade('Bargaining table',loc("All buildings are <b>%1% cheaper</b>.",1)+'<q>A sturdy table, honest wood, no hidden clauses. Except the tiny ones. The tiny ones are there.</q>',15,[21,7]);Game.last.pool='prestige';Game.last.parents=['Legacy'];Game.last.posX=-110;Game.last.posY=80;
+		new Game.Upgrade('Lucky start',loc("You start with <b>%1</b>.",loc("%1 cursor",3))+'<q>Their fingers are slightly sticky, but they are eager.</q>',20,[12,13]);Game.last.pool='prestige';Game.last.parents=['Heavenly cookies'];Game.last.posX=-60;Game.last.posY=-90;
+		new Game.Upgrade('Angelic recipe',getStrCookieProductionMultiplierPlus(2)+'<q>Annotated in at least three celestial languages. The margins are just doodles of cookies.</q>',25,[19,11]);Game.last.pool='prestige';Game.last.parents=['Angels'];Game.last.power=2;Game.last.pseudoCookie=true;Game.last.posX=370;Game.last.posY=-270;
+		new Game.Upgrade('Demonic hustle',loc("Clicking is <b>%1% stronger</b>.",5)+'<q>Why click when you can claw? (You still have to click.)</q>',25,[24,7]);Game.last.pool='prestige';Game.last.parents=['Belphegor'];Game.last.posX=20;Game.last.posY=-380;
+		new Game.Upgrade('Tidy pantry',loc("All upgrades are <b>%1% cheaper</b>.",1)+'<q>Everything in its place, and its place marked with a little label. Satisfying, really.</q>',30,[24,8]);Game.last.pool='prestige';Game.last.parents=['Classic dairy selection'];Game.last.posX=-80;Game.last.posY=310;
+
 		//end of upgrades
 
 		Game.seasons={

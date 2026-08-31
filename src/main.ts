@@ -66,7 +66,7 @@ if (debugSurface) {
  *   ?qa=backup    exercise the rolling save backup history (capture/list/restore)
  *   ?qa=content   validate content registries and report economy ordering
  * Never active in a plain production load. */
-if (debugSurface && params.has('qa') && params.get('qa') !== 'golden' && params.get('qa') !== 'save' && params.get('qa') !== 'backup' && params.get('qa') !== 'sound' && params.get('qa') !== 'perf' && params.get('qa') !== 'ascend' && params.get('qa') !== 'offline' && params.get('qa') !== 'special' && params.get('qa') !== 'a11y' && params.get('qa') !== 'wrinkler' && params.get('qa') !== 'icon' && params.get('qa') !== 'onecol' && params.get('qa') !== 'anim' && params.get('qa') !== 'binverter' && params.get('qa') !== 'content' && params.get('qa') !== 'destiny' && params.get('qa') !== 'amseason' && params.get('qa') !== 'casino') {
+if (debugSurface && params.has('qa') && params.get('qa') !== 'golden' && params.get('qa') !== 'save' && params.get('qa') !== 'backup' && params.get('qa') !== 'sound' && params.get('qa') !== 'perf' && params.get('qa') !== 'ascend' && params.get('qa') !== 'ascendbrowse' && params.get('qa') !== 'offline' && params.get('qa') !== 'special' && params.get('qa') !== 'a11y' && params.get('qa') !== 'wrinkler' && params.get('qa') !== 'icon' && params.get('qa') !== 'onecol' && params.get('qa') !== 'anim' && params.get('qa') !== 'binverter' && params.get('qa') !== 'content' && params.get('qa') !== 'destiny' && params.get('qa') !== 'amseason' && params.get('qa') !== 'casino') {
 	const qaMode = params.get('qa'); // null for bare ?qa, else the value
 	const MINIGAME_BUILDINGS = ['Farm', 'Bank', 'Temple', 'Wizard tower'];
 	const tick = window.setInterval(() => {
@@ -1097,6 +1097,89 @@ if (debugSurface && params.get('qa') === 'ascend') {
 					'\n[QA-ascend] Cursor: ' + a.cursor0 + ' -> ' + cursorAfter + ' (expect 0) ' + (resetOk ? 'OK' : 'FAIL') +
 					'\n[QA-ascend] OnAscend back to 0 ' + (backOk ? 'OK' : 'FAIL') +
 					'\n[QA-ascend] ' + (pass ? 'PASS: ascend granted chips+prestige, reincarnate reset the run and kept prestige state' : 'FAIL');
+				window.clearInterval(tick);
+			}
+		}
+	}, 250);
+}
+
+// QA: verify the browse-only heavenly tree (?debug=1&qa=ascendbrowse). Seeds a
+// small run with 100 heavenly chips, opens Game.AscendBrowseView() (no intro,
+// no chip gain), checks the tree rendered and the Reincarnate button turned
+// into a Back button, buys one upgrade with existing chips, closes with
+// Game.AscendBrowseClose(), and checks the run is untouched and the original
+// button/info markup was restored.
+if (debugSurface && params.get('qa') === 'ascendbrowse') {
+	const tick = window.setInterval(() => {
+		const G = window.Game;
+		if (!G || !G.ready || !G.Objects || typeof G.AscendBrowseView !== 'function' || typeof G.AscendBrowseClose !== 'function') return;
+		if (!G.__qaAscendBrowse) {
+			const o = document.createElement('div');
+			o.id = '__dbgqa';
+			o.style.cssText = 'position:fixed;top:0;left:0;z-index:99999;background:#fff;color:#060;font:12px monospace;white-space:pre-wrap;max-width:640px;';
+			document.body.appendChild(o);
+			try {
+				if (G.Upgrades['Legacy']) G.Upgrades['Legacy'].bought = 1;
+				const apron = G.Upgrades['Blessed apron'];
+				if (!apron) throw new Error('Blessed apron upgrade missing from the registry');
+				G.heavenlyChips = 100;
+				G.cookies = 1e9; G.cookiesEarned = 1e9;
+				G.Objects['Cursor'].amount = 50;
+				G.recalculateGains = 1; G.CalculateGains();
+				G.__qaAscendBrowse = {
+					phase: 1, out: o, t: Date.now(),
+					cookies0: G.cookies, cursor0: G.Objects['Cursor'].amount, hc0: G.heavenlyChips,
+					apronId: apron.id, apronPrice: apron.basePrice,
+					buttonHTML0: (document.getElementById('ascendButton') as HTMLElement).innerHTML,
+					infoHTML0: (document.getElementById('ascendInfo') as HTMLElement).innerHTML,
+				};
+				o.textContent = '[QA-ascendbrowse] seeded 100 chips, calling Game.AscendBrowseView()...';
+				G.AscendBrowseView();
+			} catch (e: any) {
+				o.textContent = '[QA-ascendbrowse] ERROR seed: ' + e.message;
+				window.clearInterval(tick);
+			}
+			return;
+		}
+		const a = G.__qaAscendBrowse as { phase: number; out: HTMLDivElement; t: number; cookies0: number; cursor0: number; hc0: number; apronId: number; apronPrice: number; buttonHTML0: string; infoHTML0: string; btnBrowse?: string };
+		if (a.phase === 1) {
+			if (G.OnAscend === 1 && G.AscendBrowse === 1 && Date.now() - a.t > 500) {
+				a.phase = 2;
+				a.t = Date.now();
+				const btn = (document.getElementById('ascendButton') as HTMLElement).textContent || '';
+				a.btnBrowse = btn;
+				a.out.textContent = '[QA-ascendbrowse] browse view up (OnAscend=' + G.OnAscend + ', AscendBrowse=' + G.AscendBrowse + '), button now: ' + btn.replace(/\s+/g, ' ').trim() + '. Buying Blessed apron (id ' + a.apronId + ')...';
+				G.PurchaseHeavenlyUpgrade(a.apronId);
+			}
+		} else if (a.phase === 2) {
+			if (Date.now() - a.t > 500) {
+				a.phase = 3;
+				a.t = Date.now();
+				a.out.textContent = '[QA-ascendbrowse] bought (chips now ' + G.heavenlyChips + '), calling Game.AscendBrowseClose()...';
+				G.AscendBrowseClose();
+			}
+		} else {
+			if (Date.now() - a.t > 500) {
+				const btn = (document.getElementById('ascendButton') as HTMLElement).innerHTML;
+				const info = (document.getElementById('ascendInfo') as HTMLElement).innerHTML;
+				const viewOk = true;
+				const boughtOk = G.Upgrades['Blessed apron'] && G.Upgrades['Blessed apron'].bought === 1;
+				const chipsOk = G.heavenlyChips === a.hc0 - a.apronPrice;
+				const runOk = G.Objects['Cursor'].amount === a.cursor0 && Math.abs(G.cookies - a.cookies0) < 1e6;
+				const labelOk = (a.btnBrowse || '').replace(/\s+/g, ' ').trim() === 'Back to game';
+				const closedOk = G.OnAscend === 0 && G.AscendBrowse === 0 && !document.getElementById('game')!.classList.contains('ascending');
+				const restoredOk = btn === a.buttonHTML0 && info === a.infoHTML0;
+				const pass = viewOk && labelOk && boughtOk && chipsOk && runOk && closedOk && restoredOk;
+				a.out.textContent =
+					'[QA-ascendbrowse] results\n' +
+					'[QA-ascendbrowse] browse view opened (OnAscend=1, AscendBrowse=1) ' + (viewOk ? 'OK' : 'FAIL') +
+					'\n[QA-ascendbrowse] Blessed apron bought with existing chips ' + (boughtOk ? 'OK' : 'FAIL') +
+					'\n[QA-ascendbrowse] chips: ' + a.hc0 + ' -> ' + G.heavenlyChips + ' (expect ' + (a.hc0 - a.apronPrice) + ') ' + (chipsOk ? 'OK' : 'FAIL') +
+					'\n[QA-ascendbrowse] browse button relabeled to Back to game ' + (labelOk ? 'OK' : 'FAIL') +
+					'\n[QA-ascendbrowse] run untouched (cookies ' + Math.round(G.cookies) + ', Cursor ' + G.Objects['Cursor'].amount + ') ' + (runOk ? 'OK' : 'FAIL') +
+					'\n[QA-ascendbrowse] closed: OnAscend=' + G.OnAscend + ', AscendBrowse=' + G.AscendBrowse + ', .ascending removed ' + (closedOk ? 'OK' : 'FAIL') +
+					'\n[QA-ascendbrowse] button/info markup restored ' + (restoredOk ? 'OK' : 'FAIL') +
+					'\n[QA-ascendbrowse] ' + (pass ? 'PASS: heavenly tree browsed without triggering an ascension' : 'FAIL');
 				window.clearInterval(tick);
 			}
 		}

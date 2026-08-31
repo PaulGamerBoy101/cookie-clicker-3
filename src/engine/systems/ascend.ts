@@ -109,7 +109,7 @@
 		}
 		export function Ascend(bypass?: any)
 		{
-			if (!bypass) Game.Prompt('<id Ascend><h3>'+loc("Ascend")+'</h3><div class="block">'+tinyIcon([19,7])+'<div class="line"></div>'+loc("Do you REALLY want to ascend?<div class=\"line\"></div>You will lose your progress and start over from scratch.<div class=\"line\"></div>All your cookies will be converted into prestige and heavenly chips.")+'<div class="line"></div>'+(Game.canLumps()?loc("You will keep your achievements, building levels and sugar lumps."):loc("You will keep your achievements."))+'<div class="optionBox"><a class="option smallFancyButton" style="margin:16px;padding:8px 16px;animation:rainbowCycle 5s infinite ease-in-out,pucker 0.2s ease-out;box-shadow:0px 0px 0px 1px #000,0px 0px 1px 2px currentcolor;background:linear-gradient(to bottom,transparent 0%,currentColor 500%);width:auto;text-align:center;" '+Game.clickStr+'="PlaySound(\'snd/tick.mp3\');Game.ClosePrompt();Game.Ascend(1);" id="promptOption0">'+loc("Ascend")+'</a></div></div>',[[loc("Yes"),'Game.ClosePrompt();Game.Ascend(1);','float:left;display:none;'],[loc("Cancel"),0,'float:right']]);
+			if (!bypass) Game.Prompt('<id Ascend><h3>'+loc("Ascend")+'</h3><div class="block">'+tinyIcon([19,7])+'<div class="line"></div>'+loc("Do you REALLY want to ascend?<div class=\"line\"></div>You will lose your progress and start over from scratch.<div class=\"line\"></div>All your cookies will be converted into prestige and heavenly chips.")+'<div class="line"></div>'+(Game.canLumps()?loc("You will keep your achievements, building levels and sugar lumps."):loc("You will keep your achievements."))+'<div class="optionBox"><a class="option smallFancyButton" style="margin:16px;padding:8px 16px;animation:rainbowCycle 5s infinite ease-in-out,pucker 0.2s ease-out;box-shadow:0px 0px 0px 1px #000,0px 0px 1px 2px currentcolor;background:linear-gradient(to bottom,transparent 0%,currentColor 500%);width:auto;text-align:center;" '+Game.clickStr+'="PlaySound(\'snd/tick.mp3\');Game.ClosePrompt();Game.Ascend(1);" id="promptOption0">'+loc("Ascend")+'</a></div></div>',[[loc("Yes"),'Game.ClosePrompt();Game.Ascend(1);','float:left;display:none;'],[loc("Browse the tree"),'Game.ClosePrompt();Game.AscendBrowseView();','float:right'],[loc("Cancel"),0,'float:right']]);
 			else
 			{
 				Game.Notify(loc("Ascending"),loc("So long, cookies."),[20,7],4);
@@ -134,6 +134,28 @@
 			}
 		}
 		
+		//CC3: view-only heavenly upgrade tree. Opens the same ascend view but
+		//without the intro animation, without earning chips and without
+		//committing the run; the Reincarnate button becomes a Back button and
+		//purchases spend the player's existing heavenly chips.
+		export function AscendBrowseView()
+		{
+			Game.AscendBrowse=1;
+			Game.OnAscend=1;
+			Game.addClass('ascending');
+			Game.BuildAscendTree();
+			Game.heavenlyChipsDisplayed=Game.heavenlyChips;
+			l('ascendButton').innerHTML='<span class="fancyText" style="font-size:20px;">'+loc("Back to game")+'</span>';
+			l('ascendInfo').innerHTML='<div class="ascendData smallFramed" style="margin-top:22px;width:75%;font-size:11px;">'+loc("You are just looking around.<br>Drag the screen around<br>or use arrow keys!<br>Nothing will be reset.<br>Click Back when you're done.")+'</div>';
+		}
+		export function AscendBrowseClose()
+		{
+			Game.OnAscend=0;
+			Game.AscendBrowse=0;
+			Game.removeClass('ascending');
+			l('ascendButton').innerHTML=Game.ascendButtonHTML;
+			l('ascendInfo').innerHTML=Game.ascendInfoHTML;
+		}
 		export function UpdateAscend()
 		{
 			if (Game.keys[37]) Game.AscendOffXT+=16*(1/Game.AscendZoomT);

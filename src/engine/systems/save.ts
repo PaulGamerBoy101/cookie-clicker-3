@@ -726,6 +726,7 @@ export function LoadSave(data?: any,ignoreVersionIssues?: any)
 						if (Game.ascensionMode!=1)
 						{
 							if (Game.Has('Starter kit')) Game.Objects['Cursor'].free=10;
+							if (Game.Has('Lucky start')) Game.Objects['Cursor'].free+=3;
 							if (Game.Has('Starter kitchen')) Game.Objects['Grandma'].free=5;
 						}
 						
@@ -769,6 +770,7 @@ export function LoadSave(data?: any,ignoreVersionIssues?: any)
 								if (Game.Has('Fern tea')) percent+=3;
 								if (Game.Has('Ichor syrup')) percent+=7;
 								if (Game.Has('Fortune #102')) percent+=1;
+								if (Game.Has('Night watch')) percent+=2;
 							}
 							
 							var timeOfflineOptimal=Math.min(timeOffline,maxTime);

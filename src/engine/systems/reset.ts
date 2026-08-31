@@ -142,6 +142,7 @@ export function Reset(hard: any)
 			if (Game.Has('Season switcher')) {for (var i in Game.seasons) {Game.Unlock(Game.seasons[i].trigger);}}
 			
 			if (Game.Has('Starter kit')) Game.Objects['Cursor'].getFree(10);
+			if (Game.Has('Lucky start')) Game.Objects['Cursor'].getFree(3);
 			if (Game.Has('Starter kitchen')) Game.Objects['Grandma'].getFree(5);
 		}
 	}

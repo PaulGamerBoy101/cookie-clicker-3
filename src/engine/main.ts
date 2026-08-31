@@ -16,7 +16,7 @@ import { CaptureSave, ListBackups, RestoreBackup, DownloadBackup, RefreshBackupL
 import { CreateMusic } from "./systems/music";
 import { Shimmer, updateShimmers, killShimmers } from "./systems/shimmer";
 import { getWrinklersMax, ResetWrinklers, CollectWrinklers, playWrinklerSquishSound, SpawnWrinkler, PopRandomWrinkler, UpdateWrinklers, DrawWrinklers, SaveWrinklers, LoadWrinklers } from "./systems/wrinkler";
-import { UpdateAscensionModePrompt, PickAscensionMode, UpdateAscendIntro, UpdateReincarnateIntro, Reincarnate, Ascend, UpdateAscend, AscendRefocus, PurchaseHeavenlyUpgrade, BuildAscendTree, lumpTooltip, computeLumpTimes, loadLumps, gainLumps, clickLump, harvestLumps, computeLumpType, canLumps, getLumpRefillMax, getLumpRefillRemaining, canRefillLump, refillLump, spendLump, doLumps } from "./systems/ascend";
+import { UpdateAscensionModePrompt, PickAscensionMode, UpdateAscendIntro, UpdateReincarnateIntro, Reincarnate, Ascend, AscendBrowseView, AscendBrowseClose, UpdateAscend, AscendRefocus, PurchaseHeavenlyUpgrade, BuildAscendTree, lumpTooltip, computeLumpTimes, loadLumps, gainLumps, clickLump, harvestLumps, computeLumpType, canLumps, getLumpRefillMax, getLumpRefillRemaining, canRefillLump, refillLump, spendLump, doLumps } from "./systems/ascend";
 /* CC3 rewrite (phase 6, slice 2): pure utils extracted to engine/utils/. */
 import { l, choose, escapeRegExp, replaceAll, cap, romanize, randomFloor, shuffle } from "./utils/helpers";
 import { formatEveryThirdPower, rawFormatter, formatLong, prefixes, suffixes, formatShort, numberFormatters, Beautify, shortenNumber, SimpleBeautify, beautifyInTextFilter, BeautifyInTextFunction, BeautifyInText, BeautifyAll } from "./utils/format";
@@ -1300,6 +1300,9 @@ Game.Launch=function()
 			
 			'<div id="ascendInfo"><div class="ascendData smallFramed" style="margin-top:22px;width:75%;font-size:11px;">'+loc("You are ascending.<br>Drag the screen around<br>or use arrow keys!<br>When you're ready,<br>click Reincarnate.")+'</div></div>';
 		
+		Game.ascendButtonHTML=l('ascendButton').innerHTML;//CC3: original Reincarnate label, restored by AscendBrowseClose
+		Game.ascendInfoHTML=l('ascendInfo').innerHTML;//CC3: original ascend info text, restored by AscendBrowseClose
+		
 		Game.attachTooltip(l('ascendData1'),function(){return '<div style="min-width:300px;text-align:center;font-size:11px;padding:8px;" id="tooltipAscendData1">(<b>'+Beautify(Game.heavenlyChips)+'</b>)<div class="line"></div>'+loc("Each prestige level grants you a permanent <b>+%1% CpS</b>.<br>The more levels you have, the more cookies they require.",1)+'</div>';},'bottom-right');
 		Game.attachTooltip(l('ascendData2'),function(){return '<div style="min-width:300px;text-align:center;font-size:11px;padding:8px;" id="tooltipAscendData2">(<b>'+loc("%1 heavenly chip",LBeautify(Game.heavenlyChips))+'</b>)<div class="line"></div>'+loc("Heavenly chips are used to buy heavenly upgrades.<br>You gain <b>1 chip</b> every time you gain a prestige level.")+'</div>';},'bottom-right');
 		
@@ -1307,6 +1310,7 @@ Game.Launch=function()
 		
 		AddEvent(l('ascendButton'),'click',function(){
 			PlaySound('snd/tick.mp3');
+			if (Game.AscendBrowse && !Game.DebuggingPrestige) {Game.AscendBrowseClose();return;}//CC3: browse mode just closes the tree, nothing resets
 			Game.Reincarnate();
 		});
 		
@@ -1315,6 +1319,7 @@ Game.Launch=function()
 		Game.ascendZoomablel=l('ascendZoomable');
 		Game.ascendUpgradesl=l('ascendUpgrades');
 		Game.OnAscend=0;
+		Game.AscendBrowse=0;//CC3: 1 while viewing the heavenly tree without ascending
 		Game.AscendTimer=0;//how far we are into the ascend animation
 		Game.AscendDuration=Game.fps*5;//how long the ascend animation is
 		Game.AscendBreakpoint=Game.AscendDuration*0.5;//at which point the cookie explodes during the ascend animation
@@ -1324,6 +1329,8 @@ Game.Launch=function()
 		Game.UpdateReincarnateIntro=UpdateReincarnateIntro;//CC3 rewrite (phase 4, slice 6).
 		Game.Reincarnate=Reincarnate;//CC3 rewrite (phase 4, slice 6).
 		Game.Ascend=Ascend;//CC3 rewrite (phase 4, slice 6).
+		Game.AscendBrowseView=AscendBrowseView;//CC3: view-only heavenly tree (no ascension).
+		Game.AscendBrowseClose=AscendBrowseClose;//CC3: close the browse-only heavenly tree.
 		Game.DebuggingPrestige=0;
 		Game.AscendDragX=0;
 		Game.AscendDragY=0;
@@ -1433,6 +1440,8 @@ Game.Launch=function()
 			if (Game.Has('Cookie egg')) mult*=1.1;
 			if (Game.Has('Halo gloves')) mult*=1.1;
 			if (Game.Has('Dragon claw')) mult*=1.03;
+			if (Game.Has('Firm handshake')) mult*=1.05;
+			if (Game.Has('Demonic hustle')) mult*=1.05;
 			
 			if (Game.Has('Aura gloves'))
 			{

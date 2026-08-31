@@ -5,6 +5,18 @@ picked up, traded, or dropped as we go. Checked items are shipped.
 
 ## Recently shipped (context)
 
+- Browse-only heavenly upgrade tree: the Ascend confirmation gained a
+  "Browse the tree" option (Game.AscendBrowseView/AscendBrowseClose) that
+  opens the ascend view without the intro, without earning chips and without
+  resetting anything; the Reincarnate button becomes "Back to game" (original
+  markup restored on close), purchases spend existing chips, and the debug
+  prestige mode is left alone. Verified by the ?qa=ascendbrowse probe
+- 12 low-tier heavenly upgrades (2-30 chips, appended so save ids stay stable):
+  Blessed apron, Second helping, Angelic recipe (+2/+3/+2% CpS), Firm handshake,
+  Demonic hustle (+5% clicking each), Morning bells (golden spawn +5%),
+  Sugar glaze (golden effect duration +5%), Patient tongue (golden lifespan +5%),
+  Night watch (+2% offline earnings), Bargaining table (buildings 1% cheaper),
+  Tidy pantry (upgrades 1% cheaper), Lucky start (3 free cursors each run)
 - **Cat Colony minigame** — the fifth minigame (Cats' Farm/Temple/Wizard
   tower/Bank counterpart): dispatch idle cats on timed expeditions for
   Treats, occasionally a scuffle sends cats home to rest instead. Treats buy

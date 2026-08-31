@@ -14,6 +14,7 @@ export function modifyBuildingPrice(building: any,price: any)
 	if (Game.Has('Faberge egg')) price*=0.99;
 	if (Game.Has('Divine discount')) price*=0.99;
 	if (Game.Has('Fortune #100')) price*=0.99;
+	if (Game.Has('Bargaining table')) price*=0.99;
 	//if (Game.hasAura('Fierce Hoarder')) price*=0.98;
 	price*=1-Game.auraMult('Fierce Hoarder')*0.02;
 	if (Game.hasBuff('Everything must go')) price*=0.95;

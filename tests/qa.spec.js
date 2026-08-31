@@ -488,6 +488,17 @@ test('?qa=ascend: ascension grants chips+prestige, reincarnate resets the run', 
 	expect(report).not.toMatch(/FAIL/);
 });
 
+test('?qa=ascendbrowse: heavenly tree browsed without triggering an ascension', async ({ page }) => {
+	await boot(page, '&qa=ascendbrowse');
+	// Three quick phases (open view, buy, close); no 5s intro involved.
+	const report = await qaReport(
+		page,
+		/PASS: heavenly tree browsed without triggering an ascension/,
+		90_000
+	);
+	expect(report).not.toMatch(/FAIL/);
+});
+
 test('?qa=offline: offline gain (timeOffline x CpS) granted on load', async ({ page }) => {
 	await boot(page, '&qa=offline');
 	// Phase 1 seeds + reloads the page; phase 2 (fresh load, language persisted)

@@ -120,6 +120,7 @@ export class Upgrade {
 				if (Game.Has('Faberge egg')) price*=0.99;
 				if (Game.Has('Divine sales')) price*=0.99;
 				if (Game.Has('Fortune #100')) price*=0.99;
+				if (Game.Has('Tidy pantry')) price*=0.99;
 				if (this.kitten && Game.Has('Kitten wages')) price*=0.9;
 				if (Game.hasBuff('Haggler\'s luck')) price*=0.98;
 				if (Game.hasBuff('Haggler\'s misery')) price*=1.02;

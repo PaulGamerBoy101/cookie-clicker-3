@@ -433,6 +433,9 @@ export interface Game {
 
 	/* --- ascend / prestige --- */
 	OnAscend: number;
+	AscendBrowse: number; // CC3: 1 while viewing the heavenly tree without ascending
+	ascendButtonHTML: string; // CC3: original Reincarnate label, restored by AscendBrowseClose
+	ascendInfoHTML: string; // CC3: original ascend info text, restored by AscendBrowseClose
 	AscendTimer: number;
 	AscendBreakpoint: number;
 	AscendDuration: number;
@@ -539,6 +542,8 @@ export interface Game {
 	 * sound name — the engine handles all of these at runtime. */
 	Notify(title: string, desc: string, pic?: [number, number] | number | number[] | string, quick?: number, noLog?: number | boolean): void;
 	Ascend(force?: number): void;
+	AscendBrowseView(): void;
+	AscendBrowseClose(): void;
 	Reincarnate(force?: number): void;
 	LoadMinigames(): void;
 	scriptLoaded(me: Building): void;
