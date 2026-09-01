@@ -97,6 +97,16 @@ export function makeStackDraw(Game: EngineGame) {
 		else if (typeof bg === 'function') bg(this, ctx);
 
 		const sheet = Pic(this.art.pic);
+		// The first draw can race the sprite-sheet load: Pic() returns a tiny
+		// placeholder (Game.Loader.blank) until the real sheet arrives, so pics
+		// built then would carry the placeholder's dimensions forever. If the
+		// sheet's size changes (placeholder -> loaded), drop the stale pics so the
+		// next block rebuilds them at the correct size.
+		if (sheet.width !== this._stackSheetW || sheet.height !== this._stackSheetH) {
+			this.pics = [];
+			this._stackSheetW = sheet.width;
+			this._stackSheetH = sheet.height;
+		}
 		const frames = this.art.frames || 1;
 		const nativeW = sheet.width / frames;
 		const nativeH = sheet.height;

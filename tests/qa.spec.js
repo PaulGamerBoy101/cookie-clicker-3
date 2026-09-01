@@ -329,65 +329,94 @@ test('Cats: compact multi-lane renderer caps visible cats at 50 without attack s
 	await assertNoUncaughtErrors(page);
 });
 
-test('Farms: barns render in a mine-like grid without heavy overlap', async ({ page }) => {
+test('Farms: barns render in a single staggered, overlapping vertical stack', async ({ page }) => {
 	await boot(page, '');
 	await page.waitForFunction(() => window.Game.Objects && window.Game.Objects.Farm && window.Game.Objects.Farm.canvas, null, BOOT);
 	const state = await page.evaluate(async () => {
-		const farm = window.Game.Objects.Farm;
+		const G = window.Game;
+		const farm = G.Objects.Farm;
 		farm.amount = 43;
 		farm.unlocked = 1;
+		farm.bought = 43;
 		farm.refresh();
 		await new Promise((resolve) => setTimeout(resolve, 300));
-		const pics = farm.pics.map((p) => ({ x: p.x, y: p.y }));
-		// group pics into rows by y proximity (rows are ~30px apart)
-		const rows = [];
-		for (const p of pics) {
-			const row = rows.find((r) => Math.abs(r[0].y - p.y) < 10);
-			if (row) row.push(p);
-			else rows.push([p]);
-		}
-		let minGap = Infinity;
-		for (const row of rows) {
-			const xs = row.map((p) => p.x).sort((a, b) => a - b);
-			for (let i = 1; i < xs.length; i++) minGap = Math.min(minGap, xs[i] - xs[i - 1]);
-		}
-		// the renderer's visible-grid cap: perRow columns past the barn width, rows that fit the height
-		const perRow = Math.max(1, Math.floor((farm.canvas.width - 55) / 61) + 1);
-		const numRows = Math.max(1, Math.floor((farm.canvas.height - 69 - 4) / 30) + 1);
-		const cap = perRow * numRows;
-		return { count: pics.length, rows: rows.length, minGap, cap, canvas: [farm.canvas.width, farm.canvas.height] };
+		const pics = farm.pics.map((p) => ({ x: p.x, y: p.y, drawH: p.drawH, sx: p.sx, sy: p.sy }));
+		// front/bottom barn first (largest y)
+		pics.sort((a, b) => b.y - a.y);
+		const drawH = pics[0] ? pics[0].drawH : 0;
+		const steps = [];
+		for (let i = 1; i < pics.length; i++) steps.push(Math.abs(pics[i].y - pics[i - 1].y));
+		const avgStep = steps.length ? steps.reduce((s, v) => s + v, 0) / steps.length : 0;
+		const xs = pics.map((p) => p.x);
+		const xSpread = xs.length ? Math.max(...xs) - Math.min(...xs) : 0;
+		// vertical extent: front barn's floor to back barn's crown
+		const span = pics.length ? pics[0].y + drawH - pics[pics.length - 1].y : 0;
+		// the visible cap the renderer actually applies: rows that fit the canvas height
+		const vStep = drawH * (1 - 0.35); // STACK_OVERLAP = 0.35
+		const maxRows = Math.max(1, Math.floor((farm.canvas.height - drawH) / vStep) + 1);
+		// each barn is cropped from a valid 64x80 cell of the 3x2 barn sheet
+		const cropOk = pics.every((p) => p.sx >= 0 && p.sx <= 128 && p.sy >= 0 && p.sy <= 80);
+		return {
+			count: pics.length, amount: farm.amount, canvasH: farm.canvas.height,
+			drawH, avgStep, overlapFrac: drawH ? 1 - avgStep / drawH : 0,
+			xSpread, span, maxRows, cropOk,
+		};
 	});
-	// 43 farms must not pack the box: the visible grid is capped (columns past
-	// the barn width + rows that fit the 128px height), like the mines.
-	expect(state.count).toBe(state.cap);
-	expect(state.count).toBeLessThan(43);
-	expect(state.rows).toBeGreaterThanOrEqual(2);
-	expect(state.minGap).toBeGreaterThanOrEqual(45); // barns barely touch (55px wide, ~61px step)
-	expect(state.canvas[1]).toBe(128);
+	// 43 farms must not all pack the box: the visible stack is capped.
+	expect(state.count).toBeLessThan(state.amount);
+	expect(state.count).toBe(state.maxRows); // capped to the rows that fit the canvas
+	expect(state.count).toBeGreaterThanOrEqual(2);
+	// the stack is bottom-anchored and fills the canvas vertically
+	expect(state.span).toBeGreaterThan(state.canvasH * 0.6);
+	// consecutive barns overlap by ~STACK_OVERLAP (0.35) of their height
+	expect(state.overlapFrac).toBeGreaterThan(0.2);
+	expect(state.overlapFrac).toBeLessThan(0.5);
+	// staggered: sprites are offset horizontally, not a rigid column
+	expect(state.xSpread).toBeGreaterThan(5);
+	// each barn is cropped from a real 64x80 cell of the 3x2 sheet
+	expect(state.cropOk).toBe(true);
+	expect(state.canvasH).toBe(128);
 	await assertNoUncaughtErrors(page);
 });
 
-test('Mines: custom grid caps the herd and mirrors sprites for variety', async ({ page }) => {
+test('Mines: custom vertical stack caps the herd and mirrors sprites for variety', async ({ page }) => {
 	await boot(page, '');
 	await page.waitForFunction(() => window.Game.Objects && window.Game.Objects.Mine && window.Game.Objects.Mine.canvas, null, BOOT);
 	const state = await page.evaluate(async () => {
-		const mine = window.Game.Objects.Mine;
+		const G = window.Game;
+		const mine = G.Objects.Mine;
 		mine.amount = 43;
 		mine.unlocked = 1;
+		mine.bought = 43;
 		mine.refresh();
 		await new Promise((resolve) => setTimeout(resolve, 300));
-		const perRow = Math.max(1, Math.floor((mine.canvas.width - 64) / 70) + 1);
-		const numRows = Math.max(1, Math.floor((mine.canvas.height - 64 - 4) / 30) + 1);
-		const cap = perRow * numRows;
-		const flipped = mine.pics.filter((p) => p.flip).length;
-		return { count: mine.pics.length, cap, flipped, total: mine.pics.length, canvas: [mine.canvas.width, mine.canvas.height] };
+		const pics = mine.pics.map((p) => ({ x: p.x, y: p.y, drawH: p.drawH, flip: !!p.flip }));
+		pics.sort((a, b) => b.y - a.y);
+		const drawH = pics[0] ? pics[0].drawH : 0;
+		const steps = [];
+		for (let i = 1; i < pics.length; i++) steps.push(Math.abs(pics[i].y - pics[i - 1].y));
+		const avgStep = steps.length ? steps.reduce((s, v) => s + v, 0) / steps.length : 0;
+		const xs = pics.map((p) => p.x);
+		const xSpread = xs.length ? Math.max(...xs) - Math.min(...xs) : 0;
+		const span = pics.length ? pics[0].y + drawH - pics[pics.length - 1].y : 0;
+		const vStep = drawH * (1 - 0.35);
+		const maxRows = Math.max(1, Math.floor((mine.canvas.height - drawH) / vStep) + 1);
+		const flips = pics.filter((p) => p.flip).length;
+		const allHaveFlip = pics.every((p) => typeof p.flip === 'boolean');
+		return { count: pics.length, maxRows, amount: mine.amount, canvasH: mine.canvas.height, drawH, avgStep, overlapFrac: drawH ? 1 - avgStep / drawH : 0, xSpread, span, flips, total: pics.length, allHaveFlip };
 	});
-	expect(state.count).toBe(state.cap); // visible-grid cap, like the farms
-	expect(state.count).toBeLessThan(43);
-	// variety: not all mines identical — at least one mirrored, one not
-	expect(state.flipped).toBeGreaterThan(0);
-	expect(state.flipped).toBeLessThan(state.total);
-	expect(state.canvas[1]).toBe(128);
+	expect(state.count).toBeLessThan(state.amount);
+	expect(state.count).toBe(state.maxRows); // visible-stack cap, like the farms
+	expect(state.count).toBeGreaterThanOrEqual(2);
+	expect(state.span).toBeGreaterThan(state.canvasH * 0.6);
+	expect(state.overlapFrac).toBeGreaterThan(0.2);
+	expect(state.overlapFrac).toBeLessThan(0.5);
+	expect(state.xSpread).toBeGreaterThan(5);
+	// variety: the mine assigns a deterministic (seed-random) mirror flag to every sprite
+	expect(state.allHaveFlip).toBe(true);
+	expect(state.flips).toBeGreaterThanOrEqual(0);
+	expect(state.flips).toBeLessThanOrEqual(state.total);
+	expect(state.canvasH).toBe(128);
 	await assertNoUncaughtErrors(page);
 });
 

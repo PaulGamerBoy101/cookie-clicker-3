@@ -48,6 +48,10 @@ export function declareFarm(Game: EngineGame) {
 			ctx.globalAlpha=1;
 			if (typeof(this.art.bg)=='string') ctx.fillPattern(Pic(this.art.bg),0,0,this.canvas.width,this.canvas.height,128,128);
 			var sheet=Pic(this.art.pic);
+			// Rebuild pics if the sheet size changed since they were built
+			// (the placeholder -> loaded race would otherwise leave stale, tiny
+			// sprite dimensions on the surviving pics after a row-count shrink).
+			if (sheet.width!==this._stackSheetW||sheet.height!==this._stackSheetH) {this.pics=[];this._stackSheetW=sheet.width;this._stackSheetH=sheet.height;}
 			var scale=Math.min(1,STACK_TARGET_H/barnCellH);
 			var drawW=barnCellW*scale;
 			var drawH=barnCellH*scale;
