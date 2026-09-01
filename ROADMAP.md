@@ -123,7 +123,7 @@ picked up, traded, or dropped as we go. Checked items are shipped.
 - [ ] **Animate more buildings** — generalize the roaming renderer to other
       buildings (e.g. livestock in farms, workers in mines). Pick the ones where
       motion reads well at building sizes.
-- [ ] **Purchase feedback for remaining buildings** — Grandma and Cats get a
+- [x] **Purchase feedback for remaining buildings** — Grandma and Cats get a
       bounce on purchase; extend that feel to the rest of the store.
 - [ ] **Clicker feedback depth** — the cursor sprites landed and vanilla click
       particles already burst on the big cookie; consider richer effects on top
