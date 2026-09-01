@@ -63,6 +63,8 @@ M.launch = function () {
 		M.upgradeStacks = [0, 0, 0, 0, 0, 0];
 		// Fractional yarn accumulator (not persisted — small rounding).
 		M.yarnTrickle = 0;
+		// CC3: which seat the player has clicked to select (0-5, or -1 for none)
+		M.selectedSeat = -1;
 
 		M.effectiveStacks = function (name: any) {
 			var i = M.upgradeNames.indexOf(name);
@@ -165,26 +167,63 @@ M.launch = function () {
 		str += '<style>' +
 			'#roomBG{background:url(img/shadedBorders.webp),url(img/grandmaBackground.webp);background-size:100% 100%,auto;position:absolute;left:0px;right:0px;top:0px;bottom:16px;}' +
 			'#roomContent{position:relative;box-sizing:border-box;padding:8px 16px;max-height:100%;overflow-y:auto;}' +
-			'.roomBox{position:relative;margin:8px auto;padding:8px 12px;max-width:520px;background:rgba(0,0,0,0.75);border-radius:12px;color:rgba(255,255,255,0.9);}' +
+			/* ---- base card ---- */
+			'.roomBox{position:relative;margin:8px auto;padding:8px 12px;max-width:600px;background:rgba(0,0,0,0.75);border-radius:12px;color:rgba(255,255,255,0.9);}' +
 			'.roomTitle{font-weight:bold;font-size:13px;margin-bottom:4px;text-shadow:0px 0px 4px #000;}' +
+			'.roomTitleSmall{font-weight:bold;font-size:11px;margin-bottom:4px;opacity:0.7;text-transform:uppercase;letter-spacing:1px;}' +
 			'.roomStats{text-align:center;font-size:12px;margin-bottom:4px;}' +
-			'.roomSeatRow{display:flex;align-items:center;gap:6px;padding:4px 0px;border-top:1px solid rgba(255,255,255,0.15);flex-wrap:wrap;}' +
-			'.roomSeatRow:first-of-type{border-top:none;}' +
-			'.roomSeatLabel{font-size:11px;font-weight:bold;min-width:20px;}' +
-			'.roomActBtn{cursor:pointer;padding:2px 6px;border-radius:4px;background:rgba(255,255,255,0.12);font-size:10px;white-space:nowrap;}' +
-			'.roomActBtn:hover{background:rgba(255,255,255,0.3);}' +
-			'.roomActBtnActive{background:rgba(200,255,200,0.25);border:1px solid rgba(200,255,200,0.5);}' +
-			'.roomActBtnBad{background:rgba(255,200,200,0.25);border:1px solid rgba(255,200,200,0.5);}' +
-			'.roomActBtnLocked{opacity:0.4;cursor:default;}' +
-			'.roomActBtnLocked:hover{background:rgba(255,255,255,0.12);}' +
-			'.roomEmpty{font-size:11px;opacity:0.6;font-style:italic;}' +
-			'.roomComfortBar{margin:4px 0;height:8px;border-radius:4px;background:rgba(255,255,255,0.15);overflow:hidden;position:relative;}' +
+			/* ---- comfort bar ---- */
+			'.roomComfortWrap{display:flex;align-items:center;gap:6px;margin:2px 0;}' +
+			'.roomComfortLabel{font-size:10px;white-space:nowrap;min-width:25px;text-align:center;}' +
+			'.roomComfortBar{flex:1;height:8px;border-radius:4px;background:rgba(255,255,255,0.15);overflow:hidden;position:relative;}' +
 			'.roomComfortFill{height:100%;border-radius:4px;transition:width 0.3s;}' +
-			'.roomComfortLabel{font-size:10px;text-align:center;margin:2px 0;}' +
+			'.roomCenterMark{position:absolute;left:50%;top:0;bottom:0;width:2px;background:rgba(255,255,255,0.5);}' +
 			'.roomWrathLabel{font-size:10px;text-align:center;opacity:0.7;}' +
+			/* ---- seat grid ---- */
+			'.roomSeatGrid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin:6px 0;}' +
+			'.roomSeatCard{position:relative;background:rgba(255,255,255,0.08);border-radius:8px;padding:6px;min-height:72px;cursor:pointer;border:2px solid transparent;transition:border-color 0.2s,background 0.2s;}' +
+			'.roomSeatCard:hover{background:rgba(255,255,255,0.15);}' +
+			'.roomSeatCardSelected{border-color:rgba(255,215,0,0.7);background:rgba(255,215,0,0.12);}' +
+			'.roomSeatCardLocked{opacity:0.45;cursor:default;}' +
+			'.roomSeatCardLocked:hover{background:rgba(255,255,255,0.08);}' +
+			'.roomSeatNum{font-size:9px;font-weight:bold;opacity:0.5;position:absolute;top:3px;right:5px;}' +
+			'.roomSeatIcon{width:48px;height:48px;float:left;margin-right:6px;border-radius:6px;object-fit:cover;}' +
+			'.roomSeatName{font-size:11px;font-weight:bold;line-height:1.2;}' +
+			'.roomSeatStats{font-size:9px;opacity:0.8;line-height:1.3;margin-top:2px;}' +
+			'.roomSeatTag{display:inline-block;padding:1px 5px;border-radius:3px;font-size:8px;font-weight:bold;margin-right:2px;}' +
+			'.roomSeatTagCozy{background:rgba(100,200,100,0.3);color:#8c8;}' +
+			'.roomSeatTagEldritch{background:rgba(200,100,100,0.3);color:#c88;}' +
+			'.roomSeatTagNeutral{background:rgba(200,200,200,0.2);color:#aaa;}' +
+			'.roomSeatClear{float:right;cursor:pointer;padding:0 4px;border-radius:3px;font-size:10px;opacity:0.5;}' +
+			'.roomSeatClear:hover{opacity:1;background:rgba(255,80,80,0.3);}' +
+			'.roomSeatEmpty{font-size:10px;opacity:0.5;text-align:center;padding-top:16px;}' +
+			'.roomSeatLockedTxt{font-size:9px;opacity:0.6;text-align:center;padding-top:10px;font-style:italic;}' +
+			/* ---- activity shelf ---- */
+			'.roomShelf{display:flex;flex-wrap:wrap;gap:4px;margin:4px 0;}' +
+			'.roomShelfGroup{flex:1;min-width:180px;}' +
+			'.roomShelfBtn{display:flex;align-items:center;gap:4px;cursor:pointer;padding:4px 6px;border-radius:6px;background:rgba(255,255,255,0.08);margin-bottom:3px;font-size:10px;line-height:1.2;transition:background 0.15s;}' +
+			'.roomShelfBtn:hover{background:rgba(255,255,255,0.22);}' +
+			'.roomShelfBtnLocked{opacity:0.35;cursor:default;}' +
+			'.roomShelfBtnLocked:hover{background:rgba(255,255,255,0.08);}' +
+			'.roomShelfIcon{width:32px;height:32px;border-radius:4px;object-fit:cover;flex:none;}' +
+			'.roomShelfLabel{flex:1;}' +
+			'.roomShelfRate{font-size:9px;opacity:0.7;}' +
+			'.roomShelfComfort{font-size:9px;font-weight:bold;margin-left:auto;white-space:nowrap;}' +
+			/* ---- shop ---- */
+			'.roomShopList{display:flex;flex-direction:column;gap:4px;margin:4px 0;}' +
+			'.roomShopItem{display:flex;align-items:center;gap:8px;padding:4px 6px;border-radius:6px;background:rgba(255,255,255,0.06);font-size:10px;line-height:1.3;}' +
+			'.roomShopInfo{flex:1;}' +
+			'.roomShopName{font-weight:bold;}' +
+			'.roomShopStack{opacity:0.6;}' +
+			'.roomShopDesc{opacity:0.7;font-size:9px;}' +
+			'.roomShopBtn{cursor:pointer;padding:3px 10px;border-radius:4px;background:rgba(100,180,255,0.2);font-size:10px;font-weight:bold;white-space:nowrap;transition:background 0.15s;flex:none;}' +
+			'.roomShopBtn:hover{background:rgba(100,180,255,0.35);}' +
+			'.roomShopBtnLocked{opacity:0.35;cursor:default;}' +
+			'.roomShopBtnLocked:hover{background:rgba(100,180,255,0.2);}' +
+			/* ---- misc ---- */
 			'.roomHelpBtn{cursor:pointer;padding:1px 7px;border-radius:4px;background:rgba(255,255,255,0.12);font-size:10px;font-weight:bold;margin-left:6px;white-space:nowrap;}' +
 			'.roomHelpBtn:hover{background:rgba(255,255,255,0.3);}' +
-			'.roomTutorial{margin:0px auto 8px;max-width:520px;background:rgba(0,0,0,0.85);border-radius:12px;padding:8px 12px;color:rgba(255,255,255,0.9);}' +
+			'.roomTutorial{margin:0px auto 8px;max-width:600px;background:rgba(0,0,0,0.85);border-radius:12px;padding:8px 12px;color:rgba(255,255,255,0.9);}' +
 			'.roomTutorial ul{margin:6px 0 4px 16px;padding:0;font-size:11px;line-height:1.5;}' +
 			'.roomTutorial li{margin-bottom:6px;}' +
 			'</style>';
@@ -193,6 +232,7 @@ M.launch = function () {
 		str += '<div id="roomTutorial" style="display:none;"></div>';
 		str += '<div id="roomHeader"></div>';
 		str += '<div id="roomSeats"></div>';
+		str += '<div id="roomShelf"></div>';
 		str += '<div id="roomShop"></div>';
 		str += '</div>';
 		div.innerHTML = str;
@@ -207,17 +247,24 @@ M.launch = function () {
 		if (Game.Has('Elder Covenant')) wrathLabel = 'Elder Covenant (wrath suppressed)';
 		var str = '<div class="roomBox">';
 		str += '<div class="roomTitle">' + M.name + ' <span id="roomHelpBtn" class="roomHelpBtn" title="How to play" style="float:right;">How to play</span></div>';
-		str += '<div class="roomStats">Yarn: <b>' + Beautify(M.yarn) + '</b> &nbsp;|&nbsp; Rate: <b>' + Beautify(M.yarnPerSecond(), 2) + '</b>/s</div>';
+		str += '<div class="roomStats">🧶 Yarn: <b>' + Beautify(M.yarn) + '</b> &nbsp;|&nbsp; Rate: <b>' + Beautify(M.yarnPerSecond(), 2) + '</b>/s</div>';
 		// Comfort bar: -6 to +6, centered at 0
 		var pct = 50 + (comfort / 6) * 50;
 		pct = Math.max(0, Math.min(100, pct));
 		var fillColor = comfort >= 0 ? 'rgba(100,200,100,0.8)' : 'rgba(200,100,100,0.8)';
-		var comfortLabel = 'Comfort: ';
-		if (comfort > 0) comfortLabel += '<span style="color:#8c8;">+' + comfort + ' (cozy)</span>';
-		else if (comfort < 0) comfortLabel += '<span style="color:#c88;">' + comfort + ' (eldritch)</span>';
-		else comfortLabel += '<span style="color:#888;">0 (neutral)</span>';
-		str += '<div class="roomComfortLabel">' + comfortLabel + '</div>';
-		str += '<div class="roomComfortBar"><div class="roomComfortFill" style="width:' + pct + '%;background:' + fillColor + ';margin-left:0;"></div></div>';
+		var comfortLabel = '';
+		if (comfort > 0) comfortLabel = '<span style="color:#8c8;">+' + comfort + ' (cozy)</span>';
+		else if (comfort < 0) comfortLabel = '<span style="color:#c88;">− comfort ' + comfort + ' (eldritch)</span>';
+		else comfortLabel = '<span style="color:#888;">comfort 0 (neutral)</span>';
+		// Left label: cozy, Right label: eldritch
+		var leftLabel = comfort >= 0 ? '<span style="color:#8c8;font-weight:bold;">+</span>' : '<span style="opacity:0.4;">+</span>';
+		var rightLabel = comfort <= 0 ? '<span style="color:#c88;font-weight:bold;">−</span>' : '<span style="opacity:0.4;">−</span>';
+		str += '<div class="roomComfortWrap">';
+		str += '<span class="roomComfortLabel" style="min-width:36px;text-align:right;">' + leftLabel + ' Cozy</span>';
+		str += '<div class="roomComfortBar"><div class="roomCenterMark"></div><div class="roomComfortFill" style="width:' + pct + '%;background:' + fillColor + ';margin-left:0;"></div></div>';
+		str += '<span class="roomComfortLabel" style="min-width:36px;text-align:left;">Eldritch ' + rightLabel + '</span>';
+		str += '</div>';
+		str += '<div style="text-align:center;font-size:10px;margin:2px 0;">' + comfortLabel + '</div>';
 		str += '<div class="roomWrathLabel">' + wrathLabel + '</div>';
 		str += '</div>';
 		return str;
@@ -230,7 +277,7 @@ M.launch = function () {
 		var str = '<div class="roomBox" style="margin:0;max-width:none;">';
 		str += '<div class="roomTitle">How to play <span id="roomHelpClose" class="roomHelpBtn" title="Close" style="float:right;">✕</span></div>';
 		str += '<ul>';
-		str += '<li><b>Assign activities</b> — click an activity chip on a seat row to place it there; click ✕ to empty the seat. Dimmed chips show what is needed to unlock them.</li>';
+		str += '<li><b>Assign activities</b> — click a seat card to select it, then click an activity in the shelf below to assign it there. Click ✕ on an assigned seat to empty it. Or just click an activity to fill the next empty seat automatically.</li>';
 		str += '<li><b>Unlock seats and activities</b> — each of the 6 seats and each activity unlocks at a higher number of owned Grandmas (1, 10, 25, 50, 100, 200).</li>';
 		str += '<li><b>Earn yarn</b> — every assigned seat produces yarn per second; the total is shown at the top.</li>';
 		str += '<li><b>Comfort dial</b> — cozy activities (green, +) boost Grandma CpS and calm the Grandmapocalypse; eldritch activities (red, −) cut Grandma CpS but amplify wrath-cookie and wrinkler effects while the Grandmapocalypse is active.</li>';
@@ -257,46 +304,83 @@ M.launch = function () {
 		}
 	};
 
+	M.selectSeat = function (seatIdx: any) {
+		if (seatIdx >= 0 && seatIdx < M.seats.length && M.parent.amount >= M.seatUnlocks[seatIdx]) {
+			M.selectedSeat = (M.selectedSeat === seatIdx) ? -1 : seatIdx;
+		}
+		M.refresh();
+	};
+
 	M.renderSeats = function () {
-		var str = '<div class="roomBox"><div class="roomTitle">Activities</div>';
+		var str = '<div class="roomBox"><div class="roomTitle">The Sitting Room</div>';
+		str += '<div style="font-size:10px;opacity:0.7;margin-bottom:2px;">Select a seat, then pick an activity below — or just click an activity to fill the next empty seat.</div>';
+		str += '<div class="roomSeatGrid">';
 		for (var s = 0; s < M.seats.length; s++) {
 			var seatLocked = M.parent.amount < M.seatUnlocks[s];
-			str += '<div class="roomSeatRow' + (seatLocked ? ' roomActBtnLocked' : '') + '">';
+			var selected = (M.selectedSeat === s);
+			var cls = 'roomSeatCard';
+			if (seatLocked) cls += ' roomSeatCardLocked';
+			else if (selected) cls += ' roomSeatCardSelected';
+			str += '<div class="' + cls + '" id="roomSeatCard' + s + '">';
+			str += '<span class="roomSeatNum">' + (s + 1) + '</span>';
 			if (seatLocked) {
-				str += '<span class="roomSeatLabel">' + (s + 1) + '.</span>';
-				str += '<span class="roomEmpty">Requires <b>' + M.seatUnlocks[s] + '</b> grandmas.</span>';
+				str += '<div class="roomSeatLockedTxt">🔒 Requires<br><b>' + M.seatUnlocks[s] + '</b> grandmas</div>';
 			} else {
-				str += '<span class="roomSeatLabel">' + (s + 1) + '.</span>';
-				// Activity buttons for this seat
 				var current = M.seats[s];
-				// Show activity buttons: the 6 activities, but only those unlocked
-				for (var a = 0; a < M.activities.length; a++) {
-					var act = M.activities[a];
-					var actLocked = M.parent.amount < act.unlock;
-					var wrathLocked = (act.comfort < 0 && Game.elderWrath <= 0);
-					var isActive = (current === a);
-					var cls = 'roomActBtn';
-					if (actLocked || wrathLocked) cls += ' roomActBtnLocked';
-					else if (isActive) cls += (act.comfort >= 0 ? ' roomActBtnActive' : ' roomActBtnBad');
-					var title = act.name;
-					if (actLocked) title += ' (needs ' + act.unlock + ' grandmas)';
-					if (wrathLocked) title += ' (needs active Grandmapocalypse)';
-					str += '<div class="' + cls + '" title="' + title + '" id="roomSeat' + s + 'Act' + a + '">' + act.name + '</div> ';
+				if (current < 0) {
+					str += '<div class="roomSeatEmpty">Empty seat<br>+</div>';
+				} else {
+					var act = M.activities[current];
+					var tagCls = act.comfort > 0 ? 'roomSeatTagCozy' : (act.comfort < 0 ? 'roomSeatTagEldritch' : 'roomSeatTagNeutral');
+					var tagTxt = act.comfort > 0 ? '+' + act.comfort : (act.comfort < 0 ? act.comfort : '0');
+					str += '<span class="roomSeatClear" id="roomSeatClear' + s + '" title="Empty this seat">✕</span>';
+					str += '<img class="roomSeatIcon" src="img/' + act.icon + '" alt="' + act.name + '">';
+					str += '<div class="roomSeatName">' + act.name + '</div>';
+					str += '<div class="roomSeatStats">';
+					str += '<span class="roomSeatTag ' + tagCls + '">' + tagTxt + ' comfort</span>';
+					str += '<span class="roomSeatTag roomSeatTagNeutral">+' + Beautify(act.yarnRate, 2) + ' yarn/s</span>';
+					str += '</div>';
 				}
-				// Empty button
-				var emptyCls = 'roomActBtn';
-				if (current < 0) emptyCls += ' roomActBtnActive';
-				str += '<div class="' + emptyCls + '" id="roomSeat' + s + 'Clear">✕</div>';
 			}
 			str += '</div>';
 		}
-		str += '<div class="roomWrathLabel" style="margin-top:4px;">Eldritch activities unlock when the Grandmapocalypse is active (Own <b>One mind</b>).</div>';
+		str += '</div>';
+		str += '</div>';
+		return str;
+	};
+
+	M.renderShelf = function () {
+		var str = '<div class="roomBox"><div class="roomTitle">Activities</div>';
+		var cozy = '';
+		var eldritch = '';
+		for (var a = 0; a < M.activities.length; a++) {
+			var act = M.activities[a];
+			var actLocked = M.parent.amount < act.unlock;
+			var wrathLocked = (act.comfort < 0 && Game.elderWrath <= 0);
+			var cls = 'roomShelfBtn';
+			if (actLocked || wrathLocked) cls += ' roomShelfBtnLocked';
+			var title = act.name + ' — ' + act.desc;
+			if (actLocked) title += ' (needs ' + act.unlock + ' grandmas)';
+			if (wrathLocked) title += ' (needs active Grandmapocalypse)';
+			var comfortTxt = act.comfort > 0 ? '<span style="color:#8c8;">+' + act.comfort + '</span>' : (act.comfort < 0 ? '<span style="color:#c88;">' + act.comfort + '</span>' : '<span style="color:#aaa;">0</span>');
+			var btn = '<div class="' + cls + '" title="' + title + '" id="roomShelfAct' + a + '">' +
+				'<img class="roomShelfIcon" src="img/' + act.icon + '" alt="">' +
+				'<span class="roomShelfLabel"><b>' + act.name + '</b><br><span class="roomShelfRate">' + act.desc + '</span></span>' +
+				'<span class="roomShelfComfort">' + comfortTxt + ' &nbsp;+' + Beautify(act.yarnRate, 2) + '/s</span>' +
+				'</div>';
+			if (act.comfort < 0) eldritch += btn; else cozy += btn;
+		}
+		str += '<div class="roomShelfGroup"><div class="roomTitleSmall">Cozy activities</div><div class="roomShelf">' + cozy + '</div></div>';
+		str += '<div class="roomShelfGroup"><div class="roomTitleSmall">Eldritch activities</div><div class="roomShelf">' + eldritch + '</div></div>';
+		str += '<div class="roomWrathLabel" style="margin-top:4px;">Eldritch activities unlock when the Grandmapocalypse is active (own <b>One mind</b>).</div>';
 		str += '</div>';
 		return str;
 	};
 
 	M.renderShop = function () {
 		var str = '<div class="roomBox"><div class="roomTitle">Sitting Room Upgrades</div>';
+		str += '<div style="font-size:10px;opacity:0.7;margin-bottom:2px;">Each upgrade is repeatable — every stack boosts Grandma output, and stacks persist in your save.</div>';
+		str += '<div class="roomShopList">';
 		for (var i = 0; i < M.upgradeNames.length; i++) {
 			var name = M.upgradeNames[i];
 			var up = Game.Upgrades[name];
@@ -304,12 +388,13 @@ M.launch = function () {
 			var price = up.yarnPrice || 0;
 			var stacks = M.effectiveStacks(name);
 			var canBuy = M.yarn >= price;
-			str += '<div class="roomSeatRow">';
-			str += '<div class="icon shadowFilter" style="flex:none;' + writeIcon(up.icon) + '"></div>';
-			str += '<div style="flex:1;font-size:11px;line-height:1.4;"><b>' + name + '</b>' + (stacks > 0 ? ' <span style="opacity:0.75;">×' + stacks + '</span>' : '') + '<br>' + up.baseDesc + '</div>';
-			str += '<div class="roomActBtn' + (canBuy ? '' : ' roomActBtnLocked') + '" id="roomBuy' + i + '">' + price + ' yarn</div>';
+			str += '<div class="roomShopItem">';
+			str += '<div class="icon shadowFilter" style="flex:none;margin:0;' + writeIcon(up.icon) + '"></div>';
+			str += '<div class="roomShopInfo"><span class="roomShopName">' + name + '</span>' + (stacks > 0 ? ' <span class="roomShopStack">×' + stacks + '</span>' : '') + '<br><span class="roomShopDesc">' + up.baseDesc + '</span></div>';
+			str += '<div class="roomShopBtn' + (canBuy ? '' : ' roomShopBtnLocked') + '" id="roomBuy' + i + '">' + Beautify(price) + ' 🧶</div>';
 			str += '</div>';
 		}
+		str += '</div>';
 		str += '</div>';
 		return str;
 	};
@@ -318,28 +403,46 @@ M.launch = function () {
 		if (!l('roomHeader')) return;
 		l('roomHeader').innerHTML = M.renderHeader();
 		l('roomSeats').innerHTML = M.renderSeats();
+		l('roomShelf').innerHTML = M.renderShelf();
 		l('roomShop').innerHTML = M.renderShop();
 		// Bind the How-to-play button (the header re-renders every refresh).
 		var helpBtn = l('roomHelpBtn');
 		if (helpBtn) AddEvent(helpBtn, 'click', function () { M.toggleTutorial(); });
-		// Bind seat activity buttons
+		// Bind seat card clicks
 		for (var s = 0; s < M.seats.length; s++) {
-			for (var a = 0; a < M.activities.length; a++) {
-				var btn = l('roomSeat' + s + 'Act' + a);
-				if (btn) {
-					AddEvent(btn, 'click', function (si: any, ai: any) { return function () { M.assignSeat(si, ai); }; }(s, a));
-				}
-			}
-			var clearBtn = l('roomSeat' + s + 'Clear');
+			var card = l('roomSeatCard' + s);
+			if (card) AddEvent(card, 'click', function (si: any) { return function () { M.selectSeat(si); }; }(s));
+			var clearBtn = l('roomSeatClear' + s);
 			if (clearBtn) {
-				AddEvent(clearBtn, 'click', function (si: any) { return function () { M.assignSeat(si, -1); }; }(s));
+				AddEvent(clearBtn, 'click', function (si: any) { return function (e: any) { e.stopPropagation(); M.assignSeat(si, -1); }; }(s));
+			}
+		}
+		// Bind activity shelf buttons — assign to selected seat or first empty unlocked seat
+		for (var a = 0; a < M.activities.length; a++) {
+			var btn = l('roomShelfAct' + a);
+			if (btn) {
+				AddEvent(btn, 'click', function (ai: any) { return function () {
+					var act = M.activities[ai];
+					if (M.parent.amount < act.unlock) return;
+					if (act.comfort < 0 && Game.elderWrath <= 0) { PlaySound('snd/error1.mp3',0.5); return; }
+					// Assign to selected seat, or first empty unlocked seat
+					var target = M.selectedSeat;
+					if (target < 0 || target >= M.seats.length || M.parent.amount < M.seatUnlocks[target]) {
+						target = -1;
+						for (var si = 0; si < M.seats.length; si++) {
+							if (M.parent.amount >= M.seatUnlocks[si] && M.seats[si] < 0) { target = si; break; }
+						}
+					}
+					if (target < 0) { PlaySound('snd/error1.mp3',0.5); return; }
+					M.assignSeat(target, ai);
+				}; }(a));
 			}
 		}
 		// Bind shop buttons
 		for (var j = 0; j < M.upgradeNames.length; j++) {
 			var btn2 = l('roomBuy' + j);
 			if (btn2) {
-				AddEvent(btn2, 'click', function (name: any) { return function () { M.buyUpgrade(name); }; }(M.upgradeNames[j]));
+				AddEvent(btn2, 'click', function (name: any) { return function () { if (M.yarn >= (Game.Upgrades[name] ? Game.Upgrades[name].yarnPrice : 0)) M.buyUpgrade(name); }; }(M.upgradeNames[j]));
 			}
 		}
 		M.computeEffs();
@@ -387,6 +490,7 @@ M.launch = function () {
 		M.upgradeStacks = [0, 0, 0, 0, 0, 0];
 		M.yarnTrickle = 0;
 		M.tutorialOpen = false;
+		M.selectedSeat = -1;
 		M.computeEffs();
 		M.refresh();
 		var t = l('roomTutorial');
