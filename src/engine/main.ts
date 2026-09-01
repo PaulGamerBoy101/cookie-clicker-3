@@ -1304,12 +1304,12 @@ Game.Launch=function()
 							'<div style="min-width:300px;text-align:center;font-size:11px;padding:8px;" id="tooltipReincarnate">'+loc("Click this once you've bought<br>everything you need!")+'</div>'
 							,'bottom-right')+' style="font-size:16px;margin-top:0px;"><span class="fancyText" style="font-size:20px;">'+loc("Reincarnate")+'</span></a>'+
 			'<div id="ascendModeButton" style="position:absolute;right:34px;bottom:25px;display:none;"></div>'+
-			'<div id="arrangeTreeBox" style="position:absolute;left:10px;bottom:25px;max-width:360px;">'+
+			'<input type="text" style="display:block;" id="upgradePositions"/></div>'+
+			'<div id="arrangeTreeBox" style="position:absolute;left:-172px;top:178px;width:344px;text-align:center;">'+
 			'<div id="heavenlyPresets" style="margin-bottom:4px;">'+heavenlyPresetButtons+'</div>'+
 			'<a id="arrangeTreeButton" class="option framed small" style="font-size:11px;" '+Game.clickStr+'="Game.ToggleArrangeHeavenly();" '+Game.getTooltip('<div style="min-width:220px;text-align:center;font-size:11px;padding:8px;">'+loc("Turn on arrange mode to drag heavenly upgrades wherever you want.<br>Your layout is saved and kept between ascensions.")+'</div>','bottom-right')+'>'+loc("Arrange")+'</a>'+
 			' <a id="arrangeTreeReset" class="option framed small" style="font-size:11px;display:none;" '+Game.clickStr+'="Game.ResetHeavenlyLayout();" '+Game.getTooltip('<div style="min-width:180px;text-align:center;font-size:11px;padding:8px;">'+loc("Restore the default heavenly tree layout.")+'</div>','bottom-right')+'>'+loc("Reset layout")+'</a>'+
 			'</div>'+
-			'<input type="text" style="display:block;" id="upgradePositions"/></div>'+
 			
 			'<div id="ascendInfo"><div class="ascendData smallFramed" style="margin-top:22px;width:75%;font-size:11px;">'+loc("You are ascending.<br>Drag the screen around<br>or use arrow keys!<br>When you're ready,<br>click Reincarnate.")+'</div></div>';
 		

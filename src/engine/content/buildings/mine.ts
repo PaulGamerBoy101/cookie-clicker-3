@@ -71,8 +71,10 @@ export function declareMine(Game: EngineGame) {
 			for (var i=0;i<this.pics.length;i++)
 			{
 				var pic:any=this.pics[i];
-				// Back rows sit in the shade; front rows are fully lit.
-				ctx.globalAlpha=Math.max(0.55,1-pic.id*0.12);
+				// Back rows sit in the shade; front row is fully lit. (Row-based,
+				// not id-based: ids run across columns so an id-based fade would
+				// make whole back rows see-through.)
+				ctx.globalAlpha=Math.floor(pic.id/dims.perRow)>0?0.85:1;
 				if (pic.flip)
 				{
 					ctx.save();

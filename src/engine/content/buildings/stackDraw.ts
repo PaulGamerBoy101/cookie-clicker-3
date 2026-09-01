@@ -16,10 +16,10 @@ import type { Building, Game as EngineGame } from "../../types";
 
 /** Fraction of a building's height the one above overlaps onto the one below. */
 export const STACK_OVERLAP = 0.35;
-/** Fraction of a building's width columns overlap (packed but readable). */
-export const STACK_H_OVERLAP = 0.15;
-/** Target on-screen sprite height (px); sprites scale down to fit ~3 rows. */
-export const STACK_TARGET_H = 54;
+/** Horizontal gap (px) between columns so they read as separate sprites. */
+export const STACK_H_GAP = 6;
+/** Target on-screen sprite height (px); sprites scale down to fit ~2 rows. */
+export const STACK_TARGET_H = 68;
 /** Max horizontal left/right offset between alternating rows (px). */
 export const STACK_STAGGER = 16;
 /** Random positional jitter so the stack doesn't look mechanically placed. */
@@ -29,7 +29,7 @@ export interface StackOpts {
 	overlap?: number;
 	stagger?: number;
 	jitter?: number;
-	hOverlap?: number;
+	hGap?: number;
 }
 
 /** Grid dimensions that fill a canvas with sprites of the given draw size. */
@@ -41,8 +41,8 @@ export function stackDims(
 	opts: StackOpts = {}
 ): { perRow: number; numRows: number; hStep: number; vStep: number } {
 	const overlap = opts.overlap ?? STACK_OVERLAP;
-	const hOverlap = opts.hOverlap ?? STACK_H_OVERLAP;
-	const hStep = Math.max(1, drawW * (1 - hOverlap));
+	const hGap = opts.hGap ?? STACK_H_GAP;
+	const hStep = Math.max(1, drawW + hGap);
 	const vStep = Math.max(1, drawH * (1 - overlap));
 	const perRow = Math.max(1, Math.floor((canvasW - drawW) / hStep) + 1);
 	const numRows = Math.max(1, Math.floor((canvasH - drawH) / vStep) + 1);

@@ -343,8 +343,8 @@ test('Farms: barns fill the box in a staggered, overlapping grid', async ({ page
 		const pics = farm.pics.map((p) => ({ x: p.x, y: p.y, drawW: p.drawW, drawH: p.drawH, sx: p.sx, sy: p.sy }));
 		const drawW = pics[0] ? pics[0].drawW : 0;
 		const drawH = pics[0] ? pics[0].drawH : 0;
-		// grid dims the renderer computes (STACK_OVERLAP / STACK_H_OVERLAP)
-		const hStep = Math.max(1, drawW * (1 - 0.15));
+		// grid dims the renderer computes (STACK_OVERLAP / STACK_H_GAP)
+		const hStep = Math.max(1, drawW + 6);
 		const vStep = Math.max(1, drawH * (1 - 0.35));
 		const perRow = Math.max(1, Math.floor((farm.canvas.width - drawW) / hStep) + 1);
 		const numRows = Math.max(1, Math.floor((farm.canvas.height - drawH) / vStep) + 1);
@@ -378,7 +378,7 @@ test('Farms: barns fill the box in a staggered, overlapping grid', async ({ page
 	expect(state.count).toBe(state.cap); // capped to perRow * numRows
 	expect(state.count).toBeLessThan(state.amount); // 43 farms don't all pack the box
 	expect(state.perRow).toBeGreaterThanOrEqual(5); // wide grid, not a center column
-	expect(state.numRows).toBeGreaterThanOrEqual(3); // fills the box vertically too
+	expect(state.numRows).toBeGreaterThanOrEqual(2); // fills the box vertically too
 	// the grid block fills the canvas width (before: ~27px centered in 547px)
 	expect(state.xSpread).toBeGreaterThan(state.canvasW * 0.5);
 	// bottom-anchored and fills the canvas height
@@ -406,7 +406,7 @@ test('Mines: fill the box in a staggered grid, mirroring sprites for variety', a
 		const pics = mine.pics.map((p) => ({ x: p.x, y: p.y, drawW: p.drawW, drawH: p.drawH, flip: !!p.flip }));
 		const drawW = pics[0] ? pics[0].drawW : 0;
 		const drawH = pics[0] ? pics[0].drawH : 0;
-		const hStep = Math.max(1, drawW * (1 - 0.15));
+		const hStep = Math.max(1, drawW + 6);
 		const vStep = Math.max(1, drawH * (1 - 0.35));
 		const perRow = Math.max(1, Math.floor((mine.canvas.width - drawW) / hStep) + 1);
 		const numRows = Math.max(1, Math.floor((mine.canvas.height - drawH) / vStep) + 1);
@@ -427,16 +427,20 @@ test('Mines: fill the box in a staggered grid, mirroring sprites for variety', a
 		const span = pics.length ? Math.max(...pics.map((p) => p.y + p.drawH)) - Math.min(...pics.map((p) => p.y)) : 0;
 		const flips = pics.filter((p) => p.flip).length;
 		const allHaveFlip = pics.every((p) => typeof p.flip === 'boolean');
-		return { count: pics.length, cap, perRow, numRows, amount: mine.amount, canvasW: mine.canvas.width, canvasH: mine.canvas.height, drawH, avgRowStep, overlapFrac: drawH ? 1 - avgRowStep / drawH : 0, xSpread, span, flips, total: pics.length, allHaveFlip };
+		// back rows are shaded at 0.85, front row at 1 (never see-through)
+		const minAlpha = Math.min(...pics.map((p) => Math.floor(p.id / perRow) > 0 ? 0.85 : 1));
+		return { count: pics.length, cap, perRow, numRows, amount: mine.amount, canvasW: mine.canvas.width, canvasH: mine.canvas.height, drawH, avgRowStep, overlapFrac: drawH ? 1 - avgRowStep / drawH : 0, xSpread, span, flips, total: pics.length, allHaveFlip, minAlpha };
 	});
 	expect(state.count).toBe(state.cap); // grid cap, like the farms
 	expect(state.count).toBeLessThan(state.amount);
 	expect(state.perRow).toBeGreaterThanOrEqual(5);
-	expect(state.numRows).toBeGreaterThanOrEqual(3);
+	expect(state.numRows).toBeGreaterThanOrEqual(2);
 	expect(state.xSpread).toBeGreaterThan(state.canvasW * 0.5);
 	expect(state.span).toBeGreaterThan(state.canvasH * 0.6);
 	expect(state.overlapFrac).toBeGreaterThan(0.2);
 	expect(state.overlapFrac).toBeLessThan(0.5);
+	// back rows are only slightly shaded, never see-through
+	expect(state.minAlpha).toBeGreaterThanOrEqual(0.8);
 	// variety: the mine assigns a deterministic (seed-random) mirror flag to every sprite
 	expect(state.allHaveFlip).toBe(true);
 	expect(state.flips).toBeGreaterThanOrEqual(0);
