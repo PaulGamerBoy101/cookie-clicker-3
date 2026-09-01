@@ -714,3 +714,69 @@ test('?qa=dailycrumb: daily crumb weekly calendar (claims, streak, reset, save r
 	expect(report).not.toMatch(/ERROR/);
 	await assertNoUncaughtErrors(page);
 });
+test('heavenly presets: auto/branch/generations/grid arrange the tree, reset restores the default', async ({ page }) => {
+	await boot(page, '&qa');
+	const r = await page.evaluate(() => {
+		const G = window.Game;
+		const snap = () => { const m = {}; for (const u of G.PrestigeUpgrades) m[u.id] = [u.posX, u.posY]; return m; };
+		const finite = (m) => Object.values(m).every(([x, y]) => Number.isFinite(x) && Number.isFinite(y));
+		const out = {};
+		const auto = snap();
+		out.autoCount = Object.keys(auto).length;
+		out.autoFinite = finite(auto);
+
+		G.ApplyHeavenlyPreset('grid');
+		const grid = snap();
+		out.gridFinite = finite(grid);
+		out.gridDiffers = JSON.stringify(grid) !== JSON.stringify(auto);
+
+		G.ApplyHeavenlyPreset('branch');
+		const branch = snap();
+		out.branchFinite = finite(branch);
+		out.branchDiffers = JSON.stringify(branch) !== JSON.stringify(grid);
+
+		G.ApplyHeavenlyPreset('generations');
+		const gen = snap();
+		out.genFinite = finite(gen);
+		out.genDiffers = JSON.stringify(gen) !== JSON.stringify(branch);
+
+		G.ApplyHeavenlyPreset('auto');
+		const autoPreset = snap();
+		// the auto preset re-derives a clean full-tree layout: every upgrade lands
+		// on a layer row (y is a multiple of LAYER_GAP) and it is stable across re-applies
+		out.autoCleanLayers = Object.values(autoPreset).every(([x, y]) => y % 150 === 0);
+		G.ApplyHeavenlyPreset('auto');
+		out.autoStable = JSON.stringify(snap()) === JSON.stringify(autoPreset);
+
+		// every preset writes the arrangement into the same persisted drag slot
+		out.lsCount = Object.keys(JSON.parse(window.localStorage.getItem('cc3_heavenly_layout') || '{}')).length;
+
+		// a manual drag clears the preset marker; reset returns to auto + clears the slot
+		const t = G.PrestigeUpgrades[7];
+		t.posX += 5; t.posY += 7; G.SaveHeavenlyLayout(t);
+		out.presetAfterDrag = G.heavenlyPreset;
+		G.ResetHeavenlyLayout();
+		out.resetRestores = JSON.stringify(snap()) === JSON.stringify(G._heavenlyLayoutDefaults);
+		out.lsCleared = window.localStorage.getItem('cc3_heavenly_layout') === null;
+		out.presetButtons = document.querySelectorAll('#heavenlyPresets .heavenlyPreset').length;
+		out.activeIsAuto = !!document.querySelector('#heavenlyPresets .heavenlyPreset[data-preset="auto"][style*="bold"]');
+		return out;
+	});
+	expect(r.autoCount).toBeGreaterThan(100);
+	expect(r.autoFinite).toBe(true);
+	expect(r.gridFinite).toBe(true);
+	expect(r.gridDiffers).toBe(true);
+	expect(r.branchFinite).toBe(true);
+	expect(r.branchDiffers).toBe(true);
+	expect(r.genFinite).toBe(true);
+	expect(r.genDiffers).toBe(true);
+	expect(r.autoCleanLayers).toBe(true);
+	expect(r.autoStable).toBe(true);
+	expect(r.lsCount).toBe(r.autoCount);
+	expect(r.presetAfterDrag).toBe(null);
+	expect(r.resetRestores).toBe(true);
+	expect(r.lsCleared).toBe(true);
+	expect(r.presetButtons).toBe(4);
+	expect(r.activeIsAuto).toBe(true);
+	await assertNoUncaughtErrors(page);
+});

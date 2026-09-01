@@ -307,6 +307,7 @@
 		{
 			var str='';
 			Game.heavenlyBounds={left:0,right:0,top:0,bottom:0};
+			if (Game.syncHeavenlyLayoutIfStale) Game.syncHeavenlyLayoutIfStale();//CC3: fold in prestige upgrades mods added after init
 
 			if (Game.DebuggingPrestige) l('upgradePositions').style.display='block'; else l('upgradePositions').style.display='none';
 			
@@ -452,6 +453,7 @@
 		{
 			if (!Game.ArrangeLayout) Game.ArrangeLayout={};
 			Game.ArrangeLayout[me.id]=[Math.round(me.posX),Math.round(me.posY)];
+			Game.heavenlyPreset=null;//CC3: a hand-drag is a custom arrangement, not a preset
 			try{window.localStorage.setItem('cc3_heavenly_layout',JSON.stringify(Game.ArrangeLayout));}catch(e){}
 		}
 		export function ToggleArrangeHeavenly()
@@ -464,6 +466,7 @@
 		export function ResetHeavenlyLayout()
 		{
 			Game.ArrangeLayout={};
+			if (Game.syncHeavenlyLayoutIfStale) Game.syncHeavenlyLayoutIfStale();//CC3: make sure defaults cover mod-added prestige upgrades
 			try{window.localStorage.removeItem('cc3_heavenly_layout');}catch(e){}
 			for (var i in Game.PrestigeUpgrades)
 			{
@@ -471,6 +474,8 @@
 				var d=Game._heavenlyLayoutDefaults && Game._heavenlyLayoutDefaults[me.id];
 				if (d) {me.posX=d[0];me.posY=d[1];}
 			}
+			Game.heavenlyPreset='auto';//CC3: reset returns to the derived default
+			if (Game.UpdateHeavenlyPresetButtons) Game.UpdateHeavenlyPresetButtons();
 			Game.BuildAscendTree();
 		}
 		

@@ -46,7 +46,7 @@ import { DrawBackground } from "./ui/drawBackground";/* CC3: the original relied
 
 import { declareVanillaMilks } from "./content/milks";
 import { declareVanillaChangelog } from "./content/changelog";
-import { computeHeavenlyLayout } from "./systems/heavenlyLayout";
+import { computeHeavenlyLayout, applyHeavenlyPreset, syncHeavenlyLayoutIfStale, HEAVENLY_PRESETS } from "./systems/heavenlyLayout";
 import { debugStr, Debug } from "./utils/debug";
 var Audio: any, localStorageGet: any, localStorageSet: any, Music: any, PlayCue: any, TopBarOffset: any, LASTHEAVENLYSELECTED: any, ON: any, OFF: any;
 /* CC3 rewrite (slice 3): the vanilla-content order/pool/power bookkeeping.
@@ -1292,6 +1292,10 @@ Game.Launch=function()
 		Game.nextAscensionMode=0;
 		Game.UpdateAscensionModePrompt=UpdateAscensionModePrompt;//CC3 rewrite (phase 4, slice 6): moved verbatim to systems/ascend.ts; same Game slot, same Init position.
 		Game.PickAscensionMode=PickAscensionMode;//CC3 rewrite (phase 4, slice 6).
+		Game.heavenlyPreset='auto';//CC3: the active heavenly-tree arrangement (a preset id, or null once the player hand-drags)
+		var heavenlyPresetButtons=(HEAVENLY_PRESETS).map(function(p){
+			return '<a class="heavenlyPreset option framed small" data-preset="'+p.id+'" style="font-size:11px;margin-right:2px;cursor:pointer;" '+Game.clickStr+'="Game.ApplyHeavenlyPreset(\''+p.id+'\');" '+Game.getTooltip('<div style="min-width:160px;text-align:center;font-size:11px;padding:8px;">'+loc(p.desc)+'</div>','bottom-right')+'>'+loc(p.label)+'</a>';
+		}).join('');
 		l('ascendOverlay').innerHTML=
 			'<div id="ascendBox">'+
 			'<div id="ascendData1" class="ascendData smallFramed prompt" style="margin-top:8px;"><h3 id="ascendPrestige"></h3></div>'+
@@ -1300,7 +1304,8 @@ Game.Launch=function()
 							'<div style="min-width:300px;text-align:center;font-size:11px;padding:8px;" id="tooltipReincarnate">'+loc("Click this once you've bought<br>everything you need!")+'</div>'
 							,'bottom-right')+' style="font-size:16px;margin-top:0px;"><span class="fancyText" style="font-size:20px;">'+loc("Reincarnate")+'</span></a>'+
 			'<div id="ascendModeButton" style="position:absolute;right:34px;bottom:25px;display:none;"></div>'+
-			'<div id="arrangeTreeBox" style="position:absolute;left:10px;bottom:25px;">'+
+			'<div id="arrangeTreeBox" style="position:absolute;left:10px;bottom:25px;max-width:360px;">'+
+			'<div id="heavenlyPresets" style="margin-bottom:4px;">'+heavenlyPresetButtons+'</div>'+
 			'<a id="arrangeTreeButton" class="option framed small" style="font-size:11px;" '+Game.clickStr+'="Game.ToggleArrangeHeavenly();" '+Game.getTooltip('<div style="min-width:220px;text-align:center;font-size:11px;padding:8px;">'+loc("Turn on arrange mode to drag heavenly upgrades wherever you want.<br>Your layout is saved and kept between ascensions.")+'</div>','bottom-right')+'>'+loc("Arrange")+'</a>'+
 			' <a id="arrangeTreeReset" class="option framed small" style="font-size:11px;display:none;" '+Game.clickStr+'="Game.ResetHeavenlyLayout();" '+Game.getTooltip('<div style="min-width:180px;text-align:center;font-size:11px;padding:8px;">'+loc("Restore the default heavenly tree layout.")+'</div>','bottom-right')+'>'+loc("Reset layout")+'</a>'+
 			'</div>'+
@@ -1315,6 +1320,13 @@ Game.Launch=function()
 		Game.attachTooltip(l('ascendData2'),function(){return '<div style="min-width:300px;text-align:center;font-size:11px;padding:8px;" id="tooltipAscendData2">(<b>'+loc("%1 heavenly chip",LBeautify(Game.heavenlyChips))+'</b>)<div class="line"></div>'+loc("Heavenly chips are used to buy heavenly upgrades.<br>You gain <b>1 chip</b> every time you gain a prestige level.")+'</div>';},'bottom-right');
 		
 		Game.UpdateAscensionModePrompt();
+		// CC3: highlight the active heavenly-tree arrangement preset button.
+		Game.UpdateHeavenlyPresetButtons=function(){
+			var active=Game.heavenlyPreset;
+			var btns=document.querySelectorAll('#heavenlyPresets .heavenlyPreset');
+			for (var i=0;i<btns.length;i++){var b=btns[i] as HTMLElement;var on=(b.getAttribute('data-preset')===active);b.style.fontWeight=on?'bold':'normal';b.style.background=on?'#5a4':'transparent';}
+		};
+		if (Game.UpdateHeavenlyPresetButtons) Game.UpdateHeavenlyPresetButtons();
 		
 		AddEvent(l('ascendButton'),'click',function(){
 			PlaySound('snd/tick.mp3');
@@ -1364,6 +1376,8 @@ Game.Launch=function()
 		Game.SaveHeavenlyLayout=SaveHeavenlyLayout;//CC3: arrange-mode persistence.
 		Game.ToggleArrangeHeavenly=ToggleArrangeHeavenly;//CC3: arrange-mode toggle.
 		Game.ResetHeavenlyLayout=ResetHeavenlyLayout;//CC3: arrange-mode reset.
+		Game.ApplyHeavenlyPreset=applyHeavenlyPreset;//CC3: click a preset to arrange the tree.
+		Game.syncHeavenlyLayoutIfStale=syncHeavenlyLayoutIfStale;//CC3: re-sync if mods added prestige upgrades after init
 			/*===============================================================
 			COALESCING SUGAR LUMPS
 			=======================================================
@@ -3338,6 +3352,7 @@ window.loadMinigameModule!(me.minigameUrl).then(function(){
 		Game.launchMods();
 		
 		Game.runModHook('create');//declare custom upgrades/achievs/buffs/buildings here!
+		Game.syncHeavenlyLayoutIfStale();//CC3: mods may have added prestige upgrades after the init layout ran
 		
 		BeautifyAll();
 		
