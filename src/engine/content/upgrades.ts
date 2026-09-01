@@ -2121,28 +2121,25 @@ export function declareVanillaUpgrades(Game: EngineGame) {
 
 		// Astral Reliquary: a themed heavenly sub-branch off 'Distilled essence of
 		// redoubled luck'. Declared here, after every vanilla Game.Upgrade() call,
-		// so these ids land past heavenlyPositions.ts's fixed id->position table
-		// (max key 805) instead of shifting it — inserting new upgrades earlier in
-		// this file bumps Game.UpgradesN for everything declared after them,
-		// which would scramble the whole vanilla ascend-tree layout. Manual
-		// posX/posY (not heavenlyPositions.ts) for the same reason ids here
-		// aren't stable across content edits — same technique as
-		// Game.NewUnshackleBuilding above. Coordinates were probed against a live
-		// Game.heavenlyBounds/Game.Upgrades dump to land in open canvas space
-		// (min ~100px clearance from every existing prestige-pool node).
-		new Game.Upgrade('Astral tribute',loc("Cookie production multiplier <b>+%1% permanently</b>.",5)+'<q>A small toll paid to whatever still listens up there.</q>',300000000,[25,12]);Game.last.pool='prestige';Game.last.parents=['Distilled essence of redoubled luck'];Game.last.power=5;Game.last.pseudoCookie=true;Game.last.posX=-680;Game.last.posY=600;
+		// so these ids land past the vanilla upgrade ids (max ~805) instead of
+		// shifting them — inserting new upgrades earlier in this file bumps
+		// Game.UpgradesN for everything declared after them, which shifts the ids
+		// stored in player save files and would break existing saves. Positions for
+		// all heavenly upgrades are now derived automatically from the parents DAG
+		// (systems/heavenlyLayout.ts), so no manual coordinates are needed here.
+		new Game.Upgrade('Astral tribute',loc("Cookie production multiplier <b>+%1% permanently</b>.",5)+'<q>A small toll paid to whatever still listens up there.</q>',300000000,[25,12]);Game.last.pool='prestige';Game.last.parents=['Distilled essence of redoubled luck'];Game.last.power=5;Game.last.pseudoCookie=true;
 
-		new Game.Upgrade('Reliquary embers',loc("Cookie production multiplier <b>+%1% permanently</b>.",5)+'<q>Every ember remembers the fire it came from.</q>',900000000,[26,12]);Game.last.pool='prestige';Game.last.parents=['Astral tribute'];Game.last.power=5;Game.last.pseudoCookie=true;Game.last.posX=-820;Game.last.posY=760;
-		new Game.Upgrade('Gilded aftertaste',loc("Golden cookies (and all other things that spawn, such as reindeer) have an additional <b>%1% chance of being doubled</b>.",1)+'<q>Fortune, it turns out, is an acquired taste.</q>',750000000,[27,6]);Game.last.pool='prestige';Game.last.parents=['Astral tribute'];Game.last.posX=-560;Game.last.posY=780;
-		new Game.Upgrade('Sepulchral crystallization',loc("Sugar lumps ripen <b>%1</b> sooner.",Game.sayTime(60*60*Game.fps))+'<q>Sweetness, given enough time and pressure, becomes something else entirely.</q>',800000000,[25,15]);Game.last.pool='prestige';Game.last.parents=['Astral tribute'];Game.last.posX=-950;Game.last.posY=560;
-		new Game.Upgrade('Ashen ichor',loc("Wrinklers explode into <b>%1% more cookies</b>.",5)+'<q>Even the most patient of parasites can be taught a few new tricks.</q>',700000000,[19,8]);Game.last.pool='prestige';Game.last.parents=['Astral tribute'];Game.last.posX=-680;Game.last.posY=850;
+		new Game.Upgrade('Reliquary embers',loc("Cookie production multiplier <b>+%1% permanently</b>.",5)+'<q>Every ember remembers the fire it came from.</q>',900000000,[26,12]);Game.last.pool='prestige';Game.last.parents=['Astral tribute'];Game.last.power=5;Game.last.pseudoCookie=true;
+		new Game.Upgrade('Gilded aftertaste',loc("Golden cookies (and all other things that spawn, such as reindeer) have an additional <b>%1% chance of being doubled</b>.",1)+'<q>Fortune, it turns out, is an acquired taste.</q>',750000000,[27,6]);Game.last.pool='prestige';Game.last.parents=['Astral tribute'];
+		new Game.Upgrade('Sepulchral crystallization',loc("Sugar lumps ripen <b>%1</b> sooner.",Game.sayTime(60*60*Game.fps))+'<q>Sweetness, given enough time and pressure, becomes something else entirely.</q>',800000000,[25,15]);Game.last.pool='prestige';Game.last.parents=['Astral tribute'];
+		new Game.Upgrade('Ashen ichor',loc("Wrinklers explode into <b>%1% more cookies</b>.",5)+'<q>Even the most patient of parasites can be taught a few new tricks.</q>',700000000,[19,8]);Game.last.pool='prestige';Game.last.parents=['Astral tribute'];
 
-		new Game.Upgrade('Everlasting embers',loc("Cookie production multiplier <b>+%1% permanently</b>.",5)+'<q>This one never quite seems to go out.</q>',2700000000,[25,12]);Game.last.pool='prestige';Game.last.parents=['Reliquary embers'];Game.last.power=5;Game.last.pseudoCookie=true;Game.last.posX=-980;Game.last.posY=920;
-		new Game.Upgrade('Prismatic aftertaste',loc("Golden cookie effects last <b>%1% longer</b>.",5)+'<q>The glow lingers a little longer than it should.</q>',2250000000,[28,6]);Game.last.pool='prestige';Game.last.parents=['Gilded aftertaste'];Game.last.posX=-460;Game.last.posY=950;
-		new Game.Upgrade('Frozen sepulcher',loc("Sugar lumps mature <b>%1</b> sooner.",Game.sayTime(60*60*Game.fps))+'<q>Preserved not by cold, but by sheer stubbornness.</q>',2400000000,[26,15]);Game.last.pool='prestige';Game.last.parents=['Sepulchral crystallization'];Game.last.posX=-1120;Game.last.posY=700;
-		new Game.Upgrade('Bloodless ichor',loc("You can attract <b>%1 more wrinklers</b>.",1)+'<q>Its brethren have taken notice.</q>',2100000000,[15,12]);Game.last.pool='prestige';Game.last.parents=['Ashen ichor'];Game.last.posX=-800;Game.last.posY=1020;
+		new Game.Upgrade('Everlasting embers',loc("Cookie production multiplier <b>+%1% permanently</b>.",5)+'<q>This one never quite seems to go out.</q>',2700000000,[25,12]);Game.last.pool='prestige';Game.last.parents=['Reliquary embers'];Game.last.power=5;Game.last.pseudoCookie=true;
+		new Game.Upgrade('Prismatic aftertaste',loc("Golden cookie effects last <b>%1% longer</b>.",5)+'<q>The glow lingers a little longer than it should.</q>',2250000000,[28,6]);Game.last.pool='prestige';Game.last.parents=['Gilded aftertaste'];
+		new Game.Upgrade('Frozen sepulcher',loc("Sugar lumps mature <b>%1</b> sooner.",Game.sayTime(60*60*Game.fps))+'<q>Preserved not by cold, but by sheer stubbornness.</q>',2400000000,[26,15]);Game.last.pool='prestige';Game.last.parents=['Sepulchral crystallization'];
+		new Game.Upgrade('Bloodless ichor',loc("You can attract <b>%1 more wrinklers</b>.",1)+'<q>Its brethren have taken notice.</q>',2100000000,[15,12]);Game.last.pool='prestige';Game.last.parents=['Ashen ichor'];
 
-		new Game.Upgrade('Convergence of the reliquary',loc("Cookie production multiplier <b>+%1% permanently</b>.",10)+'<q>Four paths, one hunger.</q>',9000000000,[26,12]);Game.last.pool='prestige';Game.last.parents=['Everlasting embers','Frozen sepulcher','Prismatic aftertaste','Bloodless ichor'];Game.last.power=10;Game.last.pseudoCookie=true;Game.last.posX=-850;Game.last.posY=1150;
+		new Game.Upgrade('Convergence of the reliquary',loc("Cookie production multiplier <b>+%1% permanently</b>.",10)+'<q>Four paths, one hunger.</q>',9000000000,[26,12]);Game.last.pool='prestige';Game.last.parents=['Everlasting embers','Frozen sepulcher','Prismatic aftertaste','Bloodless ichor'];Game.last.power=10;Game.last.pseudoCookie=true;
 
 		// Nine Lives: a themed heavenly sub-branch off 'Five-finger discount',
 		// focused entirely on the Cats building (content/buildings/cats.ts),
@@ -2150,60 +2147,58 @@ export function declareVanillaUpgrades(Game: EngineGame) {
 		// Cat Colony minigame (minigameCatColony.ts). Declared here at the very
 		// end of upgrades.ts, same reasoning as the Astral Reliquary branch
 		// above: inserting earlier would shift every subsequent vanilla
-		// upgrade's id and corrupt heavenlyPositions.ts's fixed id->position
-		// table. Manual posX/posY for the same reason, probed against a live
-		// Game.Upgrades dump to clear every existing prestige-pool node by at
-		// least ~100px (in line with vanilla's own tightest spacing). Icons
-		// reuse frame [0,0] of existing Cats sprite sheets (img/cats/*.png at
+		// upgrade's id and corrupt existing save files. Positions are derived
+		// automatically from the parents DAG, so no manual coordinates are set.
+		// Icons reuse frame [0,0] of existing Cats sprite sheets (img/cats/*.png at
 		// 64px cells) rather than any icons.webp cell, the same technique the
 		// Cat Colony minigame's own reward upgrades already use — no new art.
-		new Game.Upgrade('Communion of whiskers',"Cats gain <b>+10% CpS</b>."+'<q>Somewhere, a cat is purring in exactly your rhythm.</q>',700000,[0,0,'img/cats/idle.png',64]);Game.last.pool='prestige';Game.last.parents=['Five-finger discount'];Game.last.posX=-98;Game.last.posY=-773;
-		new Game.Upgrade('Nine lives, one purpose',"Cats gain <b>+10% CpS</b>."+'<q>All nine, pointed the same way: toward the food bowl.</q>',2000000,[0,0,'img/cats/walk.png',64]);Game.last.pool='prestige';Game.last.parents=['Communion of whiskers'];Game.last.posX=-98;Game.last.posY=-923;
-		new Game.Upgrade('Feline apex',"Cats gain <b>+15% CpS</b>."+'<q>The apex predator of your living room, and possibly your economy.</q>',6000000,[0,0,'img/cats/run.png',64]);Game.last.pool='prestige';Game.last.parents=['Nine lives, one purpose'];Game.last.posX=-28;Game.last.posY=-1044;
+		new Game.Upgrade('Communion of whiskers',"Cats gain <b>+10% CpS</b>."+'<q>Somewhere, a cat is purring in exactly your rhythm.</q>',700000,[0,0,'img/cats/idle.png',64]);Game.last.pool='prestige';Game.last.parents=['Five-finger discount'];
+		new Game.Upgrade('Nine lives, one purpose',"Cats gain <b>+10% CpS</b>."+'<q>All nine, pointed the same way: toward the food bowl.</q>',2000000,[0,0,'img/cats/walk.png',64]);Game.last.pool='prestige';Game.last.parents=['Communion of whiskers'];
+		new Game.Upgrade('Feline apex',"Cats gain <b>+15% CpS</b>."+'<q>The apex predator of your living room, and possibly your economy.</q>',6000000,[0,0,'img/cats/run.png',64]);Game.last.pool='prestige';Game.last.parents=['Nine lives, one purpose'];
 
-		new Game.Upgrade('Territorial pact',"Cat synergies grant their tied building an additional <b>+1% CpS per cat</b>, on top of the usual bonus."+'<q>Cats don\'t share territory. They annex it, generously, on your behalf.</q>',1800000,[0,0,'img/cats/jump.png',64]);Game.last.pool='prestige';Game.last.parents=['Communion of whiskers'];Game.last.posX=-47;Game.last.posY=-632;
-		new Game.Upgrade('Alpha instincts',"Cats gain <b>+5% CpS</b> for every cat synergy upgrade owned."+'<q>Every colony needs a cat who\'s just a little more in charge.</q>',5000000,[0,0,'img/cats/running-jump.png',64]);Game.last.pool='prestige';Game.last.parents=['Territorial pact'];Game.last.posX=152;Game.last.posY=-615;
+		new Game.Upgrade('Territorial pact',"Cat synergies grant their tied building an additional <b>+1% CpS per cat</b>, on top of the usual bonus."+'<q>Cats don\'t share territory. They annex it, generously, on your behalf.</q>',1800000,[0,0,'img/cats/jump.png',64]);Game.last.pool='prestige';Game.last.parents=['Communion of whiskers'];
+		new Game.Upgrade('Alpha instincts',"Cats gain <b>+5% CpS</b> for every cat synergy upgrade owned."+'<q>Every colony needs a cat who\'s just a little more in charge.</q>',5000000,[0,0,'img/cats/running-jump.png',64]);Game.last.pool='prestige';Game.last.parents=['Territorial pact'];
 
-		new Game.Upgrade('Nap discipline',"Cat Colony expeditions are <b>20% less likely</b> to send a cat home hurt."+'<q>A well-rested cat is a cat that comes home in one piece.</q>',1500000,[0,0,'img/cats/sleep.png',64]);Game.last.pool='prestige';Game.last.parents=['Communion of whiskers'];Game.last.posX=-295;Game.last.posY=-808;
-		new Game.Upgrade('Generous strangers',"Cat Colony expeditions yield <b>20% more treats</b>."+'<q>Turns out most of the neighborhood was willing to be robbed, gently.</q>',4000000,[0,0,'img/cats/attack-1.png',64]);Game.last.pool='prestige';Game.last.parents=['Nap discipline'];Game.last.posX=-493;Game.last.posY=-880;
-		new Game.Upgrade('Bottomless treat jar',"The Cat Colony slowly generates <b>1 treat per minute</b>, even with no expeditions underway."+'<q>Some jars refill themselves. Nobody asks questions.</q>',6000000,[0,0,'img/cats/hurt.png',64]);Game.last.pool='prestige';Game.last.parents=['Generous strangers'];Game.last.posX=-628;Game.last.posY=-719;
-		new Game.Upgrade('Efficient patrols',"Cat Colony expeditions take <b>15% less time</b>."+'<q>They\'ve stopped stopping to sniff every third leaf.</q>',9000000,[0,0,'img/cats/idle.png',64]);Game.last.pool='prestige';Game.last.parents=['Bottomless treat jar'];Game.last.posX=-682;Game.last.posY=-516;
+		new Game.Upgrade('Nap discipline',"Cat Colony expeditions are <b>20% less likely</b> to send a cat home hurt."+'<q>A well-rested cat is a cat that comes home in one piece.</q>',1500000,[0,0,'img/cats/sleep.png',64]);Game.last.pool='prestige';Game.last.parents=['Communion of whiskers'];
+		new Game.Upgrade('Generous strangers',"Cat Colony expeditions yield <b>20% more treats</b>."+'<q>Turns out most of the neighborhood was willing to be robbed, gently.</q>',4000000,[0,0,'img/cats/attack-1.png',64]);Game.last.pool='prestige';Game.last.parents=['Nap discipline'];
+		new Game.Upgrade('Bottomless treat jar',"The Cat Colony slowly generates <b>1 treat per minute</b>, even with no expeditions underway."+'<q>Some jars refill themselves. Nobody asks questions.</q>',6000000,[0,0,'img/cats/hurt.png',64]);Game.last.pool='prestige';Game.last.parents=['Generous strangers'];
+		new Game.Upgrade('Efficient patrols',"Cat Colony expeditions take <b>15% less time</b>."+'<q>They\'ve stopped stopping to sniff every third leaf.</q>',9000000,[0,0,'img/cats/idle.png',64]);Game.last.pool='prestige';Game.last.parents=['Bottomless treat jar'];
 
-		new Game.Upgrade('The Nine Lives Convergence',"Cats gain <b>+20% CpS</b>."+'<q>Nine lives, one destiny: your cookie jar.</q>',25000000,[0,0,'img/cats/attack-1.png',64]);Game.last.pool='prestige';Game.last.parents=['Feline apex','Alpha instincts','Efficient patrols'];Game.last.posX=-285;Game.last.posY=-626;
+		new Game.Upgrade('The Nine Lives Convergence',"Cats gain <b>+20% CpS</b>."+'<q>Nine lives, one destiny: your cookie jar.</q>',25000000,[0,0,'img/cats/attack-1.png',64]);Game.last.pool='prestige';Game.last.parents=['Feline apex','Alpha instincts','Efficient patrols'];
 
 		// CC3: low-tier heavenly upgrades ("the mortal staircase"), declared
 		// after the CC3 branches above (still the very end of the upgrade list) so
 		// existing save ids stay stable — upgrade ids are the registration index and
 		// saves store purchases by id. Cheap (2-30 chips) so players with a handful of
 		// heavenly chips have real options in the prestige tree instead of only the
-		// offline-earnings chain. Manual posX/posY (not heavenlyPositions.ts) for the
-		// same reason the CC3 branches above use it. Effect hooks: main.ts (click
-		// mult), shimmerTypes.ts (golden cookie frequency / lifespan / effect duration),
-		// save.ts (offline CpS % + free starters on load), reset.ts (free starters on
-		// ascension), ui/store.ts (building prices) and core/upgrade.ts (upgrade prices).
+		// offline-earnings chain. Positions are derived automatically from the
+		// parents DAG (systems/heavenlyLayout.ts), so no manual coordinates.
+		// Effect hooks: main.ts (click mult), shimmerTypes.ts (golden cookie
+		// frequency / lifespan / effect duration), save.ts (offline CpS % + free
+		// starters on load), reset.ts (free starters on ascension), ui/store.ts
+		// (building prices) and core/upgrade.ts (upgrade prices).
 		order=21000;
-		new Game.Upgrade('Blessed apron',getStrCookieProductionMultiplierPlus(2)+'<q>A well-worn apron, blessed by a saint. Or several. It depends on who you ask.</q>',2,[24,6]);Game.last.pool='prestige';Game.last.parents=['Legacy'];Game.last.power=2;Game.last.pseudoCookie=true;Game.last.posX=-170;Game.last.posY=10;
-		new Game.Upgrade('Firm handshake',loc("Clicking is <b>%1% stronger</b>.",5)+'<q>Some people say it\'s the elbow. We say it\'s the follow-through.</q>',4,[0,13]);Game.last.pool='prestige';Game.last.parents=['Legacy'];Game.last.posX=-190;Game.last.posY=120;
-		new Game.Upgrade('Morning bells',loc("Golden cookies appear <b>%1%</b> more often.",5)+'<q>Wake up, sleepyhead. It\'s a good day to be golden.</q>',5,[17,10]);Game.last.pool='prestige';Game.last.parents=['Twin Gates of Transcendence'];Game.last.posX=194;Game.last.posY=-420;
-		new Game.Upgrade('Night watch',loc("You gain another <b>+%1%</b> of your regular CpS while the game is closed.",2)+' <small>('+loc("Must own the %1 upgrade.",getUpgradeName("Twin Gates of Transcendence"))+')</small><q>Someone has to watch the oven while you sleep. It turns out you are that someone.</q>',6,[17,0]);Game.last.pool='prestige';Game.last.parents=['Twin Gates of Transcendence'];Game.last.posX=4;Game.last.posY=-340;
-		new Game.Upgrade('Second helping',getStrCookieProductionMultiplierPlus(3)+'<q>There\'s room on the plate. There\'s always room on the plate.</q>',8,[34,6]);Game.last.pool='prestige';Game.last.parents=['Heavenly cookies'];Game.last.power=3;Game.last.pseudoCookie=true;Game.last.posX=-343;Game.last.posY=-220;
-		new Game.Upgrade('Sugar glaze',loc("Golden cookie effects last <b>%1%</b> longer.",5)+'<q>Everything tastes better with a little more stickiness.</q>',10,[21,14]);Game.last.pool='prestige';Game.last.parents=['Heavenly cookies'];Game.last.posX=-43;Game.last.posY=-140;
-		new Game.Upgrade('Patient tongue',loc("Golden cookies stay <b>%1%</b> longer.",5)+'<q>They\'re not going anywhere. You\'re welcome.</q>',12,[8,13]);Game.last.pool='prestige';Game.last.parents=['Heavenly luck'];Game.last.posX=-423;Game.last.posY=-4;
-		new Game.Upgrade('Bargaining table',loc("All buildings are <b>%1% cheaper</b>.",1)+'<q>A sturdy table, honest wood, no hidden clauses. Except the tiny ones. The tiny ones are there.</q>',15,[21,7]);Game.last.pool='prestige';Game.last.parents=['Legacy'];Game.last.posX=140;Game.last.posY=-140;
-		new Game.Upgrade('Lucky start',loc("You start with <b>%1</b>.",loc("%1 cursor",3))+'<q>Their fingers are slightly sticky, but they are eager.</q>',20,[12,13]);Game.last.pool='prestige';Game.last.parents=['Heavenly cookies'];Game.last.posX=-293;Game.last.posY=-300;
-		new Game.Upgrade('Angelic recipe',getStrCookieProductionMultiplierPlus(2)+'<q>Annotated in at least three celestial languages. The margins are just doodles of cookies.</q>',25,[19,11]);Game.last.pool='prestige';Game.last.parents=['Angels'];Game.last.power=2;Game.last.pseudoCookie=true;Game.last.posX=450;Game.last.posY=-448;
-		new Game.Upgrade('Demonic hustle',loc("Clicking is <b>%1% stronger</b>.",5)+'<q>Why click when you can claw? (You still have to click.)</q>',25,[24,7]);Game.last.pool='prestige';Game.last.parents=['Belphegor'];Game.last.posX=211;Game.last.posY=-526;
-		new Game.Upgrade('Tidy pantry',loc("All upgrades are <b>%1% cheaper</b>.",1)+'<q>Everything in its place, and its place marked with a little label. Satisfying, really.</q>',30,[24,8]);Game.last.pool='prestige';Game.last.parents=['Classic dairy selection'];Game.last.posX=-41;Game.last.posY=337;
+		new Game.Upgrade('Blessed apron',getStrCookieProductionMultiplierPlus(2)+'<q>A well-worn apron, blessed by a saint. Or several. It depends on who you ask.</q>',2,[24,6]);Game.last.pool='prestige';Game.last.parents=['Legacy'];Game.last.power=2;Game.last.pseudoCookie=true;
+		new Game.Upgrade('Firm handshake',loc("Clicking is <b>%1% stronger</b>.",5)+'<q>Some people say it\'s the elbow. We say it\'s the follow-through.</q>',4,[0,13]);Game.last.pool='prestige';Game.last.parents=['Legacy'];
+		new Game.Upgrade('Morning bells',loc("Golden cookies appear <b>%1%</b> more often.",5)+'<q>Wake up, sleepyhead. It\'s a good day to be golden.</q>',5,[17,10]);Game.last.pool='prestige';Game.last.parents=['Twin Gates of Transcendence'];
+		new Game.Upgrade('Night watch',loc("You gain another <b>+%1%</b> of your regular CpS while the game is closed.",2)+' <small>('+loc("Must own the %1 upgrade.",getUpgradeName("Twin Gates of Transcendence"))+')</small><q>Someone has to watch the oven while you sleep. It turns out you are that someone.</q>',6,[17,0]);Game.last.pool='prestige';Game.last.parents=['Twin Gates of Transcendence'];
+		new Game.Upgrade('Second helping',getStrCookieProductionMultiplierPlus(3)+'<q>There\'s room on the plate. There\'s always room on the plate.</q>',8,[34,6]);Game.last.pool='prestige';Game.last.parents=['Heavenly cookies'];Game.last.power=3;Game.last.pseudoCookie=true;
+		new Game.Upgrade('Sugar glaze',loc("Golden cookie effects last <b>%1%</b> longer.",5)+'<q>Everything tastes better with a little more stickiness.</q>',10,[21,14]);Game.last.pool='prestige';Game.last.parents=['Heavenly cookies'];
+		new Game.Upgrade('Patient tongue',loc("Golden cookies stay <b>%1%</b> longer.",5)+'<q>They\'re not going anywhere. You\'re welcome.</q>',12,[8,13]);Game.last.pool='prestige';Game.last.parents=['Heavenly luck'];
+		new Game.Upgrade('Bargaining table',loc("All buildings are <b>%1% cheaper</b>.",1)+'<q>A sturdy table, honest wood, no hidden clauses. Except the tiny ones. The tiny ones are there.</q>',15,[21,7]);Game.last.pool='prestige';Game.last.parents=['Legacy'];
+		new Game.Upgrade('Lucky start',loc("You start with <b>%1</b>.",loc("%1 cursor",3))+'<q>Their fingers are slightly sticky, but they are eager.</q>',20,[12,13]);Game.last.pool='prestige';Game.last.parents=['Heavenly cookies'];
+		new Game.Upgrade('Angelic recipe',getStrCookieProductionMultiplierPlus(2)+'<q>Annotated in at least three celestial languages. The margins are just doodles of cookies.</q>',25,[19,11]);Game.last.pool='prestige';Game.last.parents=['Angels'];Game.last.power=2;Game.last.pseudoCookie=true;
+		new Game.Upgrade('Demonic hustle',loc("Clicking is <b>%1% stronger</b>.",5)+'<q>Why click when you can claw? (You still have to click.)</q>',25,[24,7]);Game.last.pool='prestige';Game.last.parents=['Belphegor'];
+		new Game.Upgrade('Tidy pantry',loc("All upgrades are <b>%1% cheaper</b>.",1)+'<q>Everything in its place, and its place marked with a little label. Satisfying, really.</q>',30,[24,8]);Game.last.pool='prestige';Game.last.parents=['Classic dairy selection'];
 
 		// Grandma's Sitting Room: a heavenly prestige branch off 'Starter kitchen'
-		// (the grandmas-themed node), extending up-left into the open area of the
-		// prestige tree (~x=-550 to -705, y=-415 to -365). These upgrades enhance the
-		// Sitting Room minigame (Grandma building's Grandmapocalypse-management
-		// minigame). Manual posX/posY probed against the live tree (same reasoning as
-		// the Cat Colony and Astral reliquary branches above).
+		// (the grandmas-themed node), extending the Sitting Room minigame (Grandma
+		// building's Grandmapocalypse-management minigame). Declared at the very end
+		// for save-id stability (same reasoning as the branches above). Positions are
+		// derived automatically from the parents DAG, so no manual coordinates.
 		order=21500;
-		new Game.Upgrade('Grandma\'s knitting circle',"The Sitting Room generates yarn <b>50% faster</b>."+'<q>The needles click in perfect rhythm, and the yarn pile grows faster than you can knit it.</q>',2000000,[0,0,'img/grandmaIcon.webp',64]);Game.last.pool='prestige';Game.last.parents=['Starter kitchen'];Game.last.posX=-550;Game.last.posY=-415;
-		new Game.Upgrade('Elder hospitality',"The Sitting Room's comfort affects the Grandmapocalypse <b>twice as strongly</b>."+'<q>The elders appreciate a well-kept sitting room. Who knew that a fresh pot of tea could soothe an eldritch horror?</q>',5000000,[0,0,'img/grandmaIconB.webp',64]);Game.last.pool='prestige';Game.last.parents=['Grandma\'s knitting circle'];Game.last.posX=-705;Game.last.posY=-365;
+		new Game.Upgrade('Grandma\'s knitting circle',"The Sitting Room generates yarn <b>50% faster</b>."+'<q>The needles click in perfect rhythm, and the yarn pile grows faster than you can knit it.</q>',2000000,[0,0,'img/grandmaIcon.webp',64]);Game.last.pool='prestige';Game.last.parents=['Starter kitchen'];
+		new Game.Upgrade('Elder hospitality',"The Sitting Room's comfort affects the Grandmapocalypse <b>twice as strongly</b>."+'<q>The elders appreciate a well-kept sitting room. Who knew that a fresh pot of tea could soothe an eldritch horror?</q>',5000000,[0,0,'img/grandmaIconB.webp',64]);Game.last.pool='prestige';Game.last.parents=['Grandma\'s knitting circle'];
 
 		//end of upgrades
 

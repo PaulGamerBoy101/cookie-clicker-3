@@ -774,7 +774,7 @@ if (debugSurface && params.get('qa') === 'casino') {
 			const ACHIEVEMENTS = ['Card minnow', 'Card trout', 'Card shark', 'Five card stud', 'Why can\'t I hold all these cards?', 'Ace up your sleeve', 'Paid off the dealer', 'Deal with the Devil', 'Blackjack!', 'I like to live dangerously', 'I also like to live dangerously'];
 			chk('11 achievements declared', ACHIEVEMENTS.every((n) => !!G.Achievements[n]) && CM.Achievements.length === 11);
 			chk('4 shadow achievements', ['Ace up your sleeve', 'Paid off the dealer', 'Deal with the Devil', 'I also like to live dangerously'].every((n) => G.Achievements[n].pool === 'shadow'));
-			chk('heavenly upgrade in PrestigeUpgrades at (38, -188)', (G.PrestigeUpgrades || []).indexOf(G.Upgrades['Actually, do tell me the odds']) !== -1 && G.Upgrades['Actually, do tell me the odds'].pool === 'prestige' && G.Upgrades['Actually, do tell me the odds'].posX === 38 && G.Upgrades['Actually, do tell me the odds'].posY === -188);
+			chk('heavenly upgrade derives a layout position from the DAG', (function(){var u=G.Upgrades['Actually, do tell me the odds'];return !!u && (G.PrestigeUpgrades||[]).indexOf(u)!==-1 && u.pool==='prestige' && typeof u.posX==='number' && typeof u.posY==='number';})());
 			const tg = G.Upgrades['True gambler'];
 			chk('bet-multiplier upgrades ordered right after "True gambler"', Math.abs(G.Upgrades['Double or nothing'].order - (tg.order + 0.001)) < 1e-9 && Math.abs(G.Upgrades['Stoned cows'].order - (G.Upgrades['Double or nothing'].order + 0.001)) < 1e-9 && Math.abs(G.Upgrades['Game for Pros'].order - (G.Upgrades['Stoned cows'].order + 0.001)) < 1e-9);
 			chk('all upgrade orders in the 1e6 region', CM.Upgrades.every((u: any) => u.order >= 1000000 && u.order < 1000000 + 0.2));

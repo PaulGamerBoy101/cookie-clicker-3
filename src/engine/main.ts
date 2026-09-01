@@ -46,7 +46,7 @@ import { DrawBackground } from "./ui/drawBackground";/* CC3: the original relied
 
 import { declareVanillaMilks } from "./content/milks";
 import { declareVanillaChangelog } from "./content/changelog";
-import { declareHeavenlyUpgradePositions } from "./content/heavenlyPositions";
+import { computeHeavenlyLayout } from "./systems/heavenlyLayout";
 import { debugStr, Debug } from "./utils/debug";
 var Audio: any, localStorageGet: any, localStorageSet: any, Music: any, PlayCue: any, TopBarOffset: any, LASTHEAVENLYSELECTED: any, ON: any, OFF: any;
 /* CC3 rewrite (slice 3): the vanilla-content order/pool/power bookkeeping.
@@ -2753,9 +2753,9 @@ window.loadMinigameModule!(me.minigameUrl).then(function(){
 		/*var oldPrestigePrices={"Chimera":5764801,"Synergies Vol. I":2525,"Synergies Vol. II":252525,"Label printer":9999};
 		for (var i in oldPrestigePrices){Game.Upgrades[i].basePrice=oldPrestigePrices[i];}*/
 		
-		declareHeavenlyUpgradePositions(Game as any);//CC3 rewrite (phase 6, slice 5): the heavenly-upgrade position map moved verbatim to content/heavenlyPositions.ts; same Init position.
-		
-		for (var iKey in Game.UpgradePositions) {Game.UpgradesById[iKey].posX=Game.UpgradePositions[iKey][0];Game.UpgradesById[iKey].posY=Game.UpgradePositions[iKey][1];}
+		//CC3: heavenly-upgrade positions are now derived deterministically from
+		//the prestige DAG (parents[]), not a hand-authored coordinate table.
+		computeHeavenlyLayout(Game as any);
 		
 		//CC3: player-arranged heavenly layout — snapshot the canonical positions
 		//(vanilla table + declared CC3 spots), then apply any saved overrides so
