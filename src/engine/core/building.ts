@@ -913,8 +913,15 @@ export class Building {
 							else ctx.drawImage(sprite,-32,-64);
 							ctx.restore();
 						}
-						else if (pic.frame!=-1) ctx.drawImage(sprite,(sprite.width/frames)*pic.frame,0,sprite.width/frames,sprite.height,pic.x,pic.y,(sprite.width/frames),sprite.height);
-						else ctx.drawImage(sprite,pic.x,pic.y);
+						else
+						{
+							//CC3: purchase feedback — every building gets a short bounce
+							//when a new sprite is born, matching the same math Grandma uses.
+							var age=Game.T-(pic.born||Game.T);
+							var bounce=age>=0 && age<24?Math.sin(age/24*Math.PI)*5:0;
+							if (pic.frame!=-1) ctx.drawImage(sprite,(sprite.width/frames)*pic.frame,0,sprite.width/frames,sprite.height,pic.x,pic.y-bounce,(sprite.width/frames),sprite.height);
+							else ctx.drawImage(sprite,pic.x,pic.y-bounce);
+						}
 						
 					}
 					
