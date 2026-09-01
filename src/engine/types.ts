@@ -588,7 +588,10 @@ export interface Game {
 	modifyBuildingPrice(me: Building, price: number): number;
 
 	/* --- mod registration --- */
-	registerMod(id: string, mod: Mod): boolean;
+	/* `builtin` marks a CC3-shipped extra as first-party: it registers through
+	 * the mod API (so it gets lifecycle/save handling) but must not earn the
+	 * "Third-party" achievement — only genuinely third-party mods do. */
+	registerMod(id: string, mod: Mod, builtin?: boolean): boolean;
 	/* `func` may receive the hook parameter (e.g. 'reset' is called with
 	 * `true` for a hard reset, `false` for an ascension) — the vanilla
 	 * registerHook passes whatever runModHook forwards. */
