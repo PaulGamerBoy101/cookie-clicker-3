@@ -673,3 +673,15 @@ test('?qa=catcolony: Cat Colony minigame + repeatable treat upgrades verified en
 	expect(report).not.toMatch(/ERROR/);
 	await assertNoUncaughtErrors(page);
 });
+
+test('?qa=dailycrumb: daily crumb weekly calendar (claims, streak, reset, save round-trip) verified', async ({ page }) => {
+	await boot(page, '&qa=dailycrumb');
+	const report = await qaReport(
+		page,
+		/PASS: daily crumb verified end to end/,
+		60_000
+	);
+	expect(report).not.toMatch(/FAIL/);
+	expect(report).not.toMatch(/ERROR/);
+	await assertNoUncaughtErrors(page);
+});

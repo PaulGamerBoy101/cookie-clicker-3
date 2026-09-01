@@ -23,6 +23,7 @@ import './extras/decideDestiny';
 import './extras/americanSeason';
 import './extras/casino';
 import './extras/tutorial';
+import './extras/dailyCrumb';
 import './styles/main.css';
 import type { Cc3AnimStats, Game as EngineGame, LanguageData } from './engine/types';
 
@@ -65,8 +66,11 @@ if (debugSurface) {
  *   ?qa=save      export a save, corrupt state, re-import, verify round-trip
  *   ?qa=backup    exercise the rolling save backup history (capture/list/restore)
  *   ?qa=content   validate content registries and report economy ordering
+ *   ?qa=dailycrumb exercise the daily crumb: claim a single missed day, a
+ *                  multi-day backfill, the streak-reset after a long absence,
+ *                  the no-double-claim guard, and the save round-trip
  * Never active in a plain production load. */
-if (debugSurface && params.has('qa') && params.get('qa') !== 'golden' && params.get('qa') !== 'save' && params.get('qa') !== 'backup' && params.get('qa') !== 'sound' && params.get('qa') !== 'perf' && params.get('qa') !== 'ascend' && params.get('qa') !== 'ascendbrowse' && params.get('qa') !== 'arrange' && params.get('qa') !== 'offline' && params.get('qa') !== 'special' && params.get('qa') !== 'a11y' && params.get('qa') !== 'wrinkler' && params.get('qa') !== 'icon' && params.get('qa') !== 'onecol' && params.get('qa') !== 'anim' && params.get('qa') !== 'binverter' && params.get('qa') !== 'content' && params.get('qa') !== 'destiny' && params.get('qa') !== 'amseason' && params.get('qa') !== 'casino') {
+if (debugSurface && params.has('qa') && params.get('qa') !== 'golden' && params.get('qa') !== 'save' && params.get('qa') !== 'backup' && params.get('qa') !== 'sound' && params.get('qa') !== 'perf' && params.get('qa') !== 'ascend' && params.get('qa') !== 'ascendbrowse' && params.get('qa') !== 'arrange' && params.get('qa') !== 'offline' && params.get('qa') !== 'special' && params.get('qa') !== 'a11y' && params.get('qa') !== 'wrinkler' && params.get('qa') !== 'icon' && params.get('qa') !== 'onecol' && params.get('qa') !== 'anim' && params.get('qa') !== 'binverter' && params.get('qa') !== 'content' && params.get('qa') !== 'destiny' && params.get('qa') !== 'amseason' && params.get('qa') !== 'casino' && params.get('qa') !== 'dailycrumb') {
 	const qaMode = params.get('qa'); // null for bare ?qa, else the value
 	const MINIGAME_BUILDINGS = ['Farm', 'Bank', 'Temple', 'Wizard tower'];
 	const tick = window.setInterval(() => {
@@ -960,6 +964,105 @@ chk('formatPercentage floors to 1 decimal', CM.formatPercentage(0.1234) === '12.
 			out.textContent = lines.join('\n') + '\n[QA-casino] ' + (pass ? 'PASS: Casino verified end to end' : 'FAIL: see checks above');
 		} catch (e: any) {
 			out.textContent = '[QA-casino] ERROR: ' + e.constructor.name + ': ' + e.message;
+		}
+		window.clearInterval(tick);
+	}, 250);
+}
+
+// QA: verify the Daily crumb (extras/dailyCrumb.ts) — the weekly calendar of
+// daily returning rewards. Fresh profile: the boot check hook records the
+// baseline day (no reward). Then drive the exposed state surface
+// (window.__cc3DailyCrumb): a single missed-day claim (the reward kind
+// depends on the day of week, verified per kind), the no-double-claim guard,
+// a 3-day backfill (streak continuity), a 30-day absence (streak reset,
+// today only), and the save round-trip (WriteSave -> corrupt -> ImportSaveCode
+// restores the streak through the mod save section). Usage: ?debug=1&qa=dailycrumb
+if (debugSurface && params.get('qa') === 'dailycrumb') {
+	const tick = window.setInterval(() => {
+		const G: any = window.Game;
+		const DC = (window as any).__cc3DailyCrumb;
+		if (!G || !G.ready || !G.Objects || !DC) return;
+		if (G.__qaDailyCrumb) return;
+		G.__qaDailyCrumb = 1;
+		const out = document.createElement('div');
+		out.id = '__dbgqa';
+		out.style.cssText = 'position:fixed;top:0;left:0;z-index:99999;background:#fff;color:#060;font:12px monospace;white-space:pre-wrap;max-width:640px;';
+		document.body.appendChild(out);
+		const lines: string[] = [];
+		let pass = true;
+		const chk = (label: string, ok: boolean) => { if (!ok) pass = false; lines.push((ok ? '✓ ' : '✗ ') + label); };
+		try {
+			const DAY = 86400000;
+			const today = DC.startOfDay(Date.now());
+			const st = DC.state;
+			const cpsBefore = G.cookiesPs || 0;
+			// 0. fresh install: baseline recorded, no reward
+			chk('baseline day recorded without a reward (lastClaim=' + (st.lastClaim === today) + ', claims=' + st.totalClaims + ')', st.lastClaim === today && st.totalClaims === 0 && st.streak === 0);
+			// 1. single missed day: the day claimed is TODAY (the missed-day
+			// window is (lastClaim, today]), so the reward kind follows today's
+			// weekday.
+			st.lastClaim = today - DAY;
+			st.streak = 0;
+			const tDow = new Date(today).getDay();
+			const cookiesBefore = G.cookies;
+			const lumpsBefore = G.lumps;
+			const claimed = DC.claim();
+			const dCookies = G.cookies - cookiesBefore;
+			const dLumps = G.lumps - lumpsBefore;
+			const expectedCookies = (mins: number) => Math.max(500, cpsBefore * 60 * mins);
+			let rewardOk = false;
+			if (tDow === 0) rewardOk = G.shimmers.length >= 1; // Sunday: golden cookie
+			else if (tDow === 2) rewardOk = !!G.buffs['Click frenzy']; // Tuesday: click frenzy
+			else if (tDow === 5) rewardOk = !!G.buffs['Frenzy']; // Friday: frenzy
+			else if (tDow === 3) rewardOk = G.lumps > -1 ? dLumps >= 1 : dCookies >= expectedCookies(10); // Wednesday: lump or fallback
+			else rewardOk = dCookies >= expectedCookies(tDow === 6 ? 10 : 5); // Mon/Thu 5min, Sat 10min
+			chk('single missed day claims (streak=' + st.streak + ', claims=' + st.totalClaims + ')', claimed && st.lastClaim === today && st.streak === 1 && st.totalClaims === 1);
+			chk('day reward granted (weekday ' + tDow + ': dCookies=' + Math.round(dCookies) + ', dLumps=' + dLumps + ')', rewardOk);
+			chk('First crumb achievement won', !!G.Achievements['First crumb'] && G.Achievements['First crumb'].won === 1);
+			// 2. same day again: no double claim
+			const before2 = { cookies: G.cookies, claims: st.totalClaims, streak: st.streak };
+			const claimed2 = DC.claim();
+			chk('no double claim on the same day', !claimed2 && st.totalClaims === before2.claims && G.cookies === before2.cookies && st.lastClaim === today);
+			// 3. 3-day backfill: all days collected, streak continuous
+			st.lastClaim = today - 3 * DAY;
+			st.streak = 0;
+			const claims3 = st.totalClaims;
+			const claimed3 = DC.claim();
+			chk('3-day backfill (streak=' + st.streak + ', +claims=' + (st.totalClaims - claims3) + ')', claimed3 && st.streak === 3 && st.totalClaims === claims3 + 3 && st.lastClaim === today);
+			// 4. 30-day absence: streak resets, only today collected
+			st.lastClaim = today - 30 * DAY;
+			st.streak = 5;
+			const claims4 = st.totalClaims;
+			const claimed4 = DC.claim();
+			chk('30-day absence resets the streak (streak=' + st.streak + ', +claims=' + (st.totalClaims - claims4) + ')', claimed4 && st.streak === 1 && st.totalClaims === claims4 + 1 && st.lastClaim === today);
+			// 5. persistence round-trip through the Custom save section
+			st.lastClaim = today - DAY;
+			st.streak = 12;
+			st.totalClaims = 42;
+			// type 2 returns the uncompressed string (type 1 is escaped Base64,
+			// so the raw mod key would not be visible in it)
+			const rawSave = G.WriteSave(2);
+			chk('save carries the CC3DailyCrumb mod entry', typeof rawSave === 'string' && rawSave.indexOf('CC3DailyCrumb') !== -1);
+			const saveCode = G.WriteSave(1);
+			st.lastClaim = null;
+			st.streak = 0;
+			st.totalClaims = 0;
+			const imported = G.ImportSaveCode(saveCode);
+			chk('import restores crumb state (streak=' + st.streak + ', claims=' + st.totalClaims + ')', imported && st.streak === 12 && st.totalClaims === 42 && st.lastClaim === today - DAY);
+			// 6. the UI text renders fully substituted (the loc() fallback for
+			// CC3-native ids must fill %N params, never show a raw "%1"): the
+			// Stats-menu crumb section and the collect notification log line.
+			G.ShowMenu('stats');
+			const crumbUi = document.getElementById('cc3CrumbStats');
+			const uiText = crumbUi ? (crumbUi.textContent || '') : '';
+			chk('stats menu crumb section renders', !!crumbUi && uiText.indexOf('Streak:') !== -1);
+			chk('no raw %N placeholders in the crumb section', uiText !== '' && !/%\d/.test(uiText));
+			chk('weekly bonus line shows substituted values', uiText.indexOf('3 golden cookies') !== -1 && uiText.indexOf('14 missed days') !== -1);
+			const logEntry = (G.Log || []).find((s: any) => String(s).indexOf('Daily crumb') !== -1) || '';
+			chk('collect notification text has no raw %N placeholders', logEntry.indexOf('Daily crumb') !== -1 && !/%\d/.test(String(logEntry)));
+			out.textContent = lines.join('\n') + '\n[QA-dailycrumb] ' + (pass ? 'PASS: daily crumb verified end to end' : 'FAIL: see checks above');
+		} catch (e: any) {
+			out.textContent = '[QA-dailycrumb] ERROR: ' + e.constructor.name + ': ' + e.message;
 		}
 		window.clearInterval(tick);
 	}, 250);

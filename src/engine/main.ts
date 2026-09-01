@@ -232,7 +232,11 @@ var loc=function(id: any, params?: any, baseline?: any)
 	
 	//if ((fallback || !found) && localizationNotFound.length<20 && localizationNotFound.indexOf(id)==-1){localizationNotFound.push(id);console.trace('localization string not found: ',id);}
 	if (found) return str;
-	return baseline||id;
+	//CC3: an unknown id (a CC3-native string not present in any language
+	//table) still gets its %N params substituted into the baseline (or the
+	//English source id), so placeholder strings render their values instead
+	//of showing a raw "%1".
+	return parseLoc(baseline||id,params);
 }
 
 var parseLoc=function(str: any, params?: any)

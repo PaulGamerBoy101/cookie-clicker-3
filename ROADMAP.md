@@ -5,6 +5,20 @@ picked up, traded, or dropped as we go. Checked items are shipped.
 
 ## Recently shipped (context)
 
+- **Daily crumb — weekly calendar rewards** — CC3-native returning-player
+  rewards, fully local/offline: every local day the game opens, the player
+  collects that weekday's crumb (Mon/Thu 5 min of production, Tue 3-min click
+  frenzy, Wed a sugar lump, Fri 3-min frenzy, Sat 10 min of production, Sun a
+  golden cookie; minimum 500 cookies while CpS is low). Consecutive days build
+  a streak; every 7-day streak grants the weekly crumb (3 golden cookies + 30
+  min of production). Missed days backfill (capped at 14 — longer absences
+  reset the streak); a fresh install only records the baseline day. State
+  (streak / last claim / lifetime claims) persists in the save's Custom mod
+  section, so it survives import/export and ascension. UI: a "Daily crumb"
+  subsection on the Stats menu (7-slot week strip, today marker, streak,
+  next-day preview) + a notification on each collection; 3 achievements.
+  Verified by the ?qa=dailycrumb probe. See
+  `src/extras/dailyCrumb.ts`.
 - **Grandma's Sitting Room minigame** — the sixth minigame (Grandma
   building counterpart), following the Cat Colony shape: seat grandmas in six
   activities on a cozy↔eldritch comfort dial. Cozy activities (knitting, tea)

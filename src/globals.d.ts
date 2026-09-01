@@ -243,6 +243,15 @@ declare global {
 		__cc3Casino?: number;
 		/* Set by extras/tutorial.ts once it has registered. */
 		__cc3Tutorial?: number;
+		/* Test/inspection surface of extras/dailyCrumb.ts (live crumb state,
+		 * persistence round-trip, forced claim); used by ?qa=dailycrumb. */
+		__cc3DailyCrumb?: {
+			state: { lastClaim: number | null; streak: number; totalClaims: number };
+			save: () => string;
+			load: (str: string) => void;
+			startOfDay: (ms: number) => number;
+			claim: () => boolean;
+		};
 		/* The American Season namespace (extras/americanSeason.ts): the
 		 * original mod's global, kept so the mod's inline menu handlers
 		 * (UpdatePref / Toggle / `config = defaultConfig()`) and other mods
