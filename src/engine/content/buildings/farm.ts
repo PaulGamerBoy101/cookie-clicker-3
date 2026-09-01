@@ -7,6 +7,7 @@
  * follows the declaration.
  */
 import type { Building, Game as EngineGame } from "../../types";
+import { stackPosition, STACK_TARGET_H, STACK_OVERLAP } from "./stackDraw";
 
 /** Declare the Farm building on Game. */
 export function declareFarm(Game: EngineGame) {
@@ -25,9 +26,9 @@ export function declareFarm(Game: EngineGame) {
 		Game.last.minigameUrl='minigameGarden.js';
 		Game.last.minigameName=loc("Garden");
 
-		// Override Farm draw to crop 64x80 cells from the 3x2 barn
-		// spritesheet instead of drawing the full sheet, and scale them
-		// down so multiple farms overlap nicely in the 128px canvas.
+		// Override Farm draw to crop 64x80 cells from the 3x2 barn spritesheet
+		// and stack them 1-per-row in a staggered, overlapping vertical column
+		// (shared STACK layout) instead of the old horizontal grid.
 		var farmObj=Game.Objects['Farm'];
 		var barnCellW=64;
 		var barnCellH=80;
@@ -40,48 +41,31 @@ export function declareFarm(Game: EngineGame) {
 			{
 				this.canvas.width=this.canvas.clientWidth;
 				this.canvas.height=this.canvas.clientHeight;
+				this.pics=[];//canvas re-sized: recompute centred positions next
 				this.toResize=false;
 			}
 			var ctx=this.ctx;
 			ctx.globalAlpha=1;
 			if (typeof(this.art.bg)=='string') ctx.fillPattern(Pic(this.art.bg),0,0,this.canvas.width,this.canvas.height,128,128);
 			var sheet=Pic(this.art.pic);
-			// Mine-like barn layout: a neat grid on the canvas — columns spaced
-			// just past the barn width (barely touching, like the mines' 64px
-			// column grid) and as many rows as fit the box height, instead of
-			// the old hStep=20 layout where barns overlapped by ~two-thirds.
+			var scale=Math.min(1,STACK_TARGET_H/barnCellH);
+			var drawW=barnCellW*scale;
+			var drawH=barnCellH*scale;
 			var canvasW=this.canvas.width;
 			var canvasH=this.canvas.height;
-			// Keep barns at a nice visible size
-			var barnW=55;
-			var barnH=Math.floor(barnW*barnCellH/barnCellW); // ~69px
-			// Horizontal step: barn width + small gap (mine-like column spacing)
-			var hStep=barnW+6;
-			// How many fit in one row across the full canvas width
-			var perRow=Math.max(1,Math.floor((canvasW-barnW)/hStep)+1);
-			// Vertical step between rows: ~30px, mine-like depth overlap
-			var vStep=30;
-			// Only rows that fit the canvas are drawn (extra purchases cycle the
-			// barn colors across the same visible grid, exactly like the mines)
-			var numRows=Math.max(1,Math.floor((canvasH-barnH-4)/vStep)+1);
-			// Bottom-anchored: front row at bottom, back rows higher
-			var yBase=canvasH-barnH-2;
-			var iT=Math.min(this.amount,perRow*numRows);
+			var vStep=Math.max(1,drawH*(1-STACK_OVERLAP));
+			var maxRows=Math.max(1,Math.floor((canvasH-drawH)/vStep)+1);
+			var iT=Math.min(this.amount,maxRows);
 			var i=this.pics.length;
 			if (i!=iT)
 			{
 				while (i<iT)
 				{
 					Math.seedrandom(Game.seed+' '+this.id+' '+i);
-					var row=Math.floor(i/perRow);
-					var col=i%perRow;
+					var pos=stackPosition(i,canvasW,canvasH,drawW,drawH);
 					var sx=(i%barnSheetCols)*barnCellW;
 					var sy=(Math.floor(i/barnSheetCols)%barnSheetRows)*barnCellH;
-					// X spans the full canvas width; back rows shift slightly for depth
-					var x=col*hStep+Math.floor((Math.random()-0.5)*12);
-					// Back rows are higher (smaller y); z = y so back barns draw first
-					var y=yBase-row*vStep+Math.floor((Math.random()-0.5)*6);
-					this.pics.push({x:x,y:y,z:y,pic:this.art.pic,id:i,frame:0,sx:sx,sy:sy,born:Game.T});
+					this.pics.push({x:Math.floor(pos.x),y:Math.floor(pos.y),z:pos.z,pic:this.art.pic,id:i,frame:0,sx:sx,sy:sy,drawW:drawW,drawH:drawH,born:Game.T});
 					i++;
 				}
 				while (i>iT)//sold farms leave the box, like the vanilla draw
@@ -95,7 +79,8 @@ export function declareFarm(Game: EngineGame) {
 			for (var i=0;i<this.pics.length;i++)
 			{
 				var pic:any=this.pics[i];
-				ctx.drawImage(sheet,pic.sx,pic.sy,barnCellW,barnCellH,pic.x,pic.y,barnW,barnH);
+				ctx.drawImage(sheet,pic.sx,pic.sy,barnCellW,barnCellH,pic.x,pic.y,pic.drawW,pic.drawH);
 			}
+			return true;
 		};
-}
+	}

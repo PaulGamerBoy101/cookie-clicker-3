@@ -38,6 +38,7 @@ import { declareJavascriptConsole } from "./javascriptconsole";
 import { declareIdleverse } from "./idleverse";
 import { declareCortexBaker } from "./cortexbaker";
 import { declareCats } from "./cats";
+import { makeStackDraw } from "./stackDraw";
 
 /** Declare the 20 vanilla buildings (and their per-building extras) on Game. */
 export function declareVanillaBuildings(Game: EngineGame) {
@@ -62,6 +63,21 @@ export function declareVanillaBuildings(Game: EngineGame) {
 	declareCortexBaker(Game);
 	declareTailRebalance(Game);
 	declareCats(Game);
+
+	// Apply the unified vertical-stack display (1 per row, staggered, ~35%
+	// overlap) to every building EXCEPT Grandma and Cats, which keep their
+	// bespoke draw routines, and Farm and Mine, which layer their own sprite
+	// rendering on top of the same shared stack layout.
+	// Canvases are attached later (in BuildStore), so we must not guard on
+	// `b.canvas` here — the draw function checks for a canvas at call time.
+	const stackDraw=makeStackDraw(Game);
+	const KEEP_OWN_DRAW: Record<string, boolean>={Grandma:true,Cats:true,Farm:true,Mine:true};
+	for (const name in Game.Objects)
+	{
+		const b:any=Game.Objects[name];
+		if (!b || KEEP_OWN_DRAW[name]) continue;
+		b.draw=stackDraw;
+	}
 }
 
 /**
