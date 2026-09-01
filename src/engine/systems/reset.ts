@@ -126,6 +126,7 @@ export function Reset(hard: any)
 	
 	Game.BuildingsOwned=0;
 	Game.UpgradesOwned=0;
+	Game.monoBuilding=null;//CC3: Monoculture challenge — clear the per-run building lock on every reset
 	
 	Game.cookiesPsByType={};
 	Game.cookiesMultByType={};

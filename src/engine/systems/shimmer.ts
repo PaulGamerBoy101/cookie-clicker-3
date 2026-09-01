@@ -95,7 +95,7 @@ export function updateShimmers()//run shimmer functions, kill overtimed shimmers
 			}
 
 			//cookie storm!
-			if (Game.hasBuff('Cookie storm') && Math.random()<0.5)
+			if (!(Game.ascensionMode==3) && Game.hasBuff('Cookie storm') && Math.random()<0.5)
 			{
 				var newShimmer=new Game.shimmer('golden',{type:'cookie storm drop'},1);
 				newShimmer.dur=Math.ceil(Math.random()*4+1);
@@ -108,6 +108,8 @@ export function updateShimmers()//run shimmer functions, kill overtimed shimmers
 			for (var i in Game.shimmerTypes)
 			{
 				var me=Game.shimmerTypes[i];
+				//CC3: Ascetic challenge — no golden cookies (or wrath cookies) spawn at all
+				if (Game.ascensionMode==3 && i=='golden') continue;
 				if (me.spawnsOnTimer && me.spawnConditions())//only run on shimmer types that work on a timer
 				{
 					if (!me.spawned)//no shimmer spawned for this type? check the timer and try to spawn one

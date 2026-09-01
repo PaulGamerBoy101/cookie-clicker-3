@@ -262,6 +262,12 @@ export class Building {
 			this.buy=function(amount: any)
 			{
 				if (Game.buyMode==-1) {this.sell(Game.buyBulk,1);return 0;}
+				//CC3: Monoculture challenge — only the locked building type may be bought
+				if (Game.ascensionMode==4 && Game.monoBuilding!==null && Game.monoBuilding!==this.id)
+				{
+					PlaySound('snd/error1.mp3',0.5);
+					return 0;
+				}
 				var success=0;
 				var moni=0;
 				var bought=0;
@@ -277,6 +283,8 @@ export class Building {
 						Game.Spend(price);
 						this.amount++;
 						this.bought++;
+						//CC3: Monoculture challenge — first successful purchase locks the building type
+						if (Game.ascensionMode==4 && Game.monoBuilding===null) Game.monoBuilding=this.id;
 						price=this.getPrice();
 						this.price=price;
 						if (this.buyFunction) this.buyFunction();
@@ -579,6 +587,13 @@ export class Building {
 				this.rebuild();
 				if (this.amount==0 && this.id!=0) l('row'+this.id).classList.remove('enabled');
 				else if (this.amount>0 && this.id!=0) l('row'+this.id).classList.add('enabled');
+				//CC3: Monoculture challenge — grey out buildings that aren't the locked type
+				if (Game.ascensionMode==4 && Game.monoBuilding!==null && Game.monoBuilding!==this.id && this.id!=0)
+				{
+					l('row'+this.id).classList.remove('enabled');
+					if (l('product'+this.id)) l('product'+this.id).classList.add('disabled');
+				}
+				else if (l('product'+this.id)) l('product'+this.id).classList.remove('disabled');
 				if ((this.muted as number)>0 && this.id!=0) {l('row'+this.id).classList.add('muted');l('mutedProduct'+this.id).style.display='inline-block';}//muted starts as the ctor's false; the engine assigns 0/1 — the original compared it to 0 either way
 				else if (this.id!=0) {l('row'+this.id).classList.remove('muted');l('mutedProduct'+this.id).style.display='none';}
 				//if (!this.onMinigame && !this.muted) {}

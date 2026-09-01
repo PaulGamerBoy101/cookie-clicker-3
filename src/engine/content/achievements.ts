@@ -1110,5 +1110,17 @@ export function declareVanillaAchievements(Game: EngineGame) {
 		new Game.Achievement('The elders sing',loc("Reach <b>-6 comfort</b> in the Sitting Room (every seat eldritch)."),[25,26]);
 		new Game.Achievement('Fully furnished',loc("Buy every Sitting Room upgrade."),[26,26]);
 
+		// CC3: Challenge-mode completion achievements, appended (not interleaved)
+		// so existing achievement ids stay stable for imported saves. Each is
+		// won directly from the game loop once you reach the cookie milestone
+		// during the matching challenge run. Shadow pool = never counts toward
+		// the achievement tally (same as vanilla shadow achievements). Acts as
+		// the permanent flag that unlocks the reward heavenly upgrade.
+		order=1200;
+		new Game.Achievement('Scrolling adept',loc("Reach <b>%1</b> baked during a <b>Trigger finger</b> run.",loc("%1 cookie",LBeautify(1e15)))+'<q>Scrolling is for winners.</q>',[12,0]);Game.last.pool='shadow';
+		new Game.Achievement('Golden heart',loc("Reach <b>%1</b> baked during an <b>Ascetic</b> run (no golden cookies).",loc("%1 cookie",LBeautify(1e12)))+'<q>Denial builds character.</q>',[27,6]);Game.last.pool='shadow';
+		new Game.Achievement('Unity',loc("Reach <b>%1</b> baked during a <b>Monoculture</b> run (one building type).",loc("%1 cookie",LBeautify(1e9)))+'<q>Diversify nothing.</q>',[13,0]);Game.last.pool='shadow';
+		new Game.Achievement('Minimalist',loc("Reach <b>%1</b> baked during a <b>Spender</b> run (no upgrades).",loc("%1 cookie",LBeautify(1e15)))+'<q>Who needs upgrades anyway?</q>',[14,0]);Game.last.pool='shadow';
+
 		//end of achievements
 }

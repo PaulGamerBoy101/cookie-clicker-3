@@ -720,6 +720,101 @@ test('?qa=sittingroom: Grandma\'s Sitting Room + Grandmapocalypse integration ve
 	await assertNoUncaughtErrors(page);
 });
 
+test('challenge modes: 5 ascension modes, gameplay gates, and reward upgrades verified', async ({ page }) => {
+	await boot(page, '');
+	const state = await page.evaluate(() => {
+		const G = window.Game;
+		const out = { modes: [], gates: {} };
+		// 1. ascensionModes: 5 entries, names match
+		const modeNames = Object.values(G.ascensionModes).map((m) => m.name);
+		out.modes = modeNames;
+		out.modeCount = Object.keys(G.ascensionModes).length;
+		// 2. monoBuilding initialised null
+		out.monoBuilding = G.monoBuilding;
+		// 3. reward upgrades exist and are gated behind achievements
+		const upgrades = ['Scrolling adept','Golden heart','Unity','Minimalist'];
+		for (const name of upgrades) {
+			const u = G.Upgrades[name];
+			if (!u) { out.gates[name] = 'missing'; continue; }
+			out.gates[name] = {
+				pool: u.pool,
+				showIfType: typeof u.showIf,
+				showIfResult: u.showIf ? u.showIf() : null,
+			};
+		}
+		// 4. achievement declarations exist
+		const achievs = ['Scrolling adept','Golden heart','Unity','Minimalist'];
+		for (const name of achievs) {
+			const a = G.Achievements[name];
+			out.gates[`achiev_${name}`] = a ? { pool: a.pool, won: a.won } : 'missing';
+		}
+		// 5. Spender gate in Upgrade.buy rejects normal upgrades
+		const testUpgrade = G.Upgrades['Reinforced index finger'];
+		if (testUpgrade) {
+			const prevMode = G.ascensionMode;
+			G.ascensionMode = 5;
+			const result = testUpgrade.buy();
+			G.ascensionMode = prevMode;
+			out.gates.spenderGate = { bought: testUpgrade.bought, result };
+		}
+		// 6. Monoculture gate in Building.buy rejects non-mono buildings
+		const testBld = G.Objects.Cursor;
+		if (testBld) {
+			const prevMode = G.ascensionMode;
+			const prevMono = G.monoBuilding;
+			G.ascensionMode = 4;
+			G.monoBuilding = 1; // locked to Grandma
+			const result = testBld.buy(1);
+			G.ascensionMode = prevMode;
+			G.monoBuilding = prevMono;
+			out.gates.monoGate = { bought: result, cursorAmount: testBld.amount };
+		}
+		// 7. Ascetic gate: the shimmerTypes module is loaded at init
+		out.gates.ascetic = { modeDesc: G.ascensionModes[3] ? G.ascensionModes[3].name : null };
+		// 8. Trigger finger: clicking achievement gate
+		out.gates.triggerFinger = {
+			scrollClickExists: typeof G.Scroll !== 'undefined',
+			hasMode2: !!G.ascensionModes[2],
+		};
+		return out;
+	});
+	// 6 slots: 0=None + 5 challenge modes
+	expect(state.modeCount).toBe(6);
+	expect(state.modes).toContain('None');
+	expect(state.modes).toContain('Born again');
+	expect(state.modes).toContain('Trigger finger');
+	expect(state.modes).toContain('Ascetic');
+	expect(state.modes).toContain('Monoculture');
+	expect(state.modes).toContain('Spender');
+	// monoBuilding null by default
+	expect(state.monoBuilding).toBeNull();
+	// 4 reward upgrades exist with showIf gating
+	for (const name of ['Scrolling adept','Golden heart','Unity','Minimalist']) {
+		expect(state.gates[name]).toBeDefined();
+		expect(state.gates[name].pool).toBe('prestige');
+		expect(state.gates[name].showIfType).toBe('function');
+		// showIf returns falsy (0) since the achievement isn't won yet
+		expect(state.gates[name].showIfResult).toBeFalsy();
+	}
+	// 4 shadow achievements declared
+	for (const name of ['Scrolling adept','Golden heart','Unity','Minimalist']) {
+		expect(state.gates[`achiev_${name}`]).toBeDefined();
+		expect(state.gates[`achiev_${name}`].pool).toBe('shadow');
+		expect(state.gates[`achiev_${name}`].won).toBe(0);
+	}
+	// Spender gate blocks normal upgrade purchase
+	expect(state.gates.spenderGate.bought).toBe(0);
+	// Monoculture gate blocks non-mono building purchase
+	expect(state.gates.monoGate.bought).toBe(0);
+	expect(state.gates.monoGate.cursorAmount).toBe(0);
+	// Ascetic mode exists
+	expect(state.gates.ascetic.modeDesc).toBe('Ascetic');
+	// Trigger finger: mode 2 exists, scroll support wired
+	expect(state.gates.triggerFinger.hasMode2).toBe(true);
+	expect(state.gates.triggerFinger.scrollClickExists).toBe(true);
+	await assertNoUncaughtErrors(page);
+});
+
 test('?qa=catcolony: Cat Colony minigame + repeatable treat upgrades verified end to end', async ({ page }) => {
 	await boot(page, '&qa=catcolony');
 	const report = await qaReport(

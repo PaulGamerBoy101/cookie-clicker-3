@@ -2200,6 +2200,18 @@ export function declareVanillaUpgrades(Game: EngineGame) {
 		new Game.Upgrade('Grandma\'s knitting circle',"The Sitting Room generates yarn <b>50% faster</b>."+'<q>The needles click in perfect rhythm, and the yarn pile grows faster than you can knit it.</q>',2000000,[0,0,'img/grandmaIcon.webp',64]);Game.last.pool='prestige';Game.last.parents=['Starter kitchen'];
 		new Game.Upgrade('Elder hospitality',"The Sitting Room's comfort affects the Grandmapocalypse <b>twice as strongly</b>."+'<q>The elders appreciate a well-kept sitting room. Who knew that a fresh pot of tea could soothe an eldritch horror?</q>',5000000,[0,0,'img/grandmaIconB.webp',64]);Game.last.pool='prestige';Game.last.parents=['Grandma\'s knitting circle'];
 
+		// CC3: Challenge completion rewards — permanent heavenly upgrades gated
+		// behind the corresponding shadow achievement (earned by reaching the
+		// cookie milestone during the challenge run).  Each upgrade's showIf
+		// makes it invisible in the tree until the achievement is owned, so it
+		// acts as a permanent unlock.  Effects are wired in main.ts (mouseCps
+		// / CalculateGains) and shimmerTypes.ts (golden cookie duration/freq).
+		order=22000;
+		new Game.Upgrade('Scrolling adept',loc("Clicking is <b>%1% stronger</b> and golden cookie effects last <b>%2% longer</b>.",[2,5])+'<q>Your scroll wheel has developed a taste for glory.</q>',25,[12,0]);Game.last.pool='prestige';Game.last.parents=['Legacy'];Game.last.showIf=function(){return Game.HasAchiev('Scrolling adept');};
+		new Game.Upgrade('Golden heart',loc("Golden cookie effects last <b>%1% longer</b> and appear <b>%2% more often</b>.",[15,5])+'<q>Who needs the sight of cookies when you can feel them in your heart?</q>',25,[27,6]);Game.last.pool='prestige';Game.last.parents=['Legacy'];Game.last.showIf=function(){return Game.HasAchiev('Golden heart');};
+		new Game.Upgrade('Unity',loc("CpS <b>+%1%</b> per 100 buildings of your most-owned type.",1)+'<q>One glass, one dough, one vision.</q>',50,[13,0]);Game.last.pool='prestige';Game.last.parents=['Legacy'];Game.last.showIf=function(){return Game.HasAchiev('Unity');};
+		new Game.Upgrade('Minimalist',loc("CpS <b>+%1%</b> per 100 upgrades owned permanently.",2)+'<q>Less is more. More is also more. But less is more-ier.</q>',75,[14,0]);Game.last.pool='prestige';Game.last.parents=['Legacy'];Game.last.showIf=function(){return Game.HasAchiev('Minimalist');};
+
 		//end of upgrades
 
 		Game.seasons={

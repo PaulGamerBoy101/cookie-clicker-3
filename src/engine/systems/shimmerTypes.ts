@@ -190,6 +190,9 @@ type BoundsRect = { left: number; right: number; top: number; bottom: number };
 					if (Game.Has('Lucky payout')) effectDurMod*=1.01;
 					if (Game.Has('Prismatic aftertaste')) effectDurMod*=1.05;
 					if (Game.Has('Sugar glaze')) effectDurMod*=1.05;
+					//CC3: challenge rewards — Golden heart +15% duration, Scrolling adept +5% duration
+					if (Game.Has('Golden heart')) effectDurMod*=1.15;
+					if (Game.Has('Scrolling adept')) effectDurMod*=1.05;
 					//if (Game.hasAura('Epoch Manipulator')) effectDurMod*=1.05;
 					effectDurMod*=1+Game.auraMult('Epoch Manipulator')*0.05;
 					if (!me.wrath) effectDurMod*=Game.eff('goldenCookieEffDur');
@@ -399,6 +402,8 @@ type BoundsRect = { left: number; right: number; top: number; bottom: number };
 				{
 					if (Game.Has('Lucky day')) m/=2;
 					if (Game.Has('Serendipity')) m/=2;
+					//CC3: Golden heart reward — golden cookies appear 5% more often
+					if (Game.Has('Golden heart')) m*=0.95;
 					if (Game.Has('Golden goose egg')) m*=0.95;
 					if (Game.Has('Heavenly luck')) m*=0.95;
 					if (Game.Has('Morning bells')) m*=0.95;

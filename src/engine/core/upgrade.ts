@@ -132,6 +132,8 @@ export class Upgrade {
 			return Math.ceil(price);
 	}
 	canBuy() {
+			//CC3: Spender challenge — no upgrades may be purchased (visual + functional gate)
+			if (Game.ascensionMode==5 && this.pool!='prestige' && this.pool!='prestigeDecor' && this.pool!='debug') return false;
 			if (this.canBuyFunc) return this.canBuyFunc();
 			if (Game.cookies>=this.getPrice()) return true; else return false;
 	}
@@ -161,6 +163,14 @@ export class Upgrade {
 	buy(bypass?: any) {
 			var success=0;
 			var cancelPurchase: any=0;//the original reassigns a boolean into this 0-sentinel
+			//CC3: Spender challenge — no upgrades may be purchased this run,
+			//including toggles and season switchers (buildings only). Heavenly
+			//upgrades are bought in the ascend tree, never during a run.
+			if (Game.ascensionMode==5 && this.pool!='prestige' && this.pool!='prestigeDecor' && this.pool!='debug')
+			{
+				PlaySound('snd/error1.mp3',0.5);
+				return 0;
+			}
 			if (this.clickFunction && !bypass) cancelPurchase=!this.clickFunction();
 			if (!cancelPurchase)
 			{

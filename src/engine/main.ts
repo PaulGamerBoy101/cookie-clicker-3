@@ -890,6 +890,7 @@ Game.Launch=function()
 		Game.heavenlyCookies=0;//how many cookies have we baked from chips (unused)
 		Game.permanentUpgrades=[-1,-1,-1,-1,-1];
 		Game.ascensionMode=0;//type of challenge run if any
+		Game.monoBuilding=null;//CC3: Monoculture challenge — the one building type locked in for the run
 		Game.resets=0;//reset counter
 		Game.lumps=-1;//sugar lumps
 		Game.lumpsTotal=-1;//sugar lumps earned across all playthroughs (-1 means they haven't even started yet)
@@ -1281,8 +1282,11 @@ Game.Launch=function()
 		
 		Game.ascensionModes={
 		0:{name:'None',dname:loc("None [ascension type]"),desc:loc("No special modifiers."),icon:[10,0]},
-		1:{name:'Born again',dname:loc("Born again [ascension type]"),desc:loc("This run will behave as if you'd just started the game from scratch. Prestige levels and heavenly upgrades will have no effect, as will sugar lumps and building levels. Perma-upgrades and minigames will be unavailable.<div class=\"line\"></div>Some achievements are only available in this mode."),icon:[2,7]}/*,
-		2:{name:'Trigger finger',dname:loc("Trigger finger [ascension type]"),desc:loc("In this run, scrolling your mouse wheel on the cookie counts as clicking it. Some upgrades introduce new clicking behaviors.<br>No clicking achievements may be obtained in this mode.<div class=\"line\"></div>Reaching 1 quadrillion cookies in this mode unlocks a special heavenly upgrade."),icon:[12,0]}*/
+		1:{name:'Born again',dname:loc("Born again [ascension type]"),desc:loc("This run will behave as if you'd just started the game from scratch. Prestige levels and heavenly upgrades will have no effect, as will sugar lumps and building levels. Perma-upgrades and minigames will be unavailable.<div class=\"line\"></div>Some achievements are only available in this mode."),icon:[2,7]},
+		2:{name:'Trigger finger',dname:loc("Trigger finger [ascension type]"),desc:loc("In this run, scrolling your mouse wheel on the cookie counts as clicking it. Some upgrades introduce new clicking behaviors.<br>No clicking achievements may be obtained in this mode.<div class=\"line\"></div>Reaching 1 quadrillion cookies in this mode unlocks a special heavenly upgrade."),icon:[12,0]},
+		3:{name:'Ascetic',dname:loc("Ascetic [ascension type]"),desc:loc("In this run, golden cookies and wrath cookies never appear. No seasonal drops either. Only your passive baking remains.<br>No golden cookie achievements may be obtained in this mode.<div class=\"line\"></div>Reaching 1 trillion cookies in this mode unlocks a special heavenly upgrade."),icon:[11,0]},
+		4:{name:'Monoculture',dname:loc("Monoculture [ascension type]"),desc:loc("In this run, you can only buy <b>one type of building</b>. The first building you purchase locks that type in for the entire run.<br>All other buildings are locked.<div class=\"line\"></div>Reaching 1 billion cookies in this mode unlocks a special heavenly upgrade."),icon:[13,0]},
+		5:{name:'Spender',dname:loc("Spender [ascension type]"),desc:loc("In this run, you cannot buy any upgrades. Only buildings may be purchased.<br>Your cookies pile up in the store instead of the lab.<div class=\"line\"></div>Reaching 1 quadrillion cookies in this mode unlocks a special heavenly upgrade."),icon:[14,0]}
 		};
 		
 		Game.ascendMeterPercent=0;
@@ -1479,6 +1483,8 @@ Game.Launch=function()
 			}
 			
 			mult*=Game.eff('click');
+			//CC3: Trigger finger completion reward — +2% cookie click power
+			if (Game.Has('Scrolling adept')) mult*=1.02;
 			
 			if (Game.hasGod)
 			{
@@ -1529,7 +1535,7 @@ Game.Launch=function()
 			if (Game.OnAscend || Game.AscendTimer>0 || Game.T<3 || now-Game.lastClick<1000/((e?e.detail:1)===0?3:50)) {}
 			else
 			{
-				if (now-Game.lastClick<(1000/15))
+				if (now-Game.lastClick<(1000/15) && Game.ascensionMode!=2)//CC3: Trigger finger — scroll clicks don't count as autoclicker clicking achievements
 				{
 					Game.autoclickerDetected+=Game.fps;
 					if (Game.autoclickerDetected>=Game.fps*5) Game.Win('Uncanny clicker');
@@ -1852,6 +1858,28 @@ Game.Launch=function()
 			mult*=eggMult;
 			
 			if (Game.Has('Sugar baking')) mult*=(1+Math.min(100,Game.lumps)*0.01);
+			
+			//CC3: challenge rewards — Monoculture (Unity: +1% CpS per 100 of your
+			//most-owned building) and Spender (Minimalist: +2% CpS per 100
+			//upgrades owned).
+			if (Game.Has('Unity'))
+			{
+				var mostOwned=0;
+				for (var iUnity in Game.Objects)
+				{
+					if (Game.Objects[iUnity].amount>mostOwned) mostOwned=Game.Objects[iUnity].amount;
+				}
+				mult*=(1+0.01*Math.floor(mostOwned/100));
+			}
+			if (Game.Has('Minimalist'))
+			{
+				var prestigeOwned=0;
+				for (var iPrestige in Game.PrestigeUpgrades)
+				{
+					if (Game.PrestigeUpgrades[iPrestige].bought) prestigeOwned++;
+				}
+				mult*=(1+0.02*Math.floor(prestigeOwned/100));
+			}
 			
 			//if (Game.hasAura('Radiant Appetite')) mult*=2;
 			mult*=1+Game.auraMult('Radiant Appetite');
@@ -3425,8 +3453,12 @@ window.loadMinigameModule!(me.minigameUrl).then(function(){
 			Game.UpdateSpecial();
 			Game.UpdateGrandmapocalypse();
 			
-			//these are kinda fun
-			//if (Game.BigCookieState==2 && !Game.promptOn && Game.Scroll!=0) Game.ClickCookie();
+			//CC3: Trigger finger challenge — scrolling over the cookie counts as clicking it
+			if (Game.ascensionMode==2 && Game.BigCookieState==2 && !Game.promptOn && Game.Scroll!=0)
+			{
+				Game.ClickCookie();
+				Game.Scroll=0;
+			}
 			//if (Game.BigCookieState==1 && !Game.promptOn) Game.ClickCookie();
 			
 			//handle graphic stuff
@@ -3585,6 +3617,15 @@ window.loadMinigameModule!(me.minigameUrl).then(function(){
 					if (Game.cookiesEarned>=1000000000 && Game.UpgradesOwned==0) Game.Win('Hardcore');
 				}
 				
+				//CC3: challenge-mode completion rewards — reach a cookie milestone
+				//during the run to permanently unlock the themed heavenly upgrade
+				//(the shadow achievement is the persistent flag; the upgrades check
+				//Game.HasAchiev so they only appear in the tree once earned).
+				if (Game.ascensionMode==2 && Game.cookiesEarned>=1000000000000000) Game.Win('Scrolling adept');
+				if (Game.ascensionMode==3 && Game.cookiesEarned>=1000000000000) Game.Win('Golden heart');
+				if (Game.ascensionMode==4 && Game.cookiesEarned>=1000000000) Game.Win('Unity');
+				if (Game.ascensionMode==5 && Game.cookiesEarned>=1000000000000000) Game.Win('Minimalist');
+				
 				for (var iKey in Game.UnlockAt)
 				{
 					var unlock=Game.UnlockAt[iKey];
@@ -3673,6 +3714,8 @@ window.loadMinigameModule!(me.minigameUrl).then(function(){
 				if (minAmount>=600) {Game.Win('Sexcentennial');Game.Unlock('Butter biscuit (with butter)');}
 				if (minAmount>=650) {Game.Win('Sexcentennial and a half');Game.Unlock('Everybutter biscuit');}
 				
+				if (Game.ascensionMode!=2)//Trigger finger: no clicking achievements
+			{
 				if (Game.handmadeCookies>=1000) {Game.Win('Clicktastic');Game.Unlock('Plastic mouse');}
 				if (Game.handmadeCookies>=100000) {Game.Win('Clickathlon');Game.Unlock('Iron mouse');}
 				if (Game.handmadeCookies>=10000000) {Game.Win('Clickolympics');Game.Unlock('Titanium mouse');}
@@ -3687,6 +3730,7 @@ window.loadMinigameModule!(me.minigameUrl).then(function(){
 				if (Game.handmadeCookies>=10000000000000000000000000) {Game.Win('One...more...click...');Game.Unlock('Plasmarble mouse');}
 				if (Game.handmadeCookies>=1000000000000000000000000000) {Game.Win('Clickety split');Game.Unlock('Miraculite mouse');}
 				if (Game.handmadeCookies>=100000000000000000000000000000) {Game.Win('Ain\'t that a click in the head');Game.Unlock('Aetherice mouse');}
+			}
 				
 				if (Game.cookiesEarned<Game.cookies) Game.Win('Cheated cookies taste awful');
 				
@@ -3963,6 +4007,8 @@ window.loadMinigameModule!(me.minigameUrl).then(function(){
 					var price=me.bulkPrice;
 					if (Game.cookiesEarned>=me.basePrice || me.bought>0) {classes+=' unlocked';lastLocked=0;me.locked=0;} else {classes+=' locked';lastLocked++;me.locked=1;}
 					if ((Game.buyMode==1 && Game.cookies>=price) || (Game.buyMode==-1 && me.amount>0)) classes+=' enabled'; else classes+=' disabled';
+					//CC3: Monoculture challenge — buildings other than the locked type are disabled
+					if (Game.ascensionMode==4 && Game.monoBuilding!==null && Game.monoBuilding!==me.id) classes=classes.replace(' enabled',' disabled');
 					if (lastLocked>2) classes+=' toggledOff';
 					me.l.className=classes;
 					//if (me.id>0) {l('productName'+me.id).innerHTML=Beautify(me.storedTotalCps/Game.ObjectsById[me.id-1].storedTotalCps,2);}
