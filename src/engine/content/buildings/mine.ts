@@ -7,7 +7,7 @@
  * follows the declaration.
  */
 import type { Building, Game as EngineGame } from "../../types";
-import { stackPosition, STACK_TARGET_H, STACK_OVERLAP } from "./stackDraw";
+import { stackPosition, stackDims, STACK_TARGET_H } from "./stackDraw";
 
 /** Declare the Mine building on Game. */
 export function declareMine(Game: EngineGame) {
@@ -48,9 +48,8 @@ export function declareMine(Game: EngineGame) {
 			var drawH=sheet.height*scale;
 			var canvasW=this.canvas.width;
 			var canvasH=this.canvas.height;
-			var vStep=Math.max(1,drawH*(1-STACK_OVERLAP));
-			var maxRows=Math.max(1,Math.floor((canvasH-drawH)/vStep)+1);
-			var iT=Math.min(this.amount,maxRows);
+			var dims=stackDims(canvasW,canvasH,drawW,drawH);
+			var iT=Math.min(this.amount,dims.perRow*dims.numRows);
 			var i=this.pics.length;
 			if (i!=iT)
 			{
