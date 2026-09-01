@@ -1,6 +1,6 @@
 # Cookie Clicker 3
 
-Cookie Clicker 3 is a modern Cookie Clicker experience based on [Cookie Clicker 2.048](https://github.com/DiSCooooo/Cookie-Clicker-2.048) (itself a port of Orteil's [Cookie Clicker](http://orteil.dashnet.org/cookieclicker/)). The project preserves the original game's behavior in a strictly typed TypeScript ES-module web app, built with a zero-runtime-dependency Vite pipeline — no jQuery, no IE polyfills, no CDN requests, no ads, no trackers. See [ROADMAP.md](ROADMAP.md) for where the project is headed.
+Cookie Clicker 3 is a modern Cookie Clicker experience based on [Cookie Clicker 2.048](https://github.com/DiSCooooo/Cookie-Clicker-2.048) (itself a port of Orteil's [Cookie Clicker](http://orteil.dashnet.org/cookieclicker/)). It is an unofficial fan port — not affiliated with or endorsed by Orteil. The project preserves the original game's behavior in a strictly typed TypeScript ES-module web app, built with a zero-runtime-dependency Vite pipeline — no jQuery, no IE polyfills, no CDN requests, no ads, no trackers. See [ROADMAP.md](ROADMAP.md) for where the project is headed.
 
 ## [PLAY ME HERE](https://giveen.github.io/cookie-clicker-3/)
 
@@ -230,6 +230,15 @@ Grandmapocalypse wrinklers: it enables `Game.elderWrath`, spawns a fully visible
 (phase 2) wrinkler, checks it sets `Game.cpsSucked` (5% of CpS, lowering the
 displayed CpS + draining cookies), then pops it and verifies `Game.wrinklersPopped`
 increments, the swallowed cookies are refunded (+10%), and the debuff clears.
+   `?qa=dailycrumb` verifies the Daily crumb (CC3-native weekly calendar of
+   daily returning rewards, `src/extras/dailyCrumb.ts`): a fresh install
+   records the baseline day without a reward, a single missed day claims that
+   day's weekday reward (cookies scale with CpS, or a buff / sugar lump /
+   golden cookie depending on the weekday), the same day never double-claims,
+   a multi-day absence backfills each missed day and keeps the streak
+   continuous, an absence over 14 days resets the streak (today only), and the
+   streak/claims state round-trips through the save's Custom mod section
+   (WriteSave → corrupt → ImportSaveCode).
 `?qa=perf&qlvl=N` seeds all four
   minigame buildings at level `N` (default 1), opens the Garden, and reports the
   actual game-loop rate (`Game.T` ticks/sec) versus the 30-tick `Game.fps`
@@ -255,6 +264,20 @@ increments, the swallowed cookies are refunded (+10%), and the debuff clears.
   CSS gates quiet). A reduced-motion variant (Playwright
   `reducedMotion: 'reduce'`) asserts the same opt-out at the OS level. Run
   it with `&oneCol=1`. Never active in a plain load.
+
+## Legal
+
+Cookie Clicker 3 is an **unofficial, non-commercial fan port**. The original
+game's code and all graphics are copyright **Orteil, 2013–2022** and are
+included under his in-source permission ("feel free to alter this code to
+your liking, but please do not re-host it, do not profit from it and do not
+present it as your own"). This project is not affiliated with or endorsed by
+Orteil, is not for sale, carries no ads or other monetization, and is not a
+substitute for the official game at
+<http://orteil.dashnet.org/cookieclicker/>. See [LICENSE](LICENSE) for the
+license on the CC3-original code and [CREDITS.md](CREDITS.md) for the full
+notice. If any rights holder objects to this project, contact me and the
+objected-to material will be removed or the project taken down.
 
 ## Credits
 
