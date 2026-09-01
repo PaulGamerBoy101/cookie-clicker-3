@@ -177,31 +177,54 @@ M.launch = function () {
 		str += '<style>' +
 			'#colonyBG{background:url(img/shadedBorders.webp),url(img/cats/Summer1.png);background-size:100% 100%,auto;position:absolute;left:0px;right:0px;top:0px;bottom:16px;}' +
 			'#colonyContent{position:relative;box-sizing:border-box;padding:8px 16px;max-height:100%;overflow-y:auto;}' +
-			'.colonyBox{position:relative;margin:8px auto;padding:8px 12px;max-width:520px;background:rgba(0,0,0,0.75);border-radius:12px;color:rgba(255,255,255,0.9);}' +
+			/* ---- base card ---- */
+			'.colonyBox{position:relative;margin:8px auto;padding:8px 12px;max-width:600px;background:rgba(0,0,0,0.75);border-radius:12px;color:rgba(255,255,255,0.9);}' +
 			'.colonyTitle{font-weight:bold;font-size:13px;margin-bottom:4px;text-shadow:0px 0px 4px #000;}' +
+			'.colonyTitleSmall{font-weight:bold;font-size:11px;margin-bottom:4px;opacity:0.7;text-transform:uppercase;letter-spacing:1px;}' +
 			'.colonyStats{text-align:center;font-size:12px;margin-bottom:4px;}' +
-			'.colonyRow{display:flex;align-items:center;gap:8px;padding:4px 0px;border-top:1px solid rgba(255,255,255,0.15);}' +
-			'.colonyRow:first-of-type{border-top:none;}' +
-			'.colonyRowText{flex:1;font-size:11px;line-height:1.4;}' +
-			'.colonyRowName{font-weight:bold;font-size:12px;}' +
-			'.colonyLocked{opacity:0.5;}' +
-			'.colonyBtn{cursor:pointer;padding:4px 10px;border-radius:6px;background:rgba(255,255,255,0.15);font-size:11px;font-weight:bold;white-space:nowrap;}' +
-			'.colonyBtn:hover{background:rgba(255,255,255,0.3);}' +
-			'.colonyBtnDisabled{cursor:default;opacity:0.35;}' +
-			'.colonyBtnDisabled:hover{background:rgba(255,255,255,0.15);}' +
-			'.colonyCatStrip{display:flex;flex-wrap:wrap;gap:2px;min-height:36px;align-items:center;}' +
+			/* ---- status chips ---- */
+			'.colonyChip{display:inline-block;padding:1px 6px;border-radius:3px;font-size:9px;font-weight:bold;margin:0 2px 2px 0;}' +
+			'.colonyChipBlue{background:rgba(100,150,255,0.25);color:#9cf;}' +
+			'.colonyChipGreen{background:rgba(100,200,100,0.25);color:#8c8;}' +
+			'.colonyChipRed{background:rgba(255,120,120,0.25);color:#f99;}' +
+			'.colonyChipAmber{background:rgba(255,200,100,0.25);color:#fc9;}' +
+			'.colonyChipGray{background:rgba(200,200,200,0.2);color:#aaa;}' +
+			/* ---- roster / cat strip ---- */
+			'.colonyCatStrip{display:flex;flex-wrap:wrap;gap:2px;min-height:36px;align-items:center;margin-top:4px;}' +
 			// Source strips are 8 frames of 80x64 (640x64 total). Halved via
 			// background-size to a 320x32 sheet so the 40x32 box shows one
 			// frame exactly — no transform needed, unlike the scaled-icon
 			// idiom elsewhere (tinyIcon()) which shrinks a fixed 48x48 icon.
 			'.colonyCat{width:40px;height:32px;background-image:url(img/cats/idle.png);background-repeat:no-repeat;background-size:320px 32px;}' +
 			'.colonyCatResting{background-image:url(img/cats/sleep.png);}' +
+			'.colonyEmpty{font-size:11px;opacity:0.6;font-style:italic;}' +
 			'@keyframes colonyCatIdleAnim{0%,12.5%{background-position:0px 0px;}12.5%,25%{background-position:-40px 0px;}25%,37.5%{background-position:-80px 0px;}37.5%,50%{background-position:-120px 0px;}50%,62.5%{background-position:-160px 0px;}62.5%,75%{background-position:-200px 0px;}75%,87.5%{background-position:-240px 0px;}87.5%,100%{background-position:-280px 0px;}}' +
 			'body:not(.noMotion) .colonyCat{animation:colonyCatIdleAnim 1.6s steps(1) infinite;}' +
-			'.colonyEmpty{font-size:11px;opacity:0.6;font-style:italic;}' +
+			'.colonyRosterLegend{font-size:9px;opacity:0.6;text-align:center;margin-top:2px;}' +
+			'.colonyTimers{font-size:10px;opacity:0.8;text-align:center;margin-top:4px;}' +
+			/* ---- mission cards ---- */
+			'.colonyMissionList{display:flex;flex-direction:column;gap:4px;margin:4px 0;}' +
+			'.colonyMission{display:flex;align-items:center;gap:8px;padding:4px 6px;border-radius:8px;background:rgba(255,255,255,0.06);font-size:10px;line-height:1.3;}' +
+			'.colonyMissionLocked{opacity:0.4;}' +
+			'.colonyMissionIcon{width:40px;height:32px;background-repeat:no-repeat;flex:none;filter:drop-shadow(0 2px 2px rgba(0,0,0,0.5));}' +
+			'.colonyMissionInfo{flex:1;}' +
+			'.colonyMissionName{font-weight:bold;font-size:11px;}' +
+			'.colonyMissionDesc{opacity:0.7;font-size:9px;}' +
+			'.colonyBtn{cursor:pointer;padding:4px 10px;border-radius:6px;background:rgba(100,180,255,0.25);font-size:11px;font-weight:bold;white-space:nowrap;transition:background 0.15s;flex:none;}' +
+			'.colonyBtn:hover{background:rgba(100,180,255,0.45);}' +
+			'.colonyBtnDisabled{cursor:default;opacity:0.35;}' +
+			'.colonyBtnDisabled:hover{background:rgba(100,180,255,0.25);}' +
+			/* ---- shop ---- */
+			'.colonyShopList{display:flex;flex-direction:column;gap:4px;margin:4px 0;}' +
+			'.colonyShopItem{display:flex;align-items:center;gap:8px;padding:4px 6px;border-radius:8px;background:rgba(255,255,255,0.06);font-size:10px;line-height:1.3;}' +
+			'.colonyShopInfo{flex:1;}' +
+			'.colonyShopName{font-weight:bold;}' +
+			'.colonyShopStack{opacity:0.6;}' +
+			'.colonyShopDesc{opacity:0.7;font-size:9px;}' +
+			/* ---- misc ---- */
 			'.colonyHelpBtn{cursor:pointer;padding:1px 7px;border-radius:4px;background:rgba(255,255,255,0.12);font-size:10px;font-weight:bold;margin-left:6px;white-space:nowrap;}' +
 			'.colonyHelpBtn:hover{background:rgba(255,255,255,0.3);}' +
-			'.colonyTutorial{margin:0px auto 8px;max-width:520px;background:rgba(0,0,0,0.85);border-radius:12px;padding:8px 12px;color:rgba(255,255,255,0.9);}' +
+			'.colonyTutorial{margin:0px auto 8px;max-width:600px;background:rgba(0,0,0,0.85);border-radius:12px;padding:8px 12px;color:rgba(255,255,255,0.9);}' +
 			'.colonyTutorial ul{margin:6px 0 4px 16px;padding:0;font-size:11px;line-height:1.5;}' +
 			'.colonyTutorial li{margin-bottom:6px;}' +
 			'</style>';
@@ -217,13 +240,28 @@ M.launch = function () {
 		M.refresh();
 	};
 
+	// Static single-frame sprite backgrounds for the mission cards — each
+	// shows one cat pose from the existing sheets, no new art.
+	M.missionArt = [
+		{ sheet: 'idle.png', size: '320px 32px', pos: '0px 0px' },        // yarn ball — loafing around
+		{ sheet: 'walk.png', size: '480px 32px', pos: '-160px 0px' },     // sunbeam — stalking
+		{ sheet: 'run.png', size: '320px 32px', pos: '-80px 0px' },       // pantry — sneaking
+		{ sheet: 'attack-1.png', size: '320px 32px', pos: '-120px 0px' }, // wrinkler — fighting
+		{ sheet: 'jump.png', size: '120px 32px', pos: '-80px 0px' },      // alley — pouncing
+		{ sheet: 'running-jump.png', size: '120px 32px', pos: '-40px 0px' } // nine lives — leaping
+	];
+
 	M.renderRoster = function () {
 		var idle = M.idleCats();
 		var away = M.awayCount();
 		var resting = M.restingCount();
 		var str = '<div class="colonyBox">';
 		str += '<div class="colonyTitle">Cat Colony <span id="colonyHelpBtn" class="colonyHelpBtn" title="How to play" style="float:right;">How to play</span></div>';
-		str += '<div class="colonyStats">Treats: <b>' + Beautify(M.treats) + '</b> &nbsp;|&nbsp; Idle: <b>' + idle + '</b> &nbsp;|&nbsp; Away: <b>' + away + '</b> &nbsp;|&nbsp; Resting: <b>' + resting + '</b></div>';
+		str += '<div class="colonyStats">🐾 Treats: <b>' + Beautify(M.treats) + '</b></div>';
+		str += '<div style="text-align:center;font-size:10px;margin-bottom:2px;">' +
+			'<span class="colonyChip colonyChipGreen">' + idle + ' idle</span>' +
+			'<span class="colonyChip colonyChipBlue">' + away + ' away</span>' +
+			'<span class="colonyChip colonyChipGray">' + resting + ' resting</span></div>';
 		str += '<div class="colonyCatStrip">';
 		var idleShown = Math.min(idle, 24);
 		for (var i = 0; i < idleShown; i++) { str += '<div class="colonyCat"></div>'; }
@@ -231,8 +269,9 @@ M.launch = function () {
 		for (var j = 0; j < restingShown; j++) { str += '<div class="colonyCat colonyCatResting"></div>'; }
 		if (idle === 0 && resting === 0) { str += '<div class="colonyEmpty">Every cat is out on an expedition.</div>'; }
 		str += '</div>';
+		if (idle > 0 || resting > 0) { str += '<div class="colonyRosterLegend">Awake cats roam the yard; sleeping cats are resting after a scuffle.</div>'; }
 		if (M.away.length > 0) {
-			str += '<div class="colonyEmpty" style="margin-top:4px;" id="colonyTimers"></div>';
+			str += '<div class="colonyTimers" id="colonyTimers"></div>';
 		}
 		str += '</div>';
 		return str;
@@ -273,26 +312,43 @@ M.launch = function () {
 
 	M.renderMissions = function () {
 		var str = '<div class="colonyBox"><div class="colonyTitle">Expeditions</div>';
+		str += '<div style="font-size:10px;opacity:0.7;margin-bottom:4px;">Send idle cats on timed expeditions to bring back treats. Bigger missions unlock at more cats and pay more — but carry more risk.</div>';
+		str += '<div class="colonyMissionList">';
 		for (var i = 0; i < M.missions.length; i++) {
 			var mission = M.missions[i];
 			var locked = M.parent.amount < mission.unlock;
 			var canGo = !locked && M.idleCats() >= mission.catCost;
-			str += '<div class="colonyRow' + (locked ? ' colonyLocked' : '') + '">';
-			str += '<div class="colonyRowText"><div class="colonyRowName">' + mission.name + '</div>' +
-				(locked ? ('Requires <b>' + mission.unlock + '</b> cats.') :
-					(mission.desc + '<br>' + mission.catCost + ' cat(s) &middot; ' + Game.sayTime(M.durationFor(mission) * Game.fps, -1) + ' &middot; ' + (Game.Has('Generous strangers') ? Math.ceil(mission.treatsMin * 1.2) + '-' + Math.ceil(mission.treatsMax * 1.2) : mission.treatsMin + '-' + mission.treatsMax) + ' treats &middot; ' + Math.round(M.hurtChanceFor(mission) * 100) + '% risk')) +
-				'</div>';
+			var art = M.missionArt[i] || M.missionArt[0];
+			str += '<div class="colonyMission' + (locked ? ' colonyMissionLocked' : '') + '">';
+			str += '<div class="colonyMissionIcon" style="background-image:url(img/cats/' + art.sheet + ');background-size:' + art.size + ';background-position:' + art.pos + ';"></div>';
+			str += '<div class="colonyMissionInfo">';
+			str += '<div class="colonyMissionName">' + mission.name + (locked ? ' <span class="colonyChip colonyChipGray">🔒 ' + mission.unlock + ' cats</span>' : '') + '</div>';
+			if (!locked) {
+				str += '<div class="colonyMissionDesc">' + mission.desc + '</div>';
+				str += '<div style="margin-top:2px;">' +
+					'<span class="colonyChip colonyChipBlue">🐾 ' + mission.catCost + ' cats</span>' +
+					'<span class="colonyChip colonyChipAmber">⏱ ' + Game.sayTime(M.durationFor(mission) * Game.fps, -1) + '</span>' +
+					'<span class="colonyChip colonyChipGreen">🍬 ' + (Game.Has('Generous strangers') ? Math.ceil(mission.treatsMin * 1.2) + '–' + Math.ceil(mission.treatsMax * 1.2) : mission.treatsMin + '–' + mission.treatsMax) + ' treats</span>' +
+					'<span class="colonyChip ' + (M.hurtChanceFor(mission) > 0.2 ? 'colonyChipRed' : 'colonyChipGray') + '">⚠ ' + Math.round(M.hurtChanceFor(mission) * 100) + '% risk</span>' +
+					'</div>';
+			} else {
+				str += '<div class="colonyMissionDesc">Unlocks at <b>' + mission.unlock + '</b> cats.</div>';
+			}
+			str += '</div>';
 			if (!locked) {
 				str += '<div class="colonyBtn' + (canGo ? '' : ' colonyBtnDisabled') + '" id="colonyDispatch' + mission.id + '">Dispatch</div>';
 			}
 			str += '</div>';
 		}
 		str += '</div>';
+		str += '</div>';
 		return str;
 	};
 
 	M.renderShop = function () {
 		var str = '<div class="colonyBox"><div class="colonyTitle">Colony Upgrades</div>';
+		str += '<div style="font-size:10px;opacity:0.7;margin-bottom:4px;">Each upgrade is repeatable — every stack boosts your Cats\' output, and stacks persist in your save.</div>';
+		str += '<div class="colonyShopList">';
 		for (var i = 0; i < M.upgradeNames.length; i++) {
 			var name = M.upgradeNames[i];
 			var up = Game.Upgrades[name];
@@ -300,14 +356,13 @@ M.launch = function () {
 			var price = up.treatsPrice || 0;
 			var stacks = M.effectiveStacks(name);
 			var canBuy = M.treats >= price;
-			str += '<div class="colonyRow">';
-			str += '<div class="icon shadowFilter" style="flex:none;' + writeIcon(up.icon) + '"></div>';
-			str += '<div class="colonyRowText"><div class="colonyRowName">' + name + (stacks > 0 ? ' <span style="font-weight:normal;opacity:0.75;">×' + stacks + '</span>' : '') + '</div>' + up.baseDesc + '</div>';
-			// Repeatable: every row always offers the flat treat price, and
-			// owned stacks show as a ×N badge on the name.
-			str += '<div class="colonyBtn' + (canBuy ? '' : ' colonyBtnDisabled') + '" id="colonyBuy' + i + '">' + price + ' treats</div>';
+			str += '<div class="colonyShopItem">';
+			str += '<div class="icon shadowFilter" style="flex:none;margin:0;' + writeIcon(up.icon) + '"></div>';
+			str += '<div class="colonyShopInfo"><span class="colonyShopName">' + name + '</span>' + (stacks > 0 ? ' <span class="colonyShopStack">×' + stacks + '</span>' : '') + '<br><span class="colonyShopDesc">' + up.baseDesc + '</span></div>';
+			str += '<div class="colonyBtn' + (canBuy ? '' : ' colonyBtnDisabled') + '" id="colonyBuy' + i + '">' + price + ' 🍬</div>';
 			str += '</div>';
 		}
+		str += '</div>';
 		str += '</div>';
 		return str;
 	};
