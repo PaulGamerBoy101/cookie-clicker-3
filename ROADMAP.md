@@ -5,6 +5,40 @@ picked up, traded, or dropped as we go. Checked items are shipped.
 
 ## Recently shipped (context)
 
+- **Challenge modes** — 4 new ascension modes, each a distinct self-imposed
+  handicap with a completion reward: **Trigger finger** (scroll over the
+  cookie = click it; no clicking achievements), **Ascetic** (golden and wrath
+  cookies never spawn), **Monoculture** (the first building you buy locks in
+  your only building type for the run), **Spender** (no upgrades may be
+  purchased). Reaching each run's cookie milestone wins a shadow achievement
+  that permanently unlocks a matching reward heavenly upgrade with real
+  effects: Scrolling adept (+2% click power, +5% golden effect duration),
+  Golden heart (+15% golden effect duration, +5% spawn frequency), Unity
+  (+1% CpS per 100 of your most-owned building type), Minimalist (+2% CpS per
+  100 prestige upgrades owned). Milestones: Trigger finger/Spender 1e15,
+  Ascetic 1e12, Monoculture 1e9. Verified by the "challenge modes" QA test.
+- **Heavenly-tree layout + arrangement presets** — upgrade positions are now
+  derived automatically from the parent DAG (Sugiyama-style), replacing
+  hand-placed coordinates, and the tree can be rearranged with one-click
+  presets (Auto / By branch / By generation / Grid) or drag-to-reposition;
+  the layout saves with the game. Verified by the ?qa=arrange and heavenly
+  presets tests.
+- **Store grid + store UI fixes** — the building store is no longer a
+  single-column list: buildings sit in a staggered, overlapping grid that
+  fills the box, so far more are visible at once. Also fixed the Mines' back
+  rows looking transparent, made farms/mines rebuild their sprites when the
+  sprite sheet loads, and relocated the heavenly-tree arrange buttons so they
+  no longer sit on top of other buttons.
+- **Sitting Room & Cat Colony visual redesign** — both minigames got a shared
+  visual language: card-based layouts (seat/mission cards with icons and
+  per-activity stat chips), labeled cozy/eldritch (Sitting Room) and
+  idle/away/resting (Cat Colony) color-coded tags, and card-style shop rows.
+  Also fixed the blank Chamomile incense icon (it was a solid-black sprite).
+- **Third-party achievement fix** — CC3's built-in extras (American Season,
+  Casino, Daily Crumb, Black Hole Inverter, Decide Your Destiny, Tutorial)
+  no longer award the "Third-party" achievement on every page load; only a
+  genuinely third-party mod does. (`Game.registerMod` gained an optional
+  `builtin` flag.)
 - **Daily crumb — weekly calendar rewards** — CC3-native returning-player
   rewards, fully local/offline: every local day the game opens, the player
   collects that weekday's crumb (Mon/Thu 5 min of production, Tue 3-min click
