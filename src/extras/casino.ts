@@ -1322,7 +1322,7 @@
 			//The casino state lives in the Chancemaker's vanilla minigame
 			//save slot (see file header), so the mod API save section
 			//intentionally stays empty.
-		});
+		}, true);
 		return true;
 	}
 

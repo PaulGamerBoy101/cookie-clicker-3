@@ -101,7 +101,7 @@ export function setupModding()
 	// customBuff(me, buff, choice, effectDurMod, mult) runs right after the
 	// vanilla `var buff=0;` and may replace the buff the pop creates.
 	Game.customShimmerTypes={golden:{customListPush:[],customEffectDurMod:[],customMult:[],customBuff:[]}};
-	Game.registerMod=function(id: any,mod: any): any
+	Game.registerMod=function(id: any,mod: any,builtin?: any): any
 	{
 		id=id.replace(/\W+/g,' ');
 		if (id=='META') return false;
@@ -110,11 +110,12 @@ export function setupModding()
 		Game.sortedMods.push(mod);
 		mod.id=id;
 		mod.name=mod.name||id;
+		if (builtin) mod.cc3Builtin=1;
 		if (App) App.registerMod(mod);
-		console.log('Mod "'+id+'" added.');
+		console.log('Mod "'+id+'" added.'+(builtin?' (cc3 built-in)':''));
 		if (Game.ready && mod.init)
 		{
-			if (!App && Game.Win) Game.Win('Third-party');
+			if (!App && Game.Win && !mod.cc3Builtin) Game.Win('Third-party');
 			mod.init();
 			if (mod.load && Game.modSaveData[id]) mod.load(Game.modSaveData[id]);
 			mod.init=0;
@@ -137,7 +138,7 @@ export function setupModding()
 				//if (mod.load && Game.modSaveData[mod.id]) mod.load(Game.modSaveData[mod.id]);
 			}
 		}
-		if (!App && Game.sortedMods.length>0) Game.Win('Third-party');
+		if (!App && Game.sortedMods.some(function(m: any){return !m.cc3Builtin;})) Game.Win('Third-party');
 	}
 	Game.registerHook=function(hook: any,func: any)
 	{

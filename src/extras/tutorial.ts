@@ -269,7 +269,7 @@ import type { Game as EngineGame } from '../engine/types';
 				Game.registerHook('draw', function () { draw(Game); });
 				Game.registerHook('check', function () { check(Game); });
 			},
-		});
+		}, true);
 		return true;
 	}
 

@@ -322,7 +322,7 @@ import type { Game as EngineGame, Upgrade } from '../engine/types';
 			init: init,
 			save: save,
 			load: load,
-		});
+		}, true);
 		return true;
 	}
 

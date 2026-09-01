@@ -303,7 +303,7 @@ import type { Building, Game as EngineGame } from '../engine/types';
 			},
 			save: function () { return save(Game); },
 			load: function (str: string) { load(Game, str); },
-		});
+		}, true);
 		return true;
 	}
 

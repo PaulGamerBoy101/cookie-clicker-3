@@ -303,7 +303,7 @@ import type { Game as EngineGame } from '../engine/types';
 			},
 			save: function () { return save(); },
 			load: function (str: string) { load(str); },
-		});
+		}, true);
 		return true;
 	}
 

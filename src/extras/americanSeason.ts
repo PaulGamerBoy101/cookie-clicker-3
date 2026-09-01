@@ -1073,7 +1073,7 @@
 			init: init,
 			save: save,
 			load: load,
-		});
+		}, true);
 		return true;
 	}
 
