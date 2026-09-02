@@ -252,6 +252,22 @@ declare global {
 			startOfDay: (ms: number) => number;
 			claim: () => boolean;
 		};
+		/* Test/inspection surface of extras/crackingCookie.ts (live crack
+		 * state, persistence round-trip, forced payoff, speed readout and
+		 * crack reset); used by ?qa=cracking. CLICK_FRENZY_SECONDS /
+		 * MIN_CYCLE_SECONDS let the probe assert the never-permanent-frenzy
+		 * invariant (cycle floor is strictly longer than the frenzy). */
+		__cc3CrackingCookie?: {
+			state: { progress: number; totalTriggers: number; lastTickMs: number; notified: boolean };
+			save: () => string;
+			load: (str: string) => void;
+			MIN_CURSORS: number;
+			CLICK_FRENZY_SECONDS: number;
+			MIN_CYCLE_SECONDS: number;
+			reset: () => void;
+			trigger: () => void;
+			speed: () => number;
+		};
 		/* The American Season namespace (extras/americanSeason.ts): the
 		 * original mod's global, kept so the mod's inline menu handlers
 		 * (UpdatePref / Toggle / `config = defaultConfig()`) and other mods

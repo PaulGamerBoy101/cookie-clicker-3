@@ -24,6 +24,7 @@ import './extras/americanSeason';
 import './extras/casino';
 import './extras/tutorial';
 import './extras/dailyCrumb';
+import './extras/crackingCookie';
 import './styles/main.css';
 import type { Cc3AnimStats, Game as EngineGame, LanguageData } from './engine/types';
 
@@ -1086,6 +1087,88 @@ if (debugSurface && params.get('qa') === 'dailycrumb') {
 			out.textContent = lines.join('\n') + '\n[QA-dailycrumb] ' + (pass ? 'PASS: daily crumb verified end to end' : 'FAIL: see checks above');
 		} catch (e: any) {
 			out.textContent = '[QA-dailycrumb] ERROR: ' + e.constructor.name + ': ' + e.message;
+		}
+		window.clearInterval(tick);
+	}, 250);
+}
+
+// QA: verify the Cracking cookie (extras/crackingCookie.ts) — cursors slowly
+// crack the big cookie; clicking the fully-cracked cookie pays out.
+// Fresh profile: set up cursors, check progress advances, trigger the payoff
+// and verify the reward, then round-trip through the save. Also check the
+// stats menu section renders. Usage: ?debug=1&qa=cracking
+if (debugSurface && params.get('qa') === 'cracking') {
+	const tick = window.setInterval(() => {
+		const G: any = window.Game;
+		const CC = (window as any).__cc3CrackingCookie;
+		if (!G || !G.ready || !G.Objects || !CC) return;
+		if (G.__qaCracking) return;
+		G.__qaCracking = 1;
+		const out = document.createElement('div');
+		out.id = '__dbgqa';
+		out.style.cssText = 'position:fixed;top:0;left:0;z-index:99999;background:#fff;color:#060;font:12px monospace;white-space:pre-wrap;max-width:640px;';
+		document.body.appendChild(out);
+		const lines: string[] = [];
+		let pass = true;
+		const chk = (label: string, ok: boolean) => { if (!ok) pass = false; lines.push((ok ? '✓ ' : '✗ ') + label); };
+		try {
+			const st = CC.state;
+			// 0. seeded cursors
+			const cursor = G.Objects['Cursor'];
+			if (cursor) cursor.amount = 15;
+			chk('cursors seeded (amount=' + (cursor ? cursor.amount : 'no cursor object') + ')', cursor && cursor.amount >= 15);
+			chk('MIN_CURSORS=' + CC.MIN_CURSORS, CC.MIN_CURSORS === 10);
+			// 0b. never-permanent-frenzy invariant: the crack cycle floor is
+			// strictly longer than the Click frenzy, so the ×777 window can
+			// never be permanently active at any cursor count.
+			const frenzy = CC.CLICK_FRENZY_SECONDS;
+			const floor = CC.MIN_CYCLE_SECONDS;
+			chk('frenzy never permanent (frenzy=' + frenzy + 's < floor=' + floor + 's)', typeof frenzy === 'number' && typeof floor === 'number' && floor > frenzy);
+			// 1. progress advances while the game is running
+			const p0 = st.progress;
+			chk('initial progress 0', p0 === 0);
+			// 2. trigger payoff (set progress to 1, hit the click hook)
+			st.progress = 1;
+			st.notified = false;
+			const cookiesBefore = G.cookies;
+			// click the cookie to trigger the payoff
+			G.ClickCookie(null, 0);
+			const dCookies = G.cookies - cookiesBefore;
+			const hasFrenzy = !!G.buffs['Click frenzy'];
+			chk('payoff consumed (progress=' + st.progress + ', totalTriggers=' + st.totalTriggers + ')', st.progress === 0 && st.totalTriggers >= 1);
+			chk('payoff rewards cookies (dCookies=' + Math.round(dCookies) + ')', dCookies >= 1000);
+			chk('payoff applies Click frenzy buff', hasFrenzy);
+			chk('achievement "It\'s cracked!" won', !!G.Achievements["It's cracked!"] && G.Achievements["It's cracked!"].won === 1);
+			// 3. no double trigger on the same click
+			const t2 = st.totalTriggers;
+			G.ClickCookie(null, 0);
+			chk('no double trigger (triggers=' + st.totalTriggers + ')', st.totalTriggers === t2);
+			// 4. persistence round-trip through the Custom save section
+			st.progress = 0.77;
+			st.totalTriggers = 42;
+			st.lastTickMs = 1234567890;
+			st.notified = true;
+			const rawSave = G.WriteSave(2);
+			chk('save carries the CC3CrackingCookie mod entry', typeof rawSave === 'string' && rawSave.indexOf('CC3CrackingCookie') !== -1);
+			const saveCode = G.WriteSave(1);
+			st.progress = 0;
+			st.totalTriggers = 0;
+			st.lastTickMs = 0;
+			st.notified = false;
+			const imported = G.ImportSaveCode(saveCode);
+			chk('import restores crack state (progress=' + st.progress + ', triggers=' + st.totalTriggers + ')', imported && Math.abs(st.progress - 0.77) < 0.001 && st.totalTriggers === 42 && st.notified === true);
+			// 5. stats menu section renders
+			G.ShowMenu('stats');
+			const ui = document.getElementById('cc3CrackStats');
+			const uiText = ui ? (ui.textContent || '') : '';
+			chk('stats menu crack section renders', !!ui && uiText.indexOf('Cracking cookie') !== -1);
+			chk('no raw %N placeholders in the crack section', uiText !== '' && !/%\d/.test(uiText));
+			// 6. reset hook clears the crack
+			CC.reset();
+			chk('reset clears progress (progress=' + st.progress + ')', st.progress === 0 && st.notified === false);
+			out.textContent = lines.join('\n') + '\n[QA-cracking] ' + (pass ? 'PASS: cracking cookie verified end to end' : 'FAIL: see checks above');
+		} catch (e: any) {
+			out.textContent = '[QA-cracking] ERROR: ' + e.constructor.name + ': ' + e.message;
 		}
 		window.clearInterval(tick);
 	}, 250);

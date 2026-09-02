@@ -239,6 +239,15 @@ increments, the swallowed cookies are refunded (+10%), and the debuff clears.
    continuous, an absence over 14 days resets the streak (today only), and the
    streak/claims state round-trips through the save's Custom mod section
    (WriteSave → corrupt → ImportSaveCode).
+   `?qa=cracking` verifies the Cracking cookie (CC3-native Cursor incentive,
+   `src/extras/crackingCookie.ts`): with at least 10 Cursors the big cookie
+   slowly cracks — speed scales with Cursor count and is wall-clock driven so
+   it advances while the tab is throttled or the game is closed (capped
+   catch-up) — and clicking the fully-cracked cookie pays out a CpS-scaled
+   cookie burst plus a Click frenzy, resets the crack, and round-trips the
+   progress/trigger count through the save's Custom mod section. The crack
+   cycle is floored (derived from the frenzy length + a hard downtime) so the
+   ×777 Click frenzy can never be permanently active at any cursor count.
 `?qa=perf&qlvl=N` seeds all four
   minigame buildings at level `N` (default 1), opens the Garden, and reports the
   actual game-loop rate (`Game.T` ticks/sec) versus the 30-tick `Game.fps`

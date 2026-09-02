@@ -839,6 +839,17 @@ test('?qa=dailycrumb: daily crumb weekly calendar (claims, streak, reset, save r
 	expect(report).not.toMatch(/ERROR/);
 	await assertNoUncaughtErrors(page);
 });
+test('?qa=cracking: cursors crack the big cookie (progress, payoff, save round-trip) verified', async ({ page }) => {
+	await boot(page, '&qa=cracking');
+	const report = await qaReport(
+		page,
+		/PASS: cracking cookie verified end to end/,
+		60_000
+	);
+	expect(report).not.toMatch(/FAIL/);
+	expect(report).not.toMatch(/ERROR/);
+	await assertNoUncaughtErrors(page);
+});
 test('heavenly presets: auto/branch/generations/grid arrange the tree, reset restores the default', async ({ page }) => {
 	await boot(page, '&qa');
 	const r = await page.evaluate(() => {
