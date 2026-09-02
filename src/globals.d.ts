@@ -258,12 +258,13 @@ declare global {
 		 * MIN_CYCLE_SECONDS let the probe assert the never-permanent-frenzy
 		 * invariant (cycle floor is strictly longer than the frenzy). */
 		__cc3CrackingCookie?: {
-			state: { progress: number; totalTriggers: number; lastTickMs: number; notified: boolean };
+			state: { progress: number; totalTriggers: number; lastTickMs: number; notified: boolean; cooldownUntil: number };
 			save: () => string;
 			load: (str: string) => void;
 			MIN_CURSORS: number;
 			CLICK_FRENZY_SECONDS: number;
 			MIN_CYCLE_SECONDS: number;
+			COOLDOWN_MS: number;
 			reset: () => void;
 			trigger: () => void;
 			speed: () => number;
@@ -281,7 +282,7 @@ declare global {
 			ACHIEVEMENTS: readonly { name: string; desc: string; icon: number[] }[];
 			computeEE: (cookiesTotal: number) => number;
 			canTranscend: () => boolean;
-			doTranscend: () => void;
+			doTranscend: (bypass?: boolean) => void;
 			purchase: (nodeId: number) => boolean;
 			buyInTree: (nodeId: number) => void;
 			respec: () => void;

@@ -1140,6 +1140,15 @@ if (debugSurface && params.get('qa') === 'cracking') {
 			chk('payoff rewards cookies (dCookies=' + Math.round(dCookies) + ')', dCookies >= 1000);
 			chk('payoff applies Click frenzy buff', hasFrenzy);
 			chk('achievement "It\'s cracked!" won', !!G.Achievements["It's cracked!"] && G.Achievements["It's cracked!"].won === 1);
+			// 2b. cooldown: the bonus is locked for COOLDOWN_MS (2 minutes)
+			chk('cooldown is 2 minutes (COOLDOWN_MS=' + CC.COOLDOWN_MS + ')', CC.COOLDOWN_MS === 2 * 60 * 1000);
+			chk('payoff started a cooldown (cooldownUntil=' + st.cooldownUntil + ')',
+				st.cooldownUntil > Date.now() && st.cooldownUntil <= Date.now() + CC.COOLDOWN_MS + 100);
+			const tBefore = st.totalTriggers;
+			st.progress = 1;
+			CC.trigger(); // force a payoff attempt while cooling down
+			chk('cooldown blocks a second payoff (triggers=' + st.totalTriggers + ')', st.totalTriggers === tBefore);
+			st.progress = 0;
 			// 3. no double trigger on the same click
 			const t2 = st.totalTriggers;
 			G.ClickCookie(null, 0);
@@ -1149,6 +1158,7 @@ if (debugSurface && params.get('qa') === 'cracking') {
 			st.totalTriggers = 42;
 			st.lastTickMs = 1234567890;
 			st.notified = true;
+			const cdBefore = st.cooldownUntil;
 			const rawSave = G.WriteSave(2);
 			chk('save carries the CC3CrackingCookie mod entry', typeof rawSave === 'string' && rawSave.indexOf('CC3CrackingCookie') !== -1);
 			const saveCode = G.WriteSave(1);
@@ -1156,8 +1166,10 @@ if (debugSurface && params.get('qa') === 'cracking') {
 			st.totalTriggers = 0;
 			st.lastTickMs = 0;
 			st.notified = false;
+			st.cooldownUntil = 0;
 			const imported = G.ImportSaveCode(saveCode);
 			chk('import restores crack state (progress=' + st.progress + ', triggers=' + st.totalTriggers + ')', imported && Math.abs(st.progress - 0.77) < 0.001 && st.totalTriggers === 42 && st.notified === true);
+			chk('import restores the cooldown (cd=' + st.cooldownUntil + ')', imported && st.cooldownUntil === cdBefore);
 			// 5. stats menu section renders
 			G.ShowMenu('stats');
 			const ui = document.getElementById('cc3CrackStats');
@@ -1166,7 +1178,7 @@ if (debugSurface && params.get('qa') === 'cracking') {
 			chk('no raw %N placeholders in the crack section', uiText !== '' && !/%\d/.test(uiText));
 			// 6. reset hook clears the crack
 			CC.reset();
-			chk('reset clears progress (progress=' + st.progress + ')', st.progress === 0 && st.notified === false);
+			chk('reset clears progress (progress=' + st.progress + ')', st.progress === 0 && st.notified === false && st.cooldownUntil === 0);
 			out.textContent = lines.join('\n') + '\n[QA-cracking] ' + (pass ? 'PASS: cracking cookie verified end to end' : 'FAIL: see checks above');
 		} catch (e: any) {
 			out.textContent = '[QA-cracking] ERROR: ' + e.constructor.name + ': ' + e.message;
