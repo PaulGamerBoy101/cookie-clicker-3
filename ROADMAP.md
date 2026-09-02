@@ -126,9 +126,6 @@ picked up, traded, or dropped as we go. Checked items are shipped.
 
 ## Animations & polish
 
-- [ ] **Grandma walking animation** — grandmas roam their box like the cats do.
-      Deferred from the cats work ("come back to it later"); the cat renderer is
-      the template.
 - [ ] **Animate more buildings** — generalize the roaming renderer to other
       buildings (e.g. livestock in farms, workers in mines). Pick the ones where
       motion reads well at building sizes.
