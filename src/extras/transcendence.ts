@@ -395,16 +395,6 @@
 		return true;
 	}
 
-	/** Purchase + re-render the Doctrine tree (for use from the prompt UI). */
-	function buyInTree(nodeId: number): void {
-		const G = window.Game;
-		if (!G) return;
-		if (purchaseDoctrineNode(nodeId)) {
-			G.ClosePrompt();
-			showDoctrineTree();
-		}
-	}
-
 	/* ================================================================
 	 * RESPEC
 	 * ================================================================ */
@@ -658,66 +648,316 @@
 		container.appendChild(toggle);
 	}
 
-	/** Show the Doctrine tree in a prompt overlay. */
+	/** Show the Doctrine tree as a 3D solar system overlay. Planets orbit
+	 *  around the central EE sun; inner orbits hold cheaper nodes, outer
+	 *  orbits hold expensive ones. The layout has infinite room for future
+	 *  nodes. */
 	function showDoctrineTree(): void {
 		const G = window.Game;
 		if (!G) return;
+		if (document.getElementById('doctrineOverlay')) return;
 
-		let html = '<div style="min-width:400px;min-height:300px;text-align:center;">';
-		html += '<h3>Doctrine of the Eternal Oven</h3>';
-		html += '<div class="line"></div>';
-		html += '<div style="font-size:11px;margin-bottom:8px;">';
-		html += 'Eternal Essence: <b>' + state.ee + '</b> | ';
-		html += 'Nodes: ' + state.doctrine.length + '/' + DOCTRINE.length;
-		html += '</div>';
+		_injectSolarCSS();
 
-		// Render each branch
-		const branches = ['glutton', 'idler', 'fatebinder', 'rebuilder'];
-		const branchLabels = ['Glutton (click)', 'Idler (production)', 'Fatebinder (golden)', 'Rebuilder (economy)'];
-		const branchColors = ['#c44', '#48c', '#c84', '#4a4'];
+		const overlay = document.createElement('div');
+		overlay.id = 'doctrineOverlay';
+		overlay.onclick = function (e: MouseEvent) { if (e.target === overlay) closeDoctrineTree(); };
 
-		for (let b = 0; b < branches.length; b++) {
-			const branchId = branches[b];
-			const nodes = DOCTRINE.filter((n) => n.branch === branchId);
-			html += '<div style="margin:8px 0;padding:4px;border:1px solid ' + branchColors[b] + ';border-radius:4px;">';
-			html += '<div style="font-weight:bold;color:' + branchColors[b] + ';font-size:12px;">' + branchLabels[b] + '</div>';
+		const system = document.createElement('div');
+		system.id = 'doctrineSystem';
+		system.setAttribute('aria-label', 'Doctrine solar system');
 
-			for (const n of nodes) {
-				const owned = doctrineHas(n.id);
-				const canAfford = state.ee >= n.cost;
-				const parentsMet = n.parents.every((pid) => doctrineHas(pid));
-				const canBuy = !owned && canAfford && parentsMet;
+		// Planet nodes are rendered here; the sun is rendered separately.
+		_renderSun(system);
+		_renderSolarSystem(system);
 
-				html += '<div style="display:inline-block;margin:4px;padding:8px;border:1px solid ' +
-					(owned ? branchColors[b] : '#555') + ';border-radius:4px;' +
-					'background:' + (owned ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.2)') + ';' +
-					'width:160px;vertical-align:top;text-align:center;' +
-					(canBuy ? 'cursor:pointer;' : 'opacity:0.6;') + '"' +
-					(canBuy ? ' onclick="window.__cc3Transcendence.buyInTree(' + n.id + ');"' : '') +
-					' title="' + n.desc + '">';
-				html += '<div style="font-size:10px;font-weight:bold;">' + n.name + '</div>';
-				html += '<div style="font-size:10px;margin-top:2px;">' + n.cost + ' EE</div>';
-				if (owned) html += '<div style="color:' + branchColors[b] + ';font-size:10px;">&#10003;</div>';
-				html += '</div>';
-			}
-			html += '</div>';
-		}
-
-		html += '<div class="line"></div>';
-		html += '<a class="option framed small" style="font-size:11px;cursor:pointer;" onclick="window.__cc3Transcendence.respecAndRedraw();">Respec</a>';
-
-		html += '</div>';
-
-		G.Prompt(html, [['Close', 0]], 0, 'widePrompt');
+		overlay.appendChild(system);
+		document.body.appendChild(overlay);
 	}
 
-	/** Respec and re-render the tree. */
+	/** Close the Doctrine solar system overlay. */
+	function closeDoctrineTree(): void {
+		const overlay = document.getElementById('doctrineOverlay');
+		if (overlay) overlay.remove();
+	}
+
+	/* Orbit radii for the solar system (innermost to outermost). */
+	const ORBIT_RADII = [100, 175, 260, 350];
+	const ORBIT_BY_COST: Record<number, number> = { 1: 0, 3: 1, 8: 2, 15: 3 };
+
+	/** Inject the solar system CSS once. */
+	function _injectSolarCSS(): void {
+		if (document.getElementById('doctrineSolarCSS')) return;
+		const s = document.createElement('style');
+		s.id = 'doctrineSolarCSS';
+		s.textContent = `
+#doctrineOverlay {
+  position: fixed; top:0; left:0; width:100vw; height:100vh;
+  background:rgba(0,0,0,0.85); z-index:9999;
+  display:flex; align-items:center; justify-content:center;
+  perspective:900px; cursor:pointer;
+}
+#doctrineSystem {
+  transform-style:preserve-3d; transform:rotateX(14deg);
+  cursor:default; position:relative;
+  width:800px; height:800px; flex-shrink:0;
+  filter:drop-shadow(0 0 60px rgba(100,140,255,0.08));
+}
+.doctrine-sun {
+  position:absolute; top:50%; left:50%;
+  width:80px; height:80px; margin:-40px; border-radius:50%;
+  background:radial-gradient(circle at 30% 30%, #ffd700, #b8860b);
+  box-shadow:0 0 40px rgba(255,215,0,0.6),0 0 80px rgba(255,215,0,0.2);
+  display:flex; flex-direction:column;
+  align-items:center; justify-content:center;
+  z-index:10; transform:translateZ(40px);
+  color:#000; font-weight:bold; font-size:13px; cursor:default;
+  line-height:1.2;
+}
+.doctrine-sun .sun-ee { font-size:20px; }
+.doctrine-sun .sun-label { font-size:10px; opacity:0.8; }
+.doctrine-close {
+  position:absolute; top:10px; right:10px; z-index:20;
+  width:36px; height:36px; border-radius:50%;
+  background:rgba(255,255,255,0.1);
+  color:#fff; font-size:18px; line-height:36px;
+  text-align:center; cursor:pointer;
+  transition:background 0.15s;
+}
+.doctrine-close:hover { background:rgba(255,255,255,0.25); }
+.doctrine-respec {
+  position:absolute; bottom:20px; left:50%; transform:translateX(-50%);
+  font-size:11px; color:#888; cursor:pointer; z-index:20;
+  padding:4px 12px; border-radius:4px;
+  border:1px solid rgba(255,255,255,0.15);
+  transition:color 0.15s, border-color 0.15s;
+}
+.doctrine-respec:hover { color:#f84; border-color:rgba(255,136,68,0.4); }
+.doctrine-planet {
+  position:absolute; width:96px; height:96px; margin:-48px;
+  border-radius:50%;
+  background:radial-gradient(circle at 30% 30%, #2a2a3a, #1a1a2a);
+  border:2px solid rgba(255,255,255,0.12);
+  display:flex; flex-direction:column;
+  align-items:center; justify-content:center;
+  transition:transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+  cursor:default; pointer-events:auto;
+  box-shadow:0 0 10px rgba(0,0,0,0.5);
+  transform:translateZ(var(--z,0px));
+}
+.doctrine-planet.buyable:hover {
+  transform:translateZ(var(--z,0px)) scale(1.22);
+  box-shadow:0 0 28px rgba(100,170,255,0.6);
+}
+.doctrine-planet .planet-icon {
+  width:24px; height:24px; image-rendering:pixelated;
+  background-size:auto;
+}
+.doctrine-planet .planet-name {
+  font-size:9px; color:#bbb; text-align:center;
+  line-height:1.1; margin-top:2px; max-width:80px;
+  overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+}
+.doctrine-planet .planet-cost {
+  font-size:10px; font-weight:bold; margin-top:1px;
+}
+.doctrine-planet.locked {
+  opacity:0.35; filter:grayscale(0.8);
+  cursor:default;
+}
+.doctrine-planet.buyable {
+  border-color:#6af;
+  cursor:pointer;
+  box-shadow:0 0 14px rgba(100,170,255,0.3);
+}
+.doctrine-planet.owned {
+  border-color:#4a4;
+  box-shadow:0 0 14px rgba(68,170,68,0.3);
+}
+.doctrine-planet.owned .planet-cost { color:#4a4; }
+`;
+		document.head.appendChild(s);
+	}
+
+	/** Render the central sun (EE display). */
+	function _renderSun(container: HTMLElement): void {
+		let el = container.querySelector('.doctrine-sun') as HTMLElement;
+		if (!el) {
+			el = document.createElement('div');
+			el.className = 'doctrine-sun';
+			container.appendChild(el);
+		}
+		el.innerHTML = '<div class="sun-ee">' + state.ee + '</div><div class="sun-label">EE</div>';
+
+		// Close button
+		if (!container.querySelector('.doctrine-close')) {
+			const close = document.createElement('div');
+			close.className = 'doctrine-close';
+			close.textContent = '×';
+			close.onclick = closeDoctrineTree;
+			container.appendChild(close);
+		}
+
+		// Respec button
+		if (!container.querySelector('.doctrine-respec')) {
+			const respec = document.createElement('div');
+			respec.className = 'doctrine-respec';
+			respec.textContent = 'Respec (' + state.doctrine.length + '/' + DOCTRINE.length + ')';
+			respec.onclick = function () {
+				PlaySound('snd/tick.mp3');
+				respecAndRedraw();
+			};
+			container.appendChild(respec);
+		}
+	}
+
+	/** Render or re-render all planet nodes on their orbits. */
+	function _renderSolarSystem(container: HTMLElement): void {
+		const cx = 400, cy = 400;
+
+		// Remove old planets (keep sun, close, respec)
+		const old = container.querySelectorAll('.doctrine-planet');
+		for (let i = old.length - 1; i >= 0; i--) old[i].remove();
+
+		// Remove old orbit rings
+		const rings = container.querySelectorAll('.doctrine-orbit-ring');
+		for (let i = rings.length - 1; i >= 0; i--) rings[i].remove();
+
+		// Draw orbit rings
+		const ringColors = ['rgba(255,200,100,0.06)', 'rgba(100,200,255,0.06)', 'rgba(200,100,255,0.06)', 'rgba(100,255,200,0.06)'];
+		for (const orbitIndex of [0, 1, 2, 3]) {
+			const r = ORBIT_RADII[orbitIndex];
+			const ring = document.createElement('div');
+			ring.className = 'doctrine-orbit-ring';
+			ring.style.cssText =
+				'position:absolute;top:50%;left:50%;width:' + (r * 2) + 'px;height:' + (r * 2) + 'px;' +
+				'margin:' + (-r) + 'px;border-radius:50%;' +
+				'border:1px solid ' + ringColors[orbitIndex] + ';' +
+				'pointer-events:none;';
+			container.appendChild(ring);
+		}
+
+		// Place each node on its orbit
+		for (const node of DOCTRINE) {
+			const orbitIndex = ORBIT_BY_COST[node.cost];
+			if (orbitIndex === undefined) continue;
+			const radius = ORBIT_RADII[orbitIndex];
+
+			// Calculate angle: nodes on the same orbit spread evenly
+			const sameOrbit = DOCTRINE.filter((n) => ORBIT_BY_COST[n.cost] === orbitIndex);
+			const idx = sameOrbit.indexOf(node);
+			const angle = (idx / sameOrbit.length) * Math.PI * 2 - Math.PI / 2; // start at top
+
+			const x = cx + Math.cos(angle) * radius;
+			const y = cy + Math.sin(angle) * radius;
+
+			const owned = doctrineHas(node.id);
+			const canAfford = state.ee >= node.cost;
+			const parentsMet = node.parents.every((pid) => doctrineHas(pid));
+			const canBuy = !owned && canAfford && parentsMet;
+
+			const planet = document.createElement('div');
+			planet.className = 'doctrine-planet' +
+				(owned ? ' owned' : '') +
+				(canBuy ? ' buyable' : '') +
+				(!owned && !canBuy ? ' locked' : '');
+			planet.style.left = x + 'px';
+			planet.style.top = y + 'px';
+
+			// 3D depth: inner orbits closer to the viewer. Set via the --z
+			// CSS variable so the base transform and the hover scale both
+			// keep the same depth (inline transform would override hover).
+			const zDepth = [30, 15, 0, -15][orbitIndex] || 0;
+			planet.style.setProperty('--z', zDepth + 'px');
+
+			// Icon
+			const icon = document.createElement('div');
+			icon.className = 'planet-icon';
+			icon.style.cssText = 'background:url(img/icons.webp) -' + (node.icon[0] * 48) + 'px -' + (node.icon[1] * 48) + 'px;';
+			planet.appendChild(icon);
+
+			// Name
+			const name = document.createElement('div');
+			name.className = 'planet-name';
+			name.textContent = node.name;
+			planet.appendChild(name);
+
+			// Cost
+			const cost = document.createElement('div');
+			cost.className = 'planet-cost';
+			cost.textContent = owned ? '✓' : node.cost + ' EE';
+			planet.appendChild(cost);
+
+			if (canBuy) {
+				planet.onclick = function () { buyInTreeSolar(node.id); };
+			}
+
+			// Tooltip for locked nodes
+			if (!canBuy && !owned) {
+				let reason = '';
+				if (!parentsMet) {
+					const missing = node.parents.filter((pid) => !doctrineHas(pid));
+					reason = 'Requires: ' + missing.map((pid) => {
+						const pn = DOCTRINE.find((d) => d.id === pid);
+						return pn ? pn.name : '?';
+					}).join(', ');
+				} else if (!canAfford) {
+					reason = 'Costs ' + node.cost + ' EE (you have ' + state.ee + ')';
+				}
+				planet.title = node.desc + (reason ? '\n' + reason : '');
+			} else {
+				planet.title = node.desc;
+			}
+
+			container.appendChild(planet);
+		}
+
+		// Update the respec button node count
+		const respecBtn = container.querySelector('.doctrine-respec') as HTMLElement;
+		if (respecBtn) respecBtn.textContent = 'Respec (' + state.doctrine.length + '/' + DOCTRINE.length + ')';
+	}
+
+	/** Purchase a node from the solar system UI and re-render in place. */
+	function buyInTreeSolar(nodeId: number): void {
+		const G = window.Game;
+		if (!G) return;
+		if (purchaseDoctrineNode(nodeId)) {
+			PlaySound('snd/shimmerClick.mp3');
+			const system = document.getElementById('doctrineSystem');
+			if (system) {
+				_renderSun(system);
+				_renderSolarSystem(system);
+			}
+		}
+	}
+
+	/** Respec and re-render the solar system in place. */
 	function respecAndRedraw(): void {
 		const G = window.Game;
 		if (!G) return;
 		respecDoctrine();
-		G.ClosePrompt();
-		showDoctrineTree();
+		const system = document.getElementById('doctrineSystem');
+		if (system) {
+			_renderSun(system);
+			_renderSolarSystem(system);
+		}
+	}
+
+	/** Purchase + re-render (kept for the QA surface; delegates to the
+	 *  solar-system re-renderer if the overlay is open, otherwise reopens). */
+	function buyInTree(nodeId: number): void {
+		const G = window.Game;
+		if (!G) return;
+		if (purchaseDoctrineNode(nodeId)) {
+			PlaySound('snd/shimmerClick.mp3');
+			const system = document.getElementById('doctrineSystem');
+			if (system) {
+				_renderSun(system);
+				_renderSolarSystem(system);
+			} else {
+				showDoctrineTree();
+			}
+		}
 	}
 
 	/* ================================================================
@@ -995,6 +1235,7 @@
 		doctrineHas,
 		hasMilestone,
 		showDoctrineTree,
+		closeDoctrineTree,
 		_addTranscendUI,
 		save,
 		load,
