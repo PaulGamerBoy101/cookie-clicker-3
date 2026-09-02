@@ -46,7 +46,7 @@ export function declareVanillaChangelog(Game: EngineGame) {
 	'<div class="listing">'+loc("The 2.048 engine was rebuilt as strictly typed TypeScript ES modules on a zero-dependency Vite build. Behavior, numbers and the save format stay compatible with 2.048 — your existing save imports without changes.")+'</div>'+
 	'<div class="listing">'+loc("Compared to the original browser version: no ads, no trackers and no CDN requests (fonts included), an offline-capable PWA with a self-updating service worker, and a one-column layout for phones.")+'</div>'+
 	'<div class="listing">'+loc("Music by Bert Cole.")+'</div>'+
-	'<div class="listing">'+loc("Where the project is headed: %1.",'<a href="https://github.com/giveen/cookie-clicker-3/blob/master/ROADMAP.md" target="_blank" class="highlightHover smallBlackButton">the roadmap</a>')+'</div>'+
+	'<div class="listing">'+loc("Where the project is headed: %1.",'<a href="https://github.com/giveen/cookie-clicker-3/blob/master/docs/ROADMAP.md" target="_blank" class="highlightHover smallBlackButton">the roadmap</a>')+'</div>'+
 	'</div><div class="subsection">'+
 	'<div class="title">'+loc("Version history")+'</div>';
 	
