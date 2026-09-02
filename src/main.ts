@@ -25,6 +25,7 @@ import './extras/casino';
 import './extras/tutorial';
 import './extras/dailyCrumb';
 import './extras/crackingCookie';
+import './extras/transcendence';
 import './styles/main.css';
 import type { Cc3AnimStats, Game as EngineGame, LanguageData } from './engine/types';
 
@@ -1391,6 +1392,66 @@ if (debugSurface && params.get('qa') === 'ascendbrowse') {
 					'\n[QA-ascendbrowse] ' + (pass ? 'PASS: heavenly tree browsed without triggering an ascension' : 'FAIL');
 				window.clearInterval(tick);
 			}
+		}
+	}, 250);
+}
+
+// QA: verify the Transcendence (second prestige layer) flow. Seeds a large
+// cookiesReset (1e30 > the 1e29 gate), calls window.__cc3Transcendence.seed()
+// then doTranscend(), and checks: EE was earned, state was recorded, the run
+// was hard-reset (buildings cleared, prestige state zeroed), the mod data
+// round-trips through save(), and the unlock/UI flags were reset for reuse.
+// Usage: ?debug=1&qa=transcend
+if (debugSurface && params.get('qa') === 'transcend') {
+	const tick = window.setInterval(() => {
+		const G = window.Game;
+		const T = (window as any).__cc3Transcendence;
+		if (!G || !G.ready || !G.Objects || !T) return;
+		if (!G.__qaTranscend) {
+			const o = document.createElement('div');
+			o.id = '__dbgqa';
+			o.style.cssText = 'position:fixed;top:0;left:0;z-index:99999;background:#fff;color:#060;font:12px monospace;white-space:pre-wrap;max-width:640px;';
+			document.body.appendChild(o);
+			try {
+				T.seed(1e30);
+				G.cookiesReset = 1e30; G.cookiesEarned = 1e12;
+				G.prestige = 1000;
+				G.heavenlyChips = 500;
+				G.Objects['Cursor'].amount = 50; G.Objects['Grandma'].amount = 20;
+				G.Objects['Cursor'].level = 5;
+				G.recalculateGains = 1; G.CalculateGains();
+				const eeBefore = T.state.ee;
+				G.__qaTranscend = { out: o, eeBefore, t: Date.now() };
+				o.textContent = '[QA-transcend] seeded cookiesReset=1e30, calling doTranscend()...';
+				T.doTranscend();
+			} catch (e: any) {
+				o.textContent = '[QA-transcend] ERROR seed: ' + e.message;
+				window.clearInterval(tick);
+			}
+			return;
+		}
+		const a = G.__qaTranscend as { out: HTMLDivElement; eeBefore: number; t: number };
+		if (Date.now() - a.t > 500) {
+			const eeAfter = T.state.ee;
+			const eeEarned = T.state.eeEarned;
+			const trans = T.state.transcendences;
+			const eeOk = eeAfter > a.eeBefore && eeEarned === eeAfter;
+			const transOk = trans === 1;
+			// 10 lifetime EE activates the Inner Fire milestone, which grants 3
+			// free Cursors after the reset — so Cursor is expected to be 3, not 0.
+			const resetOk = G.Objects['Cursor'].amount === 3 && G.Objects['Grandma'].amount === 0 && G.prestige === 0 && G.heavenlyChips === 0;
+			const savedOk = (() => { try { const s = JSON.parse(T.save()); return s.ee === eeAfter && s.trans === trans; } catch (e) { return false; } })();
+			const gateOk = T.canTranscend();
+			const pass = eeOk && transOk && resetOk && savedOk && gateOk;
+			a.out.textContent =
+				'[QA-transcend] results\n' +
+				'[QA-transcend] EE: ' + a.eeBefore + ' -> ' + eeAfter + ' (lifetime ' + eeEarned + ') ' + (eeOk ? 'OK' : 'FAIL') +
+				'\n[QA-transcend] transcendences: ' + trans + ' (expect 1) ' + (transOk ? 'OK' : 'FAIL') +
+				'\n[QA-transcend] run reset: Cursor=' + G.Objects['Cursor'].amount + ' (expect 3: Inner Fire milestone), Grandma=' + G.Objects['Grandma'].amount + ', prestige=' + G.prestige + ', chips=' + G.heavenlyChips + ' ' + (resetOk ? 'OK' : 'FAIL') +
+				'\n[QA-transcend] save round-trip ' + (savedOk ? 'OK' : 'FAIL') +
+				'\n[QA-transcend] gate still unlocked (canTranscend) ' + (gateOk ? 'OK' : 'FAIL') +
+				'\n[QA-transcend] ' + (pass ? 'PASS: transcendence earned EE, reset the run, and persisted' : 'FAIL');
+			window.clearInterval(tick);
 		}
 	}, 250);
 }

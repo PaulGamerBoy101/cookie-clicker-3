@@ -850,6 +850,17 @@ test('?qa=cracking: cursors crack the big cookie (progress, payoff, save round-t
 	expect(report).not.toMatch(/ERROR/);
 	await assertNoUncaughtErrors(page);
 });
+test('?qa=transcend: transcendence earns EE, hard-resets the run, persists state', async ({ page }) => {
+	await boot(page, '&qa=transcend');
+	const report = await qaReport(
+		page,
+		/PASS: transcendence earned EE, reset the run, and persisted/,
+		60_000
+	);
+	expect(report).not.toMatch(/FAIL/);
+	expect(report).not.toMatch(/ERROR/);
+	await assertNoUncaughtErrors(page);
+});
 test('heavenly presets: auto/branch/generations/grid arrange the tree, reset restores the default', async ({ page }) => {
 	await boot(page, '&qa');
 	const r = await page.evaluate(() => {

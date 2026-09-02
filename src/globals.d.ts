@@ -268,6 +268,34 @@ declare global {
 			trigger: () => void;
 			speed: () => number;
 		};
+		/* Test/inspection surface of extras/transcendence.ts (EE state,
+		 * Doctrine tree, forced transcendence, QA flow). */
+		__cc3Transcendence?: {
+			state: {
+				ee: number; eeSpent: number; eeEarned: number;
+				transcendences: number; totalPrestigeAllTime: number;
+				milestones: number[]; doctrine: number[];
+			};
+			DOCTRINE: readonly { id: number; name: string; branch: string; desc: string; icon: number[]; cost: number; parents: number[] }[];
+			MILESTONES: readonly { threshold: number; name: string; desc: string }[];
+			ACHIEVEMENTS: readonly { name: string; desc: string; icon: number[] }[];
+			computeEE: (cookiesTotal: number) => number;
+			canTranscend: () => boolean;
+			doTranscend: () => void;
+			purchase: (nodeId: number) => boolean;
+			buyInTree: (nodeId: number) => void;
+			respec: () => void;
+			respecAndRedraw: () => void;
+			checkMilestones: () => void;
+			checkAchievements: () => void;
+			doctrineHas: (id: number) => boolean;
+			hasMilestone: (threshold: number) => boolean;
+			showDoctrineTree: () => void;
+			_addTranscendUI: () => void;
+			save: () => string;
+			load: (str: string) => void;
+			seed: (reset: number) => void;
+		};
 		/* The American Season namespace (extras/americanSeason.ts): the
 		 * original mod's global, kept so the mod's inline menu handlers
 		 * (UpdatePref / Toggle / `config = defaultConfig()`) and other mods
