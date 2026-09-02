@@ -1434,8 +1434,8 @@ if (debugSurface && params.get('qa') === 'transcend') {
 				G.recalculateGains = 1; G.CalculateGains();
 				const eeBefore = T.state.ee;
 				G.__qaTranscend = { out: o, eeBefore, t: Date.now() };
-				o.textContent = '[QA-transcend] seeded cookiesReset=1e30, calling doTranscend()...';
-				T.doTranscend();
+				o.textContent = '[QA-transcend] seeded cookiesReset=1e30, calling doTranscend(true) (bypassing the intro animation)...';
+				T.doTranscend(true);
 			} catch (e: any) {
 				o.textContent = '[QA-transcend] ERROR seed: ' + e.message;
 				window.clearInterval(tick);

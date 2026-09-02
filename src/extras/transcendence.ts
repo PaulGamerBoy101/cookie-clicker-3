@@ -215,7 +215,82 @@
 	/** Track the most-owned building type before a reset (for Legacy Echo). */
 	let _lastMostOwnedBuilding = 0;
 
-	function doTranscend(): void {
+	/* The crumbling-cookie ascend intro is driven by Game.AscendTimer in
+	 * drawBackground.ts (the `else` of `if (Game.AscendTimer==0)` at line 173)
+	 * and animated by Game.UpdateAscendIntro. Rather than duplicating the
+	 * effect, Transcendence reuses it wholesale: it temporarily swaps
+	 * Game.UpdateAscendIntro so the intro plays identically, but the
+	 * completion runs the transcendence (EE + reset) instead of the vanilla
+	 * ascension (heavenly chips + ascend screen). */
+	let _origUpdateAscendIntro: (() => void) | null = null;
+	let _transcendIntroRunning = false;
+
+	/** Entry point. With bypass (QA probes, fast path) skip the animation. */
+	function doTranscend(bypass?: boolean): void {
+		const G = window.Game;
+		if (!G || !canTranscend()) return;
+		if (!bypass) {
+			startTranscendIntro();
+			return;
+		}
+		doTranscendCore();
+	}
+
+	/** Play the crumbling-cookie intro (same setup as Ascend(1)), then run
+	 *  the actual transcendence at the end of the animation. */
+	function startTranscendIntro(): void {
+		const G = window.Game;
+		if (!G || _transcendIntroRunning) return;
+
+		// Take over the ascend intro updater for the duration of the intro.
+		_origUpdateAscendIntro = G.UpdateAscendIntro;
+		G.UpdateAscendIntro = transcendIntro;
+		_transcendIntroRunning = true;
+
+		// Replicate Ascend(1)'s visual setup so the cookie crumbles the same
+		// way: zoom in from 0.2, add the ascendIntro class, kill shimmers.
+		G.OnAscend = 0; G.removeClass('ascending');
+		G.addClass('ascendIntro');
+		G.AscendTimer = 1;
+		G.killShimmers();
+		const toggleBox = document.getElementById('toggleBox');
+		if (toggleBox) { toggleBox.style.display = 'none'; toggleBox.innerHTML = ''; }
+		G.choiceSelectorOn = -1;
+		G.ToggleSpecialMenu(0);
+		G.AscendOffX = 0; G.AscendOffY = 0; G.AscendOffXT = 0; G.AscendOffYT = 0;
+		G.AscendZoomT = 1; G.AscendZoom = 0.2;
+		G.jukebox.reset();
+		PlayCue('preascend');
+	}
+
+	/** Stands in for Game.UpdateAscendIntro while the intro runs: same sounds
+	 *  and timer, but the completion transcends instead of ascending. */
+	function transcendIntro(): void {
+		const G = window.Game;
+		if (!G) return;
+		if (G.AscendTimer === 1) PlaySound('snd/charging.mp3');
+		if (G.AscendTimer === Math.floor(G.AscendBreakpoint)) PlaySound('snd/thud.mp3');
+		G.AscendTimer++;
+		if (G.AscendTimer > G.AscendDuration) {
+			// End of the animation — hand the updater back and transcend.
+			G.AscendTimer = 0;
+			G.removeClass('ascendIntro');
+			if (_origUpdateAscendIntro) G.UpdateAscendIntro = _origUpdateAscendIntro;
+			_origUpdateAscendIntro = null;
+			_transcendIntroRunning = false;
+
+			// Fanfare, mirroring UpdateAscendIntro's completion cues.
+			PlayCue('ascend');
+			PlayMusicSound('snd/cymbalRev.mp3');
+			if (typeof App === 'undefined' || G.volumeMusic === 0) PlaySound('snd/choir.mp3');
+
+			doTranscendCore();
+		}
+	}
+
+	/** The actual reset + EE grant. Runs at the end of the intro (or
+	 *  immediately when the intro is bypassed). */
+	function doTranscendCore(): void {
 		const G = window.Game;
 		if (!G || !canTranscend()) return;
 
@@ -445,6 +520,14 @@
 	function checkHook(): void {
 		const G = window.Game;
 		if (!G) return;
+
+		// Safety: if the intro was interrupted (AscendTimer zeroed by an
+		// external path — Esc, reincarnate, load), hand the updater back.
+		if (_transcendIntroRunning && G.AscendTimer === 0) {
+			if (_origUpdateAscendIntro) G.UpdateAscendIntro = _origUpdateAscendIntro;
+			_origUpdateAscendIntro = null;
+			_transcendIntroRunning = false;
+		}
 
 		// Track prestige running total
 		trackPrestige();
