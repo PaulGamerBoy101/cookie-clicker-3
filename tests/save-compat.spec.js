@@ -4,16 +4,35 @@
 // 3. rewrite: import master's export, re-export     -> test
 // 4. diff the parsed sections; only the lastDate timestamp may differ
 //
-// Requires a `master` build served on :4174 in addition to the :4173 server
-// from playwright.config.js (e.g. `cd /tmp/cc3-master && npx vite preview --port 4174`),
-// so it is not part of the default QA gate — run it explicitly.
+// The baseline server is wired into playwright.config.js: when a pristine
+// master build exists at .cc3-master/ (create it with `npm run setup:master`,
+// or let the CI test-compat job check it out), a `vite preview` serves it on
+// :4174 alongside the :4173 build and this spec runs; otherwise it skips.
 import { test, expect } from '@playwright/test';
 import fs from 'fs';
 
 const BOOT = { timeout: 30_000 };
 
+// Detect the baseline the same way playwright.config.js does. Locally a
+// missing baseline just skips the spec; in CI the test-compat job always
+// provisions it, so a miss there is a workflow bug and must fail loudly
+// (test.skip with a condition that never lifts is reported as failed there).
+const masterProvisioned = fs.existsSync('.cc3-master/package.json');
+if (!masterProvisioned) {
+	test.skip(
+		true,
+		'save-compat needs a pristine master build on :4174 — run `npm run setup:master` to provision it' +
+			(process.env.CI ? ' (MISSING IN CI — the test-compat job should have created it)' : '')
+	);
+}
+
 async function boot(page, base) {
-	await page.goto(`${base}/?debug=1`, { waitUntil: 'load' });
+	const response = await page.goto(`${base}/?debug=1`, { waitUntil: 'load', timeout: BOOT.timeout });
+	if (base.includes(':4174') && (!response || !response.ok())) {
+		throw new Error(
+			`save-compat baseline at ${base} is not serving the game (HTTP ${response ? response.status() : 'no response'}) — re-provision it with: npm run setup:master`
+		);
+	}
 	const lang = page.locator('#langSelect-English');
 	try {
 		await lang.waitFor({ state: 'visible', timeout: 5_000 });

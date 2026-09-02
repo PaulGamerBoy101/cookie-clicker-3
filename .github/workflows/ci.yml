@@ -1,14 +1,19 @@
-# Test the QA probe suite, then deploy the built game to GitHub Pages:
-# giveen.github.io/cookie-clicker-3/
+# Test the QA probe suite and the save-format compatibility gate, then deploy
+# the built game to GitHub Pages: giveen.github.io/cookie-clicker-3/
 #
-# test:  drives the in-page ?debug=1&qa=… probes (tests/qa.spec.js) in
-#        headless Chromium against a fresh `npm run build` + `vite preview`
-#        — the same artifacts the deploy publishes.
-# deploy: only runs when the tests pass (and never on PRs). Replaces the
-#        gh-pages branch with the fresh dist/ (peaceiris/actions-gh-pages).
-#        The relocatable build (base './') serves from the repo subpath, and
-#        the per-build service-worker cache stamp (vite.config.ts) makes each
-#        deploy self-updating for returning players.
+# test:        drives the in-page ?debug=1&qa=… probes (tests/qa.spec.js) in
+#              headless Chromium against a fresh `npm run build` + `vite preview`
+#              — the same artifacts the deploy publishes.
+# test-compat: save-compat spec (tests/save-compat.spec.js) — imports a save
+#              exported from the PRISTINE master branch into this tree and
+#              diffs the re-exports, so a save-format break can't merge. The
+#              baseline is materialized by checking out master into
+#              .cc3-master/ (playwright.config.js serves it on :4174).
+# deploy:      only runs when both test jobs pass (and never on PRs). Replaces
+#              the gh-pages branch with the fresh dist/ (peaceiris/actions-gh-pages).
+#              The relocatable build (base './') serves from the repo subpath, and
+#              the per-build service-worker cache stamp (vite.config.ts) makes each
+#              deploy self-updating for returning players.
 
 name: Test & Deploy
 
@@ -48,8 +53,7 @@ jobs:
       - run: npx playwright install chromium
       # playwright.config.js webServer builds the production bundle itself.
       # Scoped to tests/qa.spec.js: the save-compat and playthrough specs are
-      # explicit extras (they need extra servers / are timing-sensitive) and
-      # must not gate the deploy.
+      # explicit extras (they need extra servers / are timing-sensitive).
       - run: npx playwright test tests/qa.spec.js
       - uses: actions/upload-artifact@v7
         if: failure()
@@ -58,8 +62,41 @@ jobs:
           path: playwright-report/
           retention-days: 14
 
+  # Save-format compatibility gate: a save exported from PRISTINE master must
+  # import into this tree and re-export byte-identically (modulo lastDate and
+  # append-only zeros). Master itself is materialized as a read-only baseline
+  # checkout — commits land on the real branches, never here.
+  test-compat:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install chromium
+      # Pristine master as the compat baseline. `actions/checkout` refuses a
+      # nested `path` inside the workspace, so this is a manual fetch + checkout
+      # (git worktree add is unavailable on shallow clones without unshallowing).
+      - name: Check out pristine master into .cc3-master/
+        run: |
+          git fetch --no-tags --depth=1 origin master
+          git worktree add --detach .cc3-master FETCH_HEAD
+      - name: Install + build baseline
+        run: |
+          npm ci --no-audit --no-fund --prefix .cc3-master
+          npm run build --prefix .cc3-master
+      - run: npx playwright test tests/save-compat.spec.js
+      - uses: actions/upload-artifact@v7
+        if: failure()
+        with:
+          name: playwright-report-compat
+          path: playwright-report/
+          retention-days: 14
+
   deploy:
-    needs: test
+    needs: [test, test-compat]
     if: github.event_name != 'pull_request'
     runs-on: ubuntu-latest
     steps:

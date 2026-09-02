@@ -8,8 +8,9 @@
     "dev": "vite",
     "typecheck": "tsc --noEmit",
     "build": "tsc --noEmit && vite build",
-    "preview": "vite preview",
-    "test": "playwright test tests/qa.spec.js"
+    "preview": "vite preview",	"test": "playwright test tests/qa.spec.js",
+	"setup:master": "node scripts/setup-master.mjs",
+	"test:compat": "npm run setup:master && playwright test tests/save-compat.spec.js"
   },
   "devDependencies": {
     "@playwright/test": "^1.62.1",
