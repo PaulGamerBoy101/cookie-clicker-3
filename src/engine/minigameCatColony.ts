@@ -384,6 +384,7 @@ M.launch = function () {
 			var btn2 = l('colonyBuy' + j);
 			if (btn2) { AddEvent(btn2, 'click', function (name: any) { return function () { M.buyUpgrade(name); }; }(M.upgradeNames[j])); }
 		}
+		M.lastAmount = M.parent.amount;
 	};
 
 	M.save = function () {
@@ -478,6 +479,12 @@ M.launch = function () {
 	};
 	M.draw = function () {
 		//run each frame, only while the panel is visible
+
+		// Buying/selling cats only updates the store row (core/building.ts),
+		// never this panel's roster/missions HTML — refresh here so newly
+		// bought cats show up without needing a page reload.
+		if (M.parent.amount !== M.lastAmount) M.refresh();
+
 		if (M.away.length > 0 && l('colonyTimers')) {
 			var soonest = M.away[0].returnAt;
 			for (var i = 1; i < M.away.length; i++) { if (M.away[i].returnAt < soonest) soonest = M.away[i].returnAt; }
