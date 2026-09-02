@@ -324,7 +324,7 @@ export function UpdateMenu()
 				var milk=Game.Milks[i];
 				milkStr+='<div '+Game.getTooltip(
 				'<div class="prompt" style="text-align:center;padding-bottom:6px;white-space:nowrap;margin:0px;padding-bottom:96px;" id="tooltipMilk"><h3 style="margin:6px 32px 0px 32px;">'+(loc("Rank %1",romanize(i+1))+' - '+milk.name)+'</h3><div style="opacity:0.75;font-size:9px;">('+(i==0?loc("starter milk"):loc("for %1 achievements",Beautify(i*25)))+')</div><div class="line"></div><div style="width:100%;height:96px;position:absolute;left:0px;bottom:0px;background:url(img/'+milk.pic+');"></div></div>'
-				,'top')+' style="background:url(img/icons.webp?v='+Game.version+') '+(-milk.icon[0]*48)+'px '+(-milk.icon[1]*48)+'px;margin:2px 0px;" class="trophy"></div>';
+				,'top')+' style="background:url(img/icons.webp) '+(-milk.icon[0]*48)+'px '+(-milk.icon[1]*48)+'px;margin:2px 0px;" class="trophy"></div>';//CC3 perf: versionless, matches the Loader's fetch (one cached copy)
 			}
 		}
 		milkStr+='<div style="clear:both;"></div>';

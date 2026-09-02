@@ -1117,7 +1117,7 @@ M.launch=function()
 					{
 						var it=M.plants[me.children[i]];
 						if (it.unlocked) children+='<div class="gardenSeedTiny" style="background-position:'+(-0*48)+'px '+(-it.icon*48)+'px;"></div>';
-						else children+='<div class="gardenSeedTiny" style="background-image:url(img/icons.webp?v='+Game.version+');background-position:'+(-0*48)+'px '+(-7*48)+'px;opacity:0.35;"></div>';
+						else children+='<div class="gardenSeedTiny" style="background-image:url(img/icons.webp);background-position:'+(-0*48)+'px '+(-7*48)+'px;opacity:0.35;"></div>';//CC3 perf: versionless, matches the Loader's fetch (one cached copy)
 					}
 				}
 				children+='</div>';

@@ -439,24 +439,38 @@ if (debugSurface && params.get('qa') === 'sound') {
 					const loaded = s instanceof HTMLAudioElement && s.readyState >= 2;
 					const errLoaded = err instanceof HTMLAudioElement && err.readyState >= 2;
 					const confLoaded = conf instanceof HTMLAudioElement && conf.readyState >= 2;
-					// CC3 music: Music object exists, jukebox populated, first track loads
+					// CC3 music: Music object exists, jukebox populated; tracks are
+					// LAZY — no track has a src until the first playTrack (nothing
+					// is fetched before a user gesture), and playing the first track
+					// loads it and pre-buffers the next one
 					const music = (window as any).Music;
 					const musicOk = music && music.tracks && Object.keys(music.tracks).length >= 8 && music.names && music.names.length >= 8;
 					const jukeboxOk = G.jukebox && G.jukebox.tracks && G.jukebox.tracks.length >= 8 && G.jukebox.tracks[0] === 'Farm Life';
+					if (musicOk && jukeboxOk && !G.__qaSoundPlayed) {
+						G.__qaSoundPlayed = 1;
+						const idle = music.names.every((n: string) => { const a = music.tracks[n].audio; return a instanceof HTMLAudioElement && !a.getAttribute('src') && a.readyState === 0; });
+						music.playTrack(music.names[0]);
+						G.__qaSoundIdle = idle;
+					}
 					const firstTrack = musicOk ? music.tracks[music.names[0]].audio : null;
+					const nextTrack = musicOk ? music.tracks[music.names[1]].audio : null;
 					const trackLoaded = firstTrack instanceof HTMLAudioElement && firstTrack.readyState >= 2;
+					const nextBuffered = nextTrack instanceof HTMLAudioElement && !!nextTrack.src;
+					const lazyIdle = !!G.__qaSoundIdle;
 					// CC3 bridge fix: the Settings pref buttons must read ON/OFF live
 					const onOffOk = (window as any).ON === ' ON' && (window as any).OFF === ' OFF';
-					if ((loaded && errLoaded && confLoaded && trackLoaded) || Date.now() - started > 10000) {
+					if ((loaded && errLoaded && confLoaded && trackLoaded) || Date.now() - started > 15000) {
 						window.clearInterval(poll);
-						const pass = wrapperOk && loaded && errLoaded && confLoaded && musicOk && jukeboxOk && trackLoaded && onOffOk && G.volume > 0;
+						const pass = wrapperOk && loaded && errLoaded && confLoaded && musicOk && jukeboxOk && lazyIdle && trackLoaded && nextBuffered && onOffOk && G.volume > 0;
 						out.textContent =
 							'[QA-sound] wrapper produces real Audio elements: ' + wrapperOk +
 							'\n[QA-sound] \'snd/tick.mp3\' loaded (readyState=' + (s ? s.readyState : 'n/a') + '): ' + loaded +
 							'\n[QA-sound] \'snd/error1.mp3\' loaded (readyState=' + (err ? err.readyState : 'n/a') + '): ' + errLoaded +
 							'\n[QA-sound] \'snd/confirm1.mp3\' loaded via achievement win (readyState=' + (conf ? conf.readyState : 'n/a') + '): ' + confLoaded +
 							'\n[QA-sound] music tracks=' + (musicOk ? Object.keys(music.tracks).length : 'n/a') + ' jukebox=' + (jukeboxOk ? G.jukebox.tracks.length : 'n/a') +
-							'\n[QA-sound] first music track loaded (readyState=' + (firstTrack ? firstTrack.readyState : 'n/a') + '): ' + trackLoaded +
+							'\n[QA-sound] no track fetched before first play (lazy): ' + lazyIdle +
+							'\n[QA-sound] first music track loaded after playTrack (readyState=' + (firstTrack ? firstTrack.readyState : 'n/a') + '): ' + trackLoaded +
+							'\n[QA-sound] next track pre-buffered (has src): ' + nextBuffered +
 							'\n[QA-sound] ON/OFF bridge: ' + onOffOk + ' volume=' + G.volume +
 							'\n[QA-sound] ' + (pass ? 'PASS: sound engine, music, and settings labels all work' : 'FAIL: see checks above');
 						window.clearInterval(tick);
@@ -2673,6 +2687,11 @@ if (swEnabled) {
       engine's discrete value at every tick boundary). It re-anchors on
       every engine tick (a Game.T change), so it can never drift from the
       engine's value; when inactive, the engine's own render stands alone.
+      CC3 perf: the engine's #cookies markup is now static — the number
+      lives in #cookieAmount, the per-second line in #cookiesPerSecond —
+      and this pass writes into those (already parsed) nodes, only touching
+      innerHTML for the rare <br>/monospace markup, never rebuilding the
+      #cookies subtree.
    2. Ascend flash — when the 5s ascend intro passes its breakpoint
       (Game.AscendBreakpoint — the cookie-"explosion" tick where the engine
       plays snd/thud.mp3), flash the #cc3Flash overlay and shake #game
@@ -2697,14 +2716,15 @@ if (swEnabled) {
 	/* --- 1. smooth cookie counter ---------------------------------------- */
 	let lastT = -1;
 	let ax = 0, aC = 0, at = 0;
-	let lastStr = '';
 	const renderCookies = (v: number) => {
 		const G = window.Game;
 		const el = document.getElementById('cookies');
 		if (!el) return;
 		// Ported 1:1 from the engine's own #cookies render (Game.Draw) —
 		// the only difference is that the value comes from the closed-form
-		// continuation instead of the tick-quantized Game.cookiesd.
+		// continuation instead of the tick-quantized Game.cookiesd. CC3 perf:
+		// writes go into the two static spans (same markup the engine builds),
+		// so a 60fps frame never re-parses the #cookies subtree.
 		let str = window.Beautify(Math.round(v));
 		if (v >= 1000000)//dirty padding
 		{
@@ -2725,13 +2745,34 @@ if (swEnabled) {
 		str = window.loc('%1 cookie', { n: Math.round(v), b: str });
 		if (str.length > 14) str = str.replace(' ', '<br>');
 		if (G.prefs.monospace) str = '<span class="monospace">' + str + '</span>';
-		str += '<div id="cookiesPerSecond"' + (G.cpsSucked > 0 ? ' class="wrinkled"' : '') + '>' + window.loc('per second:') + ' ' + window.Beautify(G.cookiesPs * (1 - G.cpsSucked), 1) + '</div>';
-		if (str !== lastStr)
+		const amountMark = str;
+		const cpsStr = window.loc('per second:') + ' ' + window.Beautify(G.cookiesPs * (1 - G.cpsSucked), 1);
+		const cpsClass = G.cpsSucked > 0 ? 'wrinkled' : '';
+		let spans = (el as any).__cc3Spans;
+		if (!spans)
 		{
-			el.innerHTML = str;
-			lastStr = str;
+			// first frame (or the engine hasn't built them yet): build once
+			el.innerHTML = '<span id="cookieAmount">' + amountMark + '</span><span id="cookiesPerSecond" class="' + cpsClass + '"></span>';
+			spans = (el as any).__cc3Spans = { amount: el.firstChild as HTMLElement, cps: el.lastChild as HTMLElement, lastAmount: amountMark, lastCps: cpsStr };
+			(spans.cps as HTMLElement).textContent = cpsStr;
+			stats.counter.writes++;
+			return;
+		}
+		if (spans.lastAmount !== amountMark)
+		{
+			// plain text in the common case; innerHTML only when the markup
+			// actually contains elements (<br> / the monospace wrapper)
+			if (amountMark.indexOf('<') === -1) spans.amount.textContent = amountMark;
+			else spans.amount.innerHTML = amountMark;
+			spans.lastAmount = amountMark;
 			stats.counter.writes++;
 		}
+		if (spans.lastCps !== cpsStr)
+		{
+			spans.cps.textContent = cpsStr;
+			spans.lastCps = cpsStr;
+		}
+		if (spans.cps.className !== cpsClass) spans.cps.className = cpsClass;
 	};
 
 	/* --- 2. ascend flash --------------------------------------------------- */
@@ -2787,7 +2828,6 @@ if (swEnabled) {
 		if (off !== wasOff) {
 			wasOff = off;
 			document.body.classList.toggle('noMotion', off);
-			if (off) lastStr = ''; // next motion-enabled frame re-renders fresh
 		}
 		stats.noMotionClass = document.body.classList.contains('noMotion');
 		if (off) {

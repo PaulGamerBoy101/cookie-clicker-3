@@ -68,6 +68,13 @@ export function declareVanillaChangelog(Game: EngineGame) {
 	Game.updateLog+=
 
 	'</div><div class="subsection update">'+
+	'<div class="title">02/09/2026 - performance pass</div>'+
+	'<div class="listing">&bull; background music now loads lazily: nothing is fetched until you first play a track (previously the browser downloaded all ~12&nbsp;MB of music on page load, even with music off), and the next track is pre-buffered for gapless auto-advance</div>'+
+	'<div class="listing">&bull; the cookie counter and per-second readout are now updated in place instead of being rebuilt from HTML every frame</div>'+
+	'<div class="listing">&bull; tiled backgrounds (milk, tall backgrounds) are painted with native canvas patterns instead of per-tile draw loops</div>'+
+	'<div class="listing">&bull; sprite lookups no longer scan the loaded-asset list on every draw, and the remaining autosave work is scheduled during idle time</div>'+
+	'<div class="listing">&bull; the icons sprite sheet is preloaded during boot and is no longer downloaded twice under different cache-busting URLs</div>'+
+	'</div><div class="subsection update">'+
 	'<div class="title">01/09/2026 - purchase feedback, copy-to-clipboard</div>'+
 	'<div class="listing">&bull; every building now gets a short grounded bounce on purchase (not just Grandma) — the store-wide feedback the roadmap called for</div>'+
 	'<div class="listing">&bull; the Export save prompt now has a "Copy to clipboard" button so you can grab the save code without manually selecting the textarea</div>'+

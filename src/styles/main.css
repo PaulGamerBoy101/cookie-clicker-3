@@ -1339,6 +1339,10 @@ q:after
 }
 #cookiesPerSecond
 {
+	/*CC3 perf: this used to be a <div> rebuilt with the counter's innerHTML
+	 * every frame; it is now a persistent <span> updated via textContent —
+	 * display:block keeps the old below-the-number layout.*/
+	display:block;
 	font-size:50%;
 }
 #cookiesPerSecond.wrinkled

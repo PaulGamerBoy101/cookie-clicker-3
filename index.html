@@ -24,6 +24,9 @@
 	<link rel="icon" type="image/x-icon" href="img/favicon.ico">
 	<!-- apple-touch-icon stays PNG: Safari ignores WebP touch icons -->
 	<link rel="apple-touch-icon" href="img/icon.png">
+	<!--CC3 perf: warm the sprite sheet during engine boot (before the Loader
+	    starts drawing); versionless to match the Loader's fetch (one cached copy).-->
+	<link rel="preload" as="image" href="img/icons.webp">
 	<link rel="manifest" href="manifest.webmanifest">
 	<!--
 		Cookie Clicker 3 — a modern port of the Cookie Clicker 2.048 source

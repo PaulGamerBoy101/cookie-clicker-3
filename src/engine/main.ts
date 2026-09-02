@@ -480,25 +480,68 @@ var grabProps=function(arr: any,prop: any)
 }
 
 var CanvasPrototype: any=CanvasRenderingContext2D.prototype;//CC3: tsgo can't infer `this` from a prototype-cast assignment; alias keeps the verbatim method body.
+//CC3 perf: fillPattern tiled by issuing one drawImage per (iW x iH) tile in
+//a JS loop — a full-screen 512px background on a 1080p canvas is ~40 redraws
+//of the same image per call, several calls per frame. The native
+//CanvasPattern does the same fill in one GPU-composited fillRect:
+//   - the pattern is created ONCE per image at its natural size and cached
+//     on the image object (no scratch canvas, no rebuilds — the old code
+//     re-issued every tile every call);
+//   - the tile size (iW/iH) and phase (offX/offY) ride a pattern transform:
+//     translate(X+offX,Y+offY) anchors the first tile where the old loop
+//     drew it, scale(iW/natW,iH/natH) sizes each tile to iW x iH exactly
+//     like the old drawImage(img,x,y,iW,iH) did;
+//   - the fill rect is the requested W x H, so the pattern covers it
+//     completely (the old loop's left/top gap for negative offsets — a
+//     latent artifact of the per-tile march — is smoothed over).
+// While the image is still loading, the original tile loop is kept as the
+// fallback (its drawImage calls no-op per spec, same as before).
 CanvasPrototype.fillPattern=function(img: any,X: any,Y: any,W: any,H: any,iW: any,iH: any,offX: any,offY: any)
 {
 	//for when built-in patterns aren't enough
-	if (img.alt!='blank')
+	if (isBlankImg(img)) return;
+	X=X||0;Y=Y||0;
+	var offX=offX||0;
+	var offY=offY||0;
+	if (offX<0) {offX=offX-Math.floor(offX/iW)*iW;} if (offX>0) {offX=(offX%iW)-iW;}
+	if (offY<0) {offY=offY-Math.floor(offY/iH)*iH;} if (offY>0) {offY=(offY%iH)-iH;}
+	if (img.complete!==false && (img.naturalWidth||img.width))
 	{
-		var offX=offX||0;
-		var offY=offY||0;
-		if (offX<0) {offX=offX-Math.floor(offX/iW)*iW;} if (offX>0) {offX=(offX%iW)-iW;}
-		if (offY<0) {offY=offY-Math.floor(offY/iH)*iH;} if (offY>0) {offY=(offY%iH)-iH;}
-		for (var y=offY;y<H;y+=iH){for (var x=offX;x<W;x+=iW){this.drawImage(img,X+x,Y+y,iW,iH);}}
+		var pat=img.__pattern;
+		if (!pat) {pat=this.createPattern(img,'repeat');img.__pattern=pat;}
+		var natW=img.naturalWidth||img.width;
+		var natH=img.naturalHeight||img.height;
+		var m=new DOMMatrix();
+		m.translateSelf(X+offX,Y+offY);
+		if (natW!=iW||natH!=iH) m.scaleSelf(iW/natW,iH/natH);
+		(pat as any).setTransform(m);
+		var oldStyle=this.fillStyle;
+		this.fillStyle=pat;
+		//the old tile loop over-filled vertically to the next tile boundary
+		//(the milk row relies on this: it passes H=1 as a loop bound but
+		//expects one full 480px-tall row); replicate that coverage
+		this.fillRect(X,Y,W,Math.ceil(H/iH)*iH);
+		this.fillStyle=oldStyle;
+		return;
 	}
+	//image not decodable yet — original per-tile loop (no-ops per spec)
+	for (var y=offY;y<H;y+=iH){for (var x=offX;x<W;x+=iW){this.drawImage(img,X+x,Y+y,iW,iH);}}
 }
 
-var OldCanvasDrawImage=CanvasRenderingContext2D.prototype.drawImage;
-CanvasRenderingContext2D.prototype.drawImage=function()
+//CC3 perf: the blanket drawImage wrapper (an extra JS call on EVERY sprite
+//draw, game-wide, just to skip the blank placeholder) is replaced by a check
+//inside the polyfilled draw sources that can actually receive the blank
+//canvas — Pic() (which hands out Game.Loader.blank), fillPattern, and the
+//Building.draw() sprite loop. Every other drawImage call now goes straight
+//to the native method.
+var blankAlt='blank';
+var isBlankImg=function(img: any)
 {
-	//only draw the image if it's loaded
-	if (arguments[0].alt!='blank') OldCanvasDrawImage.apply(this,arguments as any);
+	return img && (img as any).alt==blankAlt;
 }
+//kept for legacy/mod compatibility (and the commented-out jitter path in
+//drawBackground): with the wrapper gone, this is simply the native method.
+var OldCanvasDrawImage=CanvasRenderingContext2D.prototype.drawImage;
 
 
 if (!document.hasFocus) document.hasFocus=function(){return document.hidden;};//for Opera
@@ -519,13 +562,21 @@ var Loader: any=function(this: any)//asset-loading system
 	this.blank.height=8;
 	this.blank.alt='blank';
 	
+	//CC3 perf: the "loaded" / "loading" bookkeeping used to be plain arrays
+	//scanned with indexOf on every Pic() call — the hottest lookup in the
+	//game (once per sprite draw, thousands of times a frame). Sets make
+	//every check O(1). Assets are never deleted, so a Set can't regress
+	//anything the old arrays supported.
+	this.assetsLoading=new Set<string>();
+	this.assetsLoaded=new Set<string>();
+	
 	this.Load=function(this: any, assets: any)
 	{
 		for (var i in assets)
 		{
 			this.loadingN++;
 			this.assetsN++;
-			if (!this.assetsLoading[assets[i]] && !this.assetsLoaded[assets[i]])
+			if (!this.assetsLoading.has(assets[i]) && !this.assetsLoaded.has(assets[i]))
 			{
 				var img=new Image();
 				if (assets[i].indexOf('/')!=-1) img.src=assets[i];
@@ -533,7 +584,7 @@ var Loader: any=function(this: any)//asset-loading system
 				img.alt=assets[i];
 				img.onload=bind(this,this.onLoad);
 				this.assets[assets[i]]=img;
-				this.assetsLoading.push(assets[i]);
+				this.assetsLoading.add(assets[i]);
 			}
 		}
 	}
@@ -552,8 +603,8 @@ var Loader: any=function(this: any)//asset-loading system
 	}
 	this.onLoad=function(this: any, e: any)
 	{
-		this.assetsLoaded.push(e.target.alt);
-		this.assetsLoading.splice(this.assetsLoading.indexOf(e.target.alt),1);
+		this.assetsLoaded.add(e.target.alt);
+		this.assetsLoading.delete(e.target.alt);
 		this.loadingN--;
 		if (this.doneLoading==0 && this.loadingN<=0 && this.loaded!=0)
 		{
@@ -569,8 +620,10 @@ var Loader: any=function(this: any)//asset-loading system
 
 var Pic=function(what: any)
 {
-	if (Game.Loader.assetsLoaded.indexOf(what)!=-1) return Game.Loader.assets[what];
-	else if (Game.Loader.assetsLoading.indexOf(what)==-1) Game.Loader.Load([what]);
+	//CC3 perf: assetsLoaded is a Set — O(1) hit test instead of an indexOf
+	//scan over every known asset (once per sprite, every frame).
+	if (Game.Loader.assetsLoaded.has(what)) return Game.Loader.assets[what];
+	else if (!Game.Loader.assetsLoading.has(what)) Game.Loader.Load([what]);
 	return Game.Loader.blank;
 }
 
@@ -716,7 +769,10 @@ Game.Launch=function()
 	
 	var css=document.createElement('style');
 	css.type='text/css';
-	css.innerHTML='body .icon,body .crate,body .usesIcon{background-image:url(img/icons.webp?v='+Game.version+');}';
+	//CC3 perf: no ?v= cache-buster — must match the versionless URL the Loader
+	//fetches, or the browser downloads icons.webp twice (and the SW caches two
+	//copies). Deploy invalidation is handled by the SW's per-build cache name.
+	css.innerHTML='body .icon,body .crate,body .usesIcon{background-image:url(img/icons.webp);}';
 	document.head.appendChild(css);
 	
 	//this is so shimmers can still appear even if you lose connection after the game is loaded
@@ -3918,7 +3974,19 @@ window.loadMinigameModule!(me.minigameUrl).then(function(){
 		Game.mouseMoved=0;
 		Game.CanClick=1;
 		
-		if ((Game.toSave || (Game.T%(Game.fps*60)==0 && Game.T>Game.fps*10 && Game.prefs.autosave)) && !Game.OnAscend)
+		//CC3 perf: the autosave's serialize+base64+localStorage write used to run
+		//on the main thread inside a frame, spiking it every 60s. The tick now
+		//only flags it; the actual write goes through requestIdleCallback (with a
+		//synchronous fallback). Manual saves (Game.toSave) still write
+		//synchronously in the same tick, exactly as before. The minigame-loading
+		//guard applies to both paths.
+		if (Game.toSave && !Game.OnAscend)
+		{
+			Game.__cc3IdleSave=false;//a manual save supersedes any pending autosave
+			Game.WriteSave();
+		}
+		else if (Game.T%(Game.fps*60)==0 && Game.T>Game.fps*10 && Game.prefs.autosave && !Game.OnAscend) Game.__cc3IdleSave=true;
+		if (Game.__cc3IdleSave && !Game.OnAscend)
 		{
 			//check if we can save : no minigames are loading
 			var canSave=true;
@@ -3927,7 +3995,15 @@ window.loadMinigameModule!(me.minigameUrl).then(function(){
 				var me=Game.Objects[iKey];
 				if (me.minigameLoading){canSave=false;break;}
 			}
-			if (canSave) Game.WriteSave();
+			if (canSave)
+			{
+				Game.__cc3IdleSave=false;
+				if (typeof requestIdleCallback==='function')
+				{
+					requestIdleCallback(function(){if (!Game.toSave) Game.WriteSave();});
+				}
+				else Game.WriteSave();
+			}//else: minigames still loading — retry next tick
 		}
 		if (!Game.toSave && !Game.isSaving)
 		{
@@ -3954,6 +4030,14 @@ window.loadMinigameModule!(me.minigameUrl).then(function(){
 		if (!Game.OnAscend)
 		{
 			
+			//CC3 perf: the counter used to be one big innerHTML string rebuilt
+			//30x a second (build + parse + layout every frame). The markup is
+			//built once (below), the number lives in #cookieAmount, the
+			//per-second line in #cookiesPerSecond, and each frame only writes
+			//textContent into the two (already parsed) nodes — only when the
+			//value actually changed. The smooth-cookie-counter polish pass in
+			//src/main.ts takes over the same nodes at refresh rate (both passes
+			//cache their node refs in #cookies.__cc3Spans).
 			var str=Beautify(Math.round(Game.cookiesd));
 			if (Game.cookiesd>=1000000)//dirty padding
 			{
@@ -3976,8 +4060,36 @@ window.loadMinigameModule!(me.minigameUrl).then(function(){
 			if (str.length>14) str=str.replace(' ','<br>');
 			
 			if (Game.prefs.monospace) str='<span class="monospace">'+str+'</span>';
-			str=str+'<div id="cookiesPerSecond"'+(Game.cpsSucked>0?' class="wrinkled"':'')+'>'+loc("per second:")+' '+Beautify(Game.cookiesPs*(1-Game.cpsSucked),1)+'</div>';
-			l('cookies').innerHTML=str;
+			
+			//CC3 perf (cont.): the amount keeps the loc/monospace markup (it may
+			//carry a <br>), wrapped in #cookieAmount so both children are always
+			//elements; the per-second line keeps its id for CSS/tests but is now
+			//a <span> updated in place.
+			var cookiesL=l('cookies') as any;
+			if (!cookiesL.__cc3Spans)
+			{
+				cookiesL.innerHTML='<span id="cookieAmount">'+str+'</span><span id="cookiesPerSecond"'+(Game.cpsSucked>0?' class="wrinkled"':'')+'></span>';
+				cookiesL.__cc3Spans={amount:cookiesL.firstChild as HTMLElement,cps:cookiesL.lastChild as HTMLElement,lastAmount:str,lastCps:loc("per second:")+' '+Beautify(Game.cookiesPs*(1-Game.cpsSucked),1)};
+				(cookiesL.__cc3Spans.cps as any).textContent=cookiesL.__cc3Spans.lastCps;
+			}
+			else
+			{
+				var spans=cookiesL.__cc3Spans;
+				if (spans.lastAmount!==str)
+				{
+					spans.amount.innerHTML=str;
+					spans.lastAmount=str;
+				}
+				var cpsStr=loc("per second:")+' '+Beautify(Game.cookiesPs*(1-Game.cpsSucked),1);
+				if (spans.lastCps!==cpsStr)
+				{
+					spans.cps.textContent=cpsStr;
+					spans.lastCps=cpsStr;
+				}
+				//the wrinkled class only matters when a wrinkler latches on
+				var wrinkled=(Game.cpsSucked>0)?'wrinkled':'';
+				if (spans.cps.className!==wrinkled) spans.cps.className=wrinkled;
+			}
 			Timer.track('cookie amount');
 			
 			for (var i in Game.Objects)
@@ -4099,10 +4211,19 @@ window.loadMinigameModule!(me.minigameUrl).then(function(){
 		Game.time=time;
 		
 		//if (Game.accumulatedDelay>=Game.fps) console.log('delay:',Math.round(Game.accumulatedDelay/Game.fps));
+		//CC3 perf: the catch-up loop could replay up to 150 Logic() ticks back-to-back
+		//(accumulatedDelay caps at 5s) after the tab was throttled — a jank spike of
+		//several hundred ms on tab return. While the page is VISIBLE, catch-up now
+		//runs at most 5 ticks per frame (the debt clears over the next second or so;
+		//meanwhile real time has passed, so gameplay is unaffected — background play
+		//is still fully simulated by the catch-up when the tab is hidden, where
+		//jank is invisible).
+		var catchupTicks=0;
 		while (Game.accumulatedDelay>0)
 		{
 			Game.Logic();
 			Game.accumulatedDelay-=1000/Game.fps;//as long as we're detecting latency (slower than target fps), execute logic (this makes drawing slower but makes the logic behave closer to correct target fps)
+			if (Game.visible && ++catchupTicks>=5) {Game.accumulatedDelay=0;break;}
 		}
 		Game.catchupLogic=0;
 		Timer.track('logic');

@@ -523,7 +523,9 @@ test('?qa=sound: sound engine, web music, and settings labels work', async ({ pa
 	expect(report).toMatch(/\'snd\/error1\.mp3\' loaded \(readyState=\d+\): true/);
 	expect(report).toMatch(/\'snd\/confirm1\.mp3\' loaded via achievement win \(readyState=\d+\): true/);
 	expect(report).toMatch(/music tracks=\d+ jukebox=\d+/);
-	expect(report).toMatch(/first music track loaded \(readyState=\d+\): true/);
+	expect(report).toMatch(/no track fetched before first play \(lazy\): true/);
+	expect(report).toMatch(/first music track loaded after playTrack \(readyState=\d+\): true/);
+	expect(report).toMatch(/next track pre-buffered \(has src\): true/);
 	expect(report).toMatch(/ON\/OFF bridge: true/);
 	expect(report).toMatch(/volume=\d+/);
 });

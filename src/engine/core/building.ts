@@ -863,6 +863,11 @@ export class Building {
 					{
 						var pic: any=this.pics[i];//runtime sprite object {x,y,z,pic,id,frame}
 						var sprite=Pic(pic.pic);
+						//CC3 perf: skip the Loader's blank placeholder while the sheet is
+						//still loading (the old global drawImage guard is gone; blank is
+						//transparent so even unguarded this draws nothing, but the loop
+						//also does seeded text work below that must not run on blanks).
+						if (sprite.alt=='blank') continue;
 						if (selected! == i && this.name=='Grandma')//selected! — tsgo TS2454: the var is only assigned inside the mouseOn branch above; the original compared the hoisted (possibly unassigned) var
 						{
 							ctx.font='14px Merriweather';

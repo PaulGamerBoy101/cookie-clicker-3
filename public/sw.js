@@ -41,6 +41,14 @@ self.addEventListener('fetch', (event) => {
 	if (request.method !== 'GET') return;
 	if (new URL(request.url).origin !== self.location.origin) return;
 
+	// CC3 perf: media requests are excluded from the SW entirely. Streaming
+	// <audio> is fetched with Range requests (cache.put() would strip the 206
+	// body; storing the full 200 would pin ~12 MB of music in the 512-entry
+	// cache), and tracks only load on first play anyway. Bypassing the SW lets
+	// the browser's own media pipeline (and its HTTP cache) handle them.
+	const url = new URL(request.url);
+	if (url.pathname.startsWith('/snd/music/') || request.headers.has('range')) return;
+
 	event.respondWith(
 		(async () => {
 			const cache = await caches.open(CACHE);
