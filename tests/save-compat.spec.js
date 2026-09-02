@@ -127,7 +127,18 @@ test('save compat: master export -> rewrite import -> re-export diff (symmetric)
 	const mPage = await mCtx.newPage();
 	await boot(mPage, 'http://localhost:4174');
 	await seedRichState(mPage);
-	const masterExport = await mPage.evaluate(() => window.Game.WriteSave(1));
+	// Capture the live values AT EXPORT TIME: the engine loop keeps ticking
+	// between the seed and export evaluates (each Logic tick adds cookiesPs/fps
+	// to G.cookies), so the seeded constants are only meaningful modulo those
+	// ticks — on a loaded runner 2-3 ticks of ~65.6 CpS land between the two
+	// evaluates. The import must nonetheless restore the export's values
+	// EXACTLY (no offline-grant or rounding drift in between), so those live
+	// values are the ground truth for the rewrite-side state assertions below.
+	const masterExport = await mPage.evaluate(() => {
+		const G = window.Game;
+		const state = { cookies: G.cookies, cookiesEarned: G.cookiesEarned };
+		return { exp: G.WriteSave(1), state };
+	});
 
 	// ---- master: self-import baseline ----
 	await mCtx.close();
@@ -141,11 +152,15 @@ test('save compat: master export -> rewrite import -> re-export diff (symmetric)
 	// Pin it identically on both import pages so the restore is symmetric.
 	const masterSelf = await m2Page.evaluate((saveStr) => {
 		const G = window.Game;
-		G.heralds = 1;
-		const ok = G.ImportSaveCode(saveStr);
-		G.recalculateGains = 1; G.CalculateGains();
-		return { ok, raw: G.WriteSave(2), exp: G.WriteSave(1) };
-	}, masterExport);
+		try {
+			G.heralds = 1;
+			const ok = G.ImportSaveCode(saveStr);
+			G.recalculateGains = 1; G.CalculateGains();
+			return { ok, raw: G.WriteSave(2), exp: G.WriteSave(1) };
+		} catch (e) {
+			return { ok: false, error: String(e) };
+		}
+	}, masterExport.exp);
 	expect(masterSelf.ok).toBe(true);
 	await m2Ctx.close();
 
@@ -163,6 +178,7 @@ test('save compat: master export -> rewrite import -> re-export diff (symmetric)
 			raw: G.WriteSave(2),
 			exp: G.WriteSave(1),
 			state: {
+			// [note] asserted against masterExport.state (captured at export time)
 				cookies: G.cookies, cookiesEarned: G.cookiesEarned, cookieClicks: G.cookieClicks,
 				goldenClicks: G.goldenClicks, resets: G.resets,
 				heavenlyChips: G.heavenlyChips, lumps: G.lumps, dragonLevel: G.dragonLevel,
@@ -175,15 +191,18 @@ test('save compat: master export -> rewrite import -> re-export diff (symmetric)
 				ach1: G.Achievements['Wake and bake'].won,
 			},
 		};
-	}, masterExport);
+	}, masterExport.exp);
 	await rCtx.close();
 
 	// 1) import must succeed on both branches
 	expect(rw.ok).toBe(true);
 
-	// 2) live state after import matches the seeded values
-	expect(rw.state.cookies).toBeCloseTo(987654321.5, 1);
-	expect(rw.state.cookiesEarned).toBeCloseTo(12345678901.25, 1);
+	// 2) live state after import matches the values at export time exactly
+	// (see the capture note above: tick drift between evaluates rules out
+	// comparing against the seeded constants)
+	expect(rw.state.cookies).toBe(masterExport.state.cookies);
+	expect(rw.state.cookiesEarned).toBe(masterExport.state.cookiesEarned);
+	// tick-free integer fields still compare against the seeded values
 	expect(rw.state.cookieClicks).toBe(4321);
 	expect(rw.state.goldenClicks).toBe(77);
 	expect(rw.state.resets).toBe(3);
