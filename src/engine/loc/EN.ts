@@ -1002,6 +1002,10 @@ export default { id: "EN", name: "english", strings: {
 		"%1 grandma",
 		"%1 grandmas"
 	],
+	"%1 cat": [
+		"%1 cat",
+		"%1 cats"
+	],
 	"[Grandma quote]A nice grandma to bake more cookies.": "A nice grandma to bake more cookies.",
 	"[Grandma business name]Oven": "Oven",
 	"[Grandma business quote]A crucial element of baking cookies.": "A crucial element of baking cookies.",
