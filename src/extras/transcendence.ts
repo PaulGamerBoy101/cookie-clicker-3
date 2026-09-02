@@ -648,94 +648,84 @@
 		container.appendChild(toggle);
 	}
 
-	/** Show the Doctrine tree as a 3D solar system overlay. Planets orbit
-	 *  around the central EE sun; inner orbits hold cheaper nodes, outer
-	 *  orbits hold expensive ones. The layout has infinite room for future
-	 *  nodes. */
-	function showDoctrineTree(): void {
-		const G = window.Game;
-		if (!G) return;
-		if (document.getElementById('doctrineOverlay')) return;
-
-		_injectSolarCSS();
-
-		const overlay = document.createElement('div');
-		overlay.id = 'doctrineOverlay';
-		overlay.onclick = function (e: MouseEvent) { if (e.target === overlay) closeDoctrineTree(); };
-
-		const system = document.createElement('div');
-		system.id = 'doctrineSystem';
-		system.setAttribute('aria-label', 'Doctrine solar system');
-
-		// Planet nodes are rendered here; the sun is rendered separately.
-		_renderSun(system);
-		_renderSolarSystem(system);
-
-		overlay.appendChild(system);
-		document.body.appendChild(overlay);
-	}
-
-	/** Close the Doctrine solar system overlay. */
-	function closeDoctrineTree(): void {
-		const overlay = document.getElementById('doctrineOverlay');
-		if (overlay) overlay.remove();
-	}
-
-	/* Orbit radii for the solar system (innermost to outermost). */
-	const ORBIT_RADII = [100, 175, 260, 350];
+	/* Orbit radii as fractions of the system half-size (set dynamically).
+	 * Inner orbits hold cheaper nodes, outer hold expensive ones. */
+	const ORBIT_FRACTIONS = [0.24, 0.43, 0.63, 0.87];
 	const ORBIT_BY_COST: Record<number, number> = { 1: 0, 3: 1, 8: 2, 15: 3 };
 
-	/** Inject the solar system CSS once. */
+	/* Pan/zoom state for the full-screen view. */
+	let _viewOffX = 0, _viewOffY = 0, _viewZoom = 1;
+	let _viewDragging = false, _viewDragStartX = 0, _viewDragStartY = 0;
+	let _viewDragOffX = 0, _viewDragOffY = 0;
+
+	/** Inject the full-screen Doctrine view CSS once. */
 	function _injectSolarCSS(): void {
 		if (document.getElementById('doctrineSolarCSS')) return;
 		const s = document.createElement('style');
 		s.id = 'doctrineSolarCSS';
 		s.textContent = `
-#doctrineOverlay {
-  position: fixed; top:0; left:0; width:100vw; height:100vh;
-  background:rgba(0,0,0,0.85); z-index:9999;
-  display:flex; align-items:center; justify-content:center;
-  perspective:900px; cursor:pointer;
+#doctrineFullView {
+  position:fixed; top:0; left:0; width:100vw; height:100vh;
+  z-index:9999;
+  background:radial-gradient(ellipse at 50% 40%, #0f0f24 0%, #030308 100%);
+  display:flex; flex-direction:column;
+  overflow:hidden; user-select:none;
+  color:#fff; font-family:serif;
+}
+#doctrineTopBar {
+  width:100%; height:48px; display:flex; align-items:center;
+  background:rgba(0,0,0,0.55); flex-shrink:0;
+  border-bottom:1px solid rgba(255,255,255,0.06);
+  z-index:10; padding:0 16px;
+}
+#doctrineBackBtn {
+  font-size:14px; cursor:pointer; color:#999;
+  transition:color 0.15s; padding:8px 14px;
+  white-space:nowrap;
+}
+#doctrineBackBtn:hover { color:#fff; }
+#doctrineInfo {
+  flex:1; text-align:center; font-size:13px;
+  white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+}
+#doctrineInfo b { color:#ffd700; }
+#doctrineRespecBtn {
+  font-size:12px; cursor:pointer; color:#888;
+  transition:color 0.15s, border-color 0.15s;
+  padding:5px 14px; border:1px solid rgba(255,255,255,0.12);
+  border-radius:4px; white-space:nowrap;
+}
+#doctrineRespecBtn:hover { color:#f84; border-color:rgba(255,136,68,0.4); }
+#doctrineCanvas {
+  flex:1; cursor:grab; perspective:900px;
+  overflow:hidden; position:relative;
+}
+#doctrineCanvas.dragging { cursor:grabbing; }
+#doctrineViewport {
+  position:absolute; top:50%; left:50%;
+  transform-style:preserve-3d;
+  transform:translate(-50%,-50%) scale(var(--zoom,1)) translate(var(--ox,0px),var(--oy,0px));
+  pointer-events:none;
 }
 #doctrineSystem {
   transform-style:preserve-3d; transform:rotateX(14deg);
-  cursor:default; position:relative;
-  width:800px; height:800px; flex-shrink:0;
-  filter:drop-shadow(0 0 60px rgba(100,140,255,0.08));
+  position:relative; pointer-events:none;
+  filter:drop-shadow(0 0 60px rgba(100,140,255,0.06));
 }
 .doctrine-sun {
-  position:absolute; top:50%; left:50%;
-  width:80px; height:80px; margin:-40px; border-radius:50%;
+  position:absolute; top:50%; left:50%; border-radius:50%;
   background:radial-gradient(circle at 30% 30%, #ffd700, #b8860b);
   box-shadow:0 0 40px rgba(255,215,0,0.6),0 0 80px rgba(255,215,0,0.2);
   display:flex; flex-direction:column;
   align-items:center; justify-content:center;
   z-index:10; transform:translateZ(40px);
   color:#000; font-weight:bold; font-size:13px; cursor:default;
-  line-height:1.2;
+  line-height:1.2; pointer-events:auto;
 }
 .doctrine-sun .sun-ee { font-size:20px; }
 .doctrine-sun .sun-label { font-size:10px; opacity:0.8; }
-.doctrine-close {
-  position:absolute; top:10px; right:10px; z-index:20;
-  width:36px; height:36px; border-radius:50%;
-  background:rgba(255,255,255,0.1);
-  color:#fff; font-size:18px; line-height:36px;
-  text-align:center; cursor:pointer;
-  transition:background 0.15s;
-}
-.doctrine-close:hover { background:rgba(255,255,255,0.25); }
-.doctrine-respec {
-  position:absolute; bottom:20px; left:50%; transform:translateX(-50%);
-  font-size:11px; color:#888; cursor:pointer; z-index:20;
-  padding:4px 12px; border-radius:4px;
-  border:1px solid rgba(255,255,255,0.15);
-  transition:color 0.15s, border-color 0.15s;
-}
-.doctrine-respec:hover { color:#f84; border-color:rgba(255,136,68,0.4); }
 .doctrine-planet {
-  position:absolute; width:96px; height:96px; margin:-48px;
-  border-radius:50%;
+  position:absolute; border-radius:50%;
   background:radial-gradient(circle at 30% 30%, #2a2a3a, #1a1a2a);
   border:2px solid rgba(255,255,255,0.12);
   display:flex; flex-direction:column;
@@ -745,17 +735,13 @@
   box-shadow:0 0 10px rgba(0,0,0,0.5);
   transform:translateZ(var(--z,0px));
 }
-.doctrine-planet.buyable:hover {
-  transform:translateZ(var(--z,0px)) scale(1.22);
-  box-shadow:0 0 28px rgba(100,170,255,0.6);
-}
 .doctrine-planet .planet-icon {
-  width:24px; height:24px; image-rendering:pixelated;
-  background-size:auto;
+  width:26px; height:26px; image-rendering:pixelated;
+  background-size:auto; flex-shrink:0;
 }
 .doctrine-planet .planet-name {
   font-size:9px; color:#bbb; text-align:center;
-  line-height:1.1; margin-top:2px; max-width:80px;
+  line-height:1.1; margin-top:2px;
   overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
 }
 .doctrine-planet .planet-cost {
@@ -766,9 +752,12 @@
   cursor:default;
 }
 .doctrine-planet.buyable {
-  border-color:#6af;
-  cursor:pointer;
+  border-color:#6af; cursor:pointer;
   box-shadow:0 0 14px rgba(100,170,255,0.3);
+}
+.doctrine-planet.buyable:hover {
+  transform:translateZ(var(--z,0px)) scale(1.22);
+  box-shadow:0 0 28px rgba(100,170,255,0.6);
 }
 .doctrine-planet.owned {
   border-color:#4a4;
@@ -779,54 +768,167 @@
 		document.head.appendChild(s);
 	}
 
+	/** Compute the optimal system size for the current viewport. */
+	function _getSystemSize(): number {
+		return Math.min(window.innerHeight * 0.72, window.innerWidth * 0.86, 960);
+	}
+
+	/** Show the Doctrine tree as a full-screen 3D solar system view,
+	 *  modelled after the heavenly upgrade tree — full-viewport takeover,
+	 *  dark space background, top bar, and draggable/zoomable canvas. */
+	function showDoctrineTree(): void {
+		const G = window.Game;
+		if (!G) return;
+		if (document.getElementById('doctrineFullView')) return;
+
+		_injectSolarCSS();
+
+		const view = document.createElement('div');
+		view.id = 'doctrineFullView';
+
+		// Top bar
+		const top = document.createElement('div');
+		top.id = 'doctrineTopBar';
+		const back = document.createElement('div');
+		back.id = 'doctrineBackBtn';
+		back.textContent = '← Back';
+		back.onclick = function () { PlaySound('snd/tickOff.mp3'); closeDoctrineTree(); };
+		const info = document.createElement('div');
+		info.id = 'doctrineInfo';
+		const respec = document.createElement('div');
+		respec.id = 'doctrineRespecBtn';
+		respec.textContent = 'Respec';
+		respec.onclick = function () { PlaySound('snd/tick.mp3'); respecAndRedraw(); };
+		top.appendChild(back);
+		top.appendChild(info);
+		top.appendChild(respec);
+		view.appendChild(top);
+
+		// Canvas with pan/zoom
+		const canvas = document.createElement('div');
+		canvas.id = 'doctrineCanvas';
+		const viewport = document.createElement('div');
+		viewport.id = 'doctrineViewport';
+		const system = document.createElement('div');
+		system.id = 'doctrineSystem';
+		system.setAttribute('aria-label', 'Doctrine solar system');
+		const size = _getSystemSize();
+		system.style.width = size + 'px';
+		system.style.height = size + 'px';
+		viewport.appendChild(system);
+		canvas.appendChild(viewport);
+		view.appendChild(canvas);
+
+		document.body.appendChild(view);
+
+		_renderSun(system);
+		_renderSolarSystem(system);
+		_updateDoctrineInfo();
+		_initDoctrinePanZoom(canvas, viewport);
+	}
+
+	/** Close the Doctrine full-screen view. */
+	function closeDoctrineTree(): void {
+		const view = document.getElementById('doctrineFullView');
+		if (view) view.remove();
+		_viewOffX = 0; _viewOffY = 0; _viewZoom = 1;
+	}
+
+	/** Set up mouse-drag panning and wheel zoom on the canvas. */
+	function _initDoctrinePanZoom(canvas: HTMLElement, viewport: HTMLElement): void {
+		canvas.addEventListener('mousedown', function (e: MouseEvent) {
+			_viewDragging = false;
+			_viewDragStartX = e.clientX;
+			_viewDragStartY = e.clientY;
+			_viewDragOffX = _viewOffX;
+			_viewDragOffY = _viewOffY;
+		});
+		canvas.addEventListener('mousemove', function (e: MouseEvent) {
+			if (e.buttons !== 1) { _viewDragging = false; return; }
+			const dx = e.clientX - _viewDragStartX;
+			const dy = e.clientY - _viewDragStartY;
+			if (Math.abs(dx) > 4 || Math.abs(dy) > 4) {
+				_viewDragging = true;
+				canvas.classList.add('dragging');
+			}
+			if (_viewDragging) {
+				_viewOffX = _viewDragOffX + dx / _viewZoom;
+				_viewOffY = _viewDragOffY + dy / _viewZoom;
+				_applyViewTransform(viewport);
+			}
+		});
+		canvas.addEventListener('mouseup', function () {
+			canvas.classList.remove('dragging');
+			_viewDragging = false;
+		});
+		canvas.addEventListener('mouseleave', function () {
+			canvas.classList.remove('dragging');
+			_viewDragging = false;
+		});
+		canvas.addEventListener('wheel', function (e: WheelEvent) {
+			e.preventDefault();
+			const delta = e.deltaY > 0 ? -0.1 : 0.1;
+			_viewZoom = Math.max(0.4, Math.min(1.6, _viewZoom + delta));
+			_applyViewTransform(viewport);
+		}, { passive: false });
+		window.addEventListener('keydown', function (e: KeyboardEvent) {
+			if (!document.getElementById('doctrineFullView')) return;
+			const step = 20 / _viewZoom;
+			switch (e.key) {
+				case 'ArrowLeft': _viewOffX -= step; _applyViewTransform(viewport); break;
+				case 'ArrowRight': _viewOffX += step; _applyViewTransform(viewport); break;
+				case 'ArrowUp': _viewOffY -= step; _applyViewTransform(viewport); break;
+				case 'ArrowDown': _viewOffY += step; _applyViewTransform(viewport); break;
+			}
+		});
+	}
+
+	function _applyViewTransform(viewport: HTMLElement): void {
+		viewport.style.setProperty('--zoom', String(_viewZoom));
+		viewport.style.setProperty('--ox', Math.round(_viewOffX) + 'px');
+		viewport.style.setProperty('--oy', Math.round(_viewOffY) + 'px');
+	}
+
 	/** Render the central sun (EE display). */
 	function _renderSun(container: HTMLElement): void {
+		const size = container.clientWidth || _getSystemSize();
+		const sunSize = Math.max(60, Math.round(size * 0.09));
 		let el = container.querySelector('.doctrine-sun') as HTMLElement;
 		if (!el) {
 			el = document.createElement('div');
 			el.className = 'doctrine-sun';
 			container.appendChild(el);
 		}
+		el.style.width = sunSize + 'px';
+		el.style.height = sunSize + 'px';
+		el.style.margin = (-sunSize / 2) + 'px';
 		el.innerHTML = '<div class="sun-ee">' + state.ee + '</div><div class="sun-label">EE</div>';
+	}
 
-		// Close button
-		if (!container.querySelector('.doctrine-close')) {
-			const close = document.createElement('div');
-			close.className = 'doctrine-close';
-			close.textContent = '×';
-			close.onclick = closeDoctrineTree;
-			container.appendChild(close);
-		}
-
-		// Respec button
-		if (!container.querySelector('.doctrine-respec')) {
-			const respec = document.createElement('div');
-			respec.className = 'doctrine-respec';
-			respec.textContent = 'Respec (' + state.doctrine.length + '/' + DOCTRINE.length + ')';
-			respec.onclick = function () {
-				PlaySound('snd/tick.mp3');
-				respecAndRedraw();
-			};
-			container.appendChild(respec);
-		}
+	/** Update the top bar info text. */
+	function _updateDoctrineInfo(): void {
+		const info = document.getElementById('doctrineInfo');
+		if (!info) return;
+		info.innerHTML = 'Eternal Essence: <b>' + state.ee + '</b> &nbsp;|&nbsp; Nodes: ' + state.doctrine.length + '/' + DOCTRINE.length;
+		const respecBtn = document.getElementById('doctrineRespecBtn');
+		if (respecBtn) respecBtn.textContent = 'Respec (' + state.doctrine.length + '/' + DOCTRINE.length + ')';
 	}
 
 	/** Render or re-render all planet nodes on their orbits. */
 	function _renderSolarSystem(container: HTMLElement): void {
-		const cx = 400, cy = 400;
+		const size = container.clientWidth || _getSystemSize();
+		const cx = size / 2, cy = size / 2;
+		const planetSize = Math.max(90, Math.round(size * 0.12));
+		const radii = ORBIT_FRACTIONS.map((f) => Math.round(cx * f));
 
-		// Remove old planets (keep sun, close, respec)
-		const old = container.querySelectorAll('.doctrine-planet');
+		// Remove old planets and orbit rings
+		const old = container.querySelectorAll('.doctrine-planet, .doctrine-orbit-ring');
 		for (let i = old.length - 1; i >= 0; i--) old[i].remove();
-
-		// Remove old orbit rings
-		const rings = container.querySelectorAll('.doctrine-orbit-ring');
-		for (let i = rings.length - 1; i >= 0; i--) rings[i].remove();
 
 		// Draw orbit rings
 		const ringColors = ['rgba(255,200,100,0.06)', 'rgba(100,200,255,0.06)', 'rgba(200,100,255,0.06)', 'rgba(100,255,200,0.06)'];
 		for (const orbitIndex of [0, 1, 2, 3]) {
-			const r = ORBIT_RADII[orbitIndex];
+			const r = radii[orbitIndex];
 			const ring = document.createElement('div');
 			ring.className = 'doctrine-orbit-ring';
 			ring.style.cssText =
@@ -841,12 +943,11 @@
 		for (const node of DOCTRINE) {
 			const orbitIndex = ORBIT_BY_COST[node.cost];
 			if (orbitIndex === undefined) continue;
-			const radius = ORBIT_RADII[orbitIndex];
+			const radius = radii[orbitIndex];
 
-			// Calculate angle: nodes on the same orbit spread evenly
 			const sameOrbit = DOCTRINE.filter((n) => ORBIT_BY_COST[n.cost] === orbitIndex);
 			const idx = sameOrbit.indexOf(node);
-			const angle = (idx / sameOrbit.length) * Math.PI * 2 - Math.PI / 2; // start at top
+			const angle = (idx / sameOrbit.length) * Math.PI * 2 - Math.PI / 2;
 
 			const x = cx + Math.cos(angle) * radius;
 			const y = cy + Math.sin(angle) * radius;
@@ -863,10 +964,12 @@
 				(!owned && !canBuy ? ' locked' : '');
 			planet.style.left = x + 'px';
 			planet.style.top = y + 'px';
+			// Planet size via CSS variable
+			planet.style.setProperty('--ps', planetSize + 'px');
+			planet.style.width = planetSize + 'px';
+			planet.style.height = planetSize + 'px';
+			planet.style.margin = (-planetSize / 2) + 'px';
 
-			// 3D depth: inner orbits closer to the viewer. Set via the --z
-			// CSS variable so the base transform and the hover scale both
-			// keep the same depth (inline transform would override hover).
 			const zDepth = [30, 15, 0, -15][orbitIndex] || 0;
 			planet.style.setProperty('--z', zDepth + 'px');
 
@@ -892,7 +995,6 @@
 				planet.onclick = function () { buyInTreeSolar(node.id); };
 			}
 
-			// Tooltip for locked nodes
 			if (!canBuy && !owned) {
 				let reason = '';
 				if (!parentsMet) {
@@ -911,10 +1013,6 @@
 
 			container.appendChild(planet);
 		}
-
-		// Update the respec button node count
-		const respecBtn = container.querySelector('.doctrine-respec') as HTMLElement;
-		if (respecBtn) respecBtn.textContent = 'Respec (' + state.doctrine.length + '/' + DOCTRINE.length + ')';
 	}
 
 	/** Purchase a node from the solar system UI and re-render in place. */
@@ -927,6 +1025,7 @@
 			if (system) {
 				_renderSun(system);
 				_renderSolarSystem(system);
+				_updateDoctrineInfo();
 			}
 		}
 	}
@@ -940,11 +1039,12 @@
 		if (system) {
 			_renderSun(system);
 			_renderSolarSystem(system);
+			_updateDoctrineInfo();
 		}
 	}
 
 	/** Purchase + re-render (kept for the QA surface; delegates to the
-	 *  solar-system re-renderer if the overlay is open, otherwise reopens). */
+	 *  solar-system re-renderer if the view is open, otherwise reopens). */
 	function buyInTree(nodeId: number): void {
 		const G = window.Game;
 		if (!G) return;
@@ -954,6 +1054,7 @@
 			if (system) {
 				_renderSun(system);
 				_renderSolarSystem(system);
+				_updateDoctrineInfo();
 			} else {
 				showDoctrineTree();
 			}
