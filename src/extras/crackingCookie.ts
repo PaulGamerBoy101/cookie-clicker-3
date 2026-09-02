@@ -13,12 +13,13 @@
  * Design:
  *   - Cracking requires at least MIN_CURSORS Cursors (10 — the "Ambidextrous"
  *     milestone). Below that, the crumble sits where it is (it never heals).
- *   - Crumble speed scales sub-linearly with Cursor count: with C as the count,
+ *   - Crumble speed scales linearly with Cursor count: with C as the count,
  *     progress/second = BASE_CRACK_SPEED * (C / MIN_CURSORS)^CURSOR_SPEED_EXP.
- *     Doubling your Cursors cuts the time to the next crack by ~30%. The
- *     cycle is floored at MIN_CYCLE_SECONDS — derived from the Click frenzy
- *     length plus a hard downtime — so a payoff can never recur while the
- *     previous frenzy is still running (the ×777 window is never permanent).
+ *     At exactly MIN_CURSORS a full crack takes ~2 hours — "a very long time";
+ *     doubling your cursors halves the time to the next crack. The cycle is
+ *     floored at MIN_CYCLE_SECONDS — derived from the Click frenzy length plus
+ *     a hard downtime — so a payoff can never recur while the previous frenzy
+ *     is still running (the ×777 window is never permanent).
  *   - Cracking is wall-clock driven (Date.now() deltas in the logic hook), so
  *     it keeps working while the tab is throttled or the game is closed; a
  *     single logic tick can catch up at most MAX_OFFLINE_MS (4 h) so a long
@@ -53,12 +54,22 @@ import type { Game as EngineGame } from '../engine/types';
 	/* --- tuning knobs --- */
 	/* Cursors needed before the crumble starts spreading. */
 	const MIN_CURSORS = 10;
-	/* Progress fraction gained per second at exactly MIN_CURSORS (~50 s per
-	 * crumble cycle at the threshold). */
-	const BASE_CRACK_SPEED = 0.02;
-	/* speed = BASE_CRACK_SPEED * (C / MIN)^EXP — sub-linear so early purchases
-	 * are very visible and the tail gently tapers. */
-	const CURSOR_SPEED_EXP = 0.5;
+	/* Progress fraction gained per second at exactly MIN_CURSORS. At
+	 * MIN_CURSORS a full crack cycle takes ~2 hours — "a very long time" —
+	 * so the early-game payoff is an idle-hours reward, not a quick click.
+	 * speed scales linearly (EXP=1) so buying cursors is visibly rewarding:
+	 *   10 cursors  → ~2 h
+	 *   25 cursors  → ~48 min
+	 *   50 cursors  → ~24 min
+	 *  100 cursors  → ~12 min
+	 *  500 cursors  → ~2.4 min
+	 * The ceiling is the 2-minute hard cooldown on the payoff, which the
+	 * curve reaches around 600 cursors. */
+	const BASE_CRACK_SPEED = 1 / 7200; // 0.000139
+	/* speed = BASE_CRACK_SPEED * (C / MIN)^EXP — linear (EXP=1) so the
+	 * speedup is directly proportional to cursor count: doubling your
+	 * cursors halves the time to the next crack (until the cooldown cap). */
+	const CURSOR_SPEED_EXP = 1;
 	/* Cap the wall-clock catch-up per logic tick (4 h) — a single tick may
 	 * only advance the crumble this far even if the game was closed for days. */
 	const MAX_OFFLINE_MS = 4 * 3600 * 1000;
@@ -72,7 +83,7 @@ import type { Game as EngineGame } from '../engine/types';
 	 * FRENZY_DOWNTIME of downtime. Because MIN_CYCLE_SECONDS is DERIVED from
 	 * CLICK_FRENZY_SECONDS, the ×777 window can never be permanently active
 	 * at any cursor count — even thousands — and the invariant holds even if
-	 * the frenzy length is tweaked later. The cap bites at ~175 cursors. */
+	 * the frenzy length is tweaked later. The cap bites at ~6000 cursors. */
 	const FRENZY_DOWNTIME = 5;
 	const MIN_CYCLE_SECONDS = CLICK_FRENZY_SECONDS + FRENZY_DOWNTIME; // 12
 	/* Hard 2-minute cooldown on the bonus payoff after each trigger. During
