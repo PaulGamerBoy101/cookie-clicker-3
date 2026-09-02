@@ -522,6 +522,9 @@ export interface Game {
 	WriteSave(type?: number): string;
 	ImportSaveCode(save: string): boolean;
 	ExportSaveCode(): string;
+	/* CC3: one-click copy of the export-save code (roadmap: cloud-save
+	 * convenience) — wired from systems/save.ts alongside ExportSave. */
+	CopySaveToClipboard(): void;
 	/* CC3 rolling save backups (systems/backup.ts): CaptureSave is called from
 	 * WriteSave; ListBackups/RestoreBackup/DownloadBackup/RefreshBackupList
 	 * drive the Options menu history. The backup entry shape is

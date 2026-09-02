@@ -497,6 +497,7 @@ test('?qa=save: save export -> import round-trip restores state', async ({ page 
 	expect(report).toMatch(/cats=7/);
 	expect(report).toMatch(/cat upgrade=true/);
 	expect(report).toMatch(/cat achievement=true/);
+	expect(report).toMatch(/copy-to-clipboard button=true/);
 });
 
 test('?qa=backup: rolling save backups capture, prune, restore, and download', async ({ page }) => {

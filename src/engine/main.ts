@@ -11,7 +11,7 @@ import { Building } from "./core/building";
 import { Upgrade, TieredUpgrade, SynergyUpgrade } from "./core/upgrade";
 import { HowMuchPrestige, HowManyCookiesReset, EarnHeavenlyChips, GetHeavenlyMultiplier, ComputeCps, GetTieredCpsMult } from "./systems/economy";
 import { ValidateContent, GetEconomyReport, SimulateEconomy, AnalyzeEconomy, SimulateStrategy } from "./systems/contentValidation";
-import { ExportSave, ImportSave, ImportSaveCode, FileSave, FileLoad, WriteSave, salvageSave, LoadSave } from "./systems/save";
+import { ExportSave, ImportSave, ImportSaveCode, CopySaveToClipboard, FileSave, FileLoad, WriteSave, salvageSave, LoadSave } from "./systems/save";
 import { CaptureSave, ListBackups, RestoreBackup, DownloadBackup, RefreshBackupList } from "./systems/backup";
 import { CreateMusic } from "./systems/music";
 import { Shimmer, updateShimmers, killShimmers } from "./systems/shimmer";
@@ -1229,6 +1229,7 @@ Game.Launch=function()
 		Game.ExportSave=ExportSave;//CC3 rewrite (phase 4, slice 2): moved verbatim to systems/save.ts; same Game slot, same Init position.
 		Game.ImportSave=ImportSave;//CC3 rewrite (phase 4, slice 2): moved verbatim to systems/save.ts.
 		Game.ImportSaveCode=ImportSaveCode;//CC3 rewrite (phase 4, slice 2): moved verbatim to systems/save.ts.
+		Game.CopySaveToClipboard=CopySaveToClipboard;//CC3: one-click copy of the export save code (roadmap: cloud-save convenience).
 		
 		Game.FileSave=FileSave;//CC3 rewrite (phase 4, slice 2): moved verbatim to systems/save.ts.
 		Game.FileLoad=FileLoad;//CC3 rewrite (phase 4, slice 2): moved verbatim to systems/save.ts.

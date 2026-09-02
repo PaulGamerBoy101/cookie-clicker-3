@@ -33,8 +33,38 @@ export function ExportSave()
 		{
 			//if (App) return false;
 			Game.prefs.showBackupWarning=0;
-			Game.Prompt('<id ExportSave><h3>'+loc("Export save")+'</h3><div class="block">'+loc("This is your save code.<br>Copy it and keep it somewhere safe!")+'</div><div class="block"><textarea id="textareaPrompt" style="width:100%;height:128px;" readonly>'+Game.WriteSave(1)+'</textarea></div>',[loc("All done!")]);//prompt('Copy this text and keep it somewhere safe!',Game.WriteSave(1));
+			Game.Prompt('<id ExportSave><h3>'+loc("Export save")+'</h3><div class="block">'+loc("This is your save code.<br>Copy it and keep it somewhere safe!")+'</div><div class="block"><textarea id="textareaPrompt" style="width:100%;height:128px;" readonly>'+Game.WriteSave(1)+'</textarea></div>',[[loc("Copy to clipboard"),'Game.CopySaveToClipboard();'],[loc("All done!")]]);//prompt('Copy this text and keep it somewhere safe!',Game.WriteSave(1));
 			l('textareaPrompt').focus();l('textareaPrompt').select();
+		}
+//CC3: one-click copy of the export textarea. The modern async clipboard API
+//needs a user gesture + secure context; a hidden-textarea execCommand fallback
+//covers http/file pages and older browsers.
+function FallbackCopy(text: string): boolean
+		{
+			var ta: any=document.createElement('textarea');
+			ta.value=text;
+			ta.style.position='fixed';ta.style.opacity='0';
+			document.body.appendChild(ta);
+			ta.focus();ta.select();
+			var ok=false;
+			try { ok=document.execCommand('copy'); } catch(e) { ok=false; }
+			document.body.removeChild(ta);
+			return ok;
+		}
+export function CopySaveToClipboard()
+		{
+			var text=l('textareaPrompt').value;
+			var copied=function(){Game.Notify(loc("Copied!"),loc("Save code copied to the clipboard."),'',1,1);};
+			var failed=function(){Game.Notify(loc("Copy failed"),loc("Please copy the code manually."),'',1,1);};
+			if (navigator.clipboard && navigator.clipboard.writeText)
+			{
+				navigator.clipboard.writeText(text).then(copied).catch(function()
+				{
+					if (FallbackCopy(text)) copied(); else failed();
+				});
+			}
+			else if (FallbackCopy(text)) copied();
+			else failed();
 		}
 export function ImportSave(def?: any)
 		{

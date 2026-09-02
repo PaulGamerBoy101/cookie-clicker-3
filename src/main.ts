@@ -307,7 +307,29 @@ if (debugSurface && params.get('qa') === 'save') {
 			const catAchievementOk = G.Achievements['Cat nap council'].won === 1;
 			const newCatAchievementOk = G.Achievements['One thousand paws'].won === 1;
 			const cpsOk = Math.abs(G.cookiesPs - cpsA) < 0.01;
-			const pass = ok && cookiesOk && cursorsOk && grandmasOk && catsOk && catUpgradeOk && catAchievementOk && newCatAchievementOk && cpsOk;
+			// 6. verify the export prompt's copy-to-clipboard button: open the
+			// prompt, click "Copy to clipboard", and confirm writeText received
+			// the save code (stubbed — headless pages deny the real clipboard).
+			let copiedText: string | null = null;
+			const realWriteText = navigator.clipboard && navigator.clipboard.writeText ? navigator.clipboard.writeText.bind(navigator.clipboard) : null;
+			Object.defineProperty(navigator, 'clipboard', { value: { writeText: (t: string) => { copiedText = t; return Promise.resolve(); } }, configurable: true });
+			const copyBtnOk = (() => {
+				try {
+					G.ExportSave();
+					const promptL = document.getElementById('promptContentExportSave');
+					const parent = promptL ? promptL.parentElement : null;
+					if (!promptL || !parent) return 'no-prompt';
+					const opts = parent.querySelectorAll('.option');
+					let copyBtn: Element | null = null;
+					opts.forEach((a) => { if (a.textContent.indexOf('Copy to clipboard') !== -1) copyBtn = a; });
+					if (!copyBtn) return 'no-button';
+					(copyBtn as HTMLElement).click();
+					const txt = document.getElementById('textareaPrompt') as HTMLTextAreaElement | null;
+					return copiedText !== null && txt !== null && copiedText === txt.value;
+				} catch (e: any) { return 'error:' + e.message; }
+			})();
+			if (realWriteText) Object.defineProperty(navigator, 'clipboard', { value: { writeText: realWriteText }, configurable: true });
+			const pass = ok && cookiesOk && cursorsOk && grandmasOk && catsOk && catUpgradeOk && catAchievementOk && newCatAchievementOk && cpsOk && copyBtnOk === true;
 			out.textContent =
 				'[QA-save] export length=' + saveStr.length +
 				'\n[QA-save] ImportSaveCode returned=' + ok +
@@ -315,6 +337,7 @@ if (debugSurface && params.get('qa') === 'save') {
 				'\n[QA-save] corrupted: cookies=7 cursors=0 grandmas=0 cats=0 cps=' + cpsCorrupt.toFixed(2) +
 				'\n[QA-save] after import: cookies=' + G.cookies.toFixed(3) + ' cursors=' + G.Objects['Cursor'].amount + ' grandmas=' + G.Objects['Grandma'].amount + ' cats=' + G.Objects['Cats'].amount + ' cps=' + G.cookiesPs.toFixed(2) +
 				'\n[QA-save] checks: cookies=' + cookiesOk + ' cursors=' + cursorsOk + ' grandmas=' + grandmasOk + ' cats=' + catsOk + ' cat upgrade=' + catUpgradeOk + ' cat achievement=' + catAchievementOk + ' new cat achievement=' + newCatAchievementOk + ' cps=' + cpsOk +
+				'\n[QA-save] copy-to-clipboard button=' + copyBtnOk +
 				'\n[QA-save] ' + (pass ? 'PASS: export->import round-trip restored state' : 'FAIL: state mismatch');
 		} catch (e: any) {
 			out.textContent = '[QA-save] ERROR: ' + e.constructor.name + ': ' + e.message;

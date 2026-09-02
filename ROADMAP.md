@@ -39,6 +39,15 @@ picked up, traded, or dropped as we go. Checked items are shipped.
   no longer award the "Third-party" achievement on every page load; only a
   genuinely third-party mod does. (`Game.registerMod` gained an optional
   `builtin` flag.)
+- **Purchase feedback everywhere** — the roadmap said "Grandma and Cats get a"
+  bounce on purchase; extend to the rest of the store. Only Grandma actually had
+  it. Every building pic already carries a `born` timestamp, so the generic
+  framed/unframed draw branches now route through the same age-based bounce
+  math — any purchase across the store gets immediate visual feedback.
+- **Cloud-save convenience (copy-to-clipboard)** — the Export save prompt
+  gained a one-click "Copy to clipboard" button. Works in secure contexts
+  (navigator.clipboard.writeText) and falls back to a hidden-textarea
+  execCommand('copy') for http/file pages. Verified by the ?qa=save probe.
 - **Daily crumb — weekly calendar rewards** — CC3-native returning-player
   rewards, fully local/offline: every local day the game opens, the player
   collects that weekday's crumb (Mon/Thu 5 min of production, Tue 3-min click
@@ -162,8 +171,12 @@ picked up, traded, or dropped as we go. Checked items are shipped.
 - [ ] **Mod loader polish** — native mods work (Black Hole Inverter is one) and
       `Game.modSaveData` exists, but the modding surface is minimal and there is
       no mod menu or public API docs; document and expose it.
-- [ ] **Cloud-save convenience** — one-click copy-to-clipboard of the save code
-      is cheap; a QR-code export for phone transfer is a fun add.
+- [x] **Cloud-save convenience (copy-to-clipboard)** — the Export save prompt
+      gained a one-click "Copy to clipboard" button (modern async clipboard API
+      with a hidden-textarea execCommand fallback for http/file pages).
+      Verified by the ?qa=save probe.
+- [ ] **QR-code save export** — the copy-to-clipboard landed; a QR-code export
+      for phone transfer is a fun add on top.
 - [ ] **PWA niceties** — install prompts, badge the app icon with uncollected
       cookies, background-sync autosaves.
 

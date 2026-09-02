@@ -68,6 +68,10 @@ export function declareVanillaChangelog(Game: EngineGame) {
 	Game.updateLog+=
 
 	'</div><div class="subsection update">'+
+	'<div class="title">01/09/2026 - purchase feedback, copy-to-clipboard</div>'+
+	'<div class="listing">&bull; every building now gets a short grounded bounce on purchase (not just Grandma) — the store-wide feedback the roadmap called for</div>'+
+	'<div class="listing">&bull; the Export save prompt now has a "Copy to clipboard" button so you can grab the save code without manually selecting the textarea</div>'+
+	'</div><div class="subsection update">'+
 	'<div class="title">01/09/2026 - challenges, a roomier store, and cozier minigames</div>'+
 	'<div class="listing">&bull; added 4 new challenge modes (pick one when ascending): <b>Trigger finger</b> (scroll over the cookie = click it, no clicking achievements), <b>Ascetic</b> (golden and wrath cookies never spawn), <b>Monoculture</b> (the first building you buy locks in your only building type for the run), and <b>Spender</b> (no upgrades may be purchased, buildings only). Each has a completion shadow achievement that permanently unlocks a reward heavenly upgrade: Scrolling adept (+2% click power, +5% golden effect duration), Golden heart (+15% duration, +5% spawn frequency), Unity (+1% CpS per 100 of your most-owned building), and Minimalist (+2% CpS per 100 prestige upgrades owned)</div>'+
 	'<div class="listing">&bull; the building store is no longer a single column: buildings now sit in a staggered, overlapping grid that fills the box, so far more of them are visible at once; also fixed the Mines\' back rows looking transparent and made farms/mines rebuild their sprites when the sprite sheet loads</div>'+
