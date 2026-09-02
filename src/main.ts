@@ -2487,6 +2487,22 @@ if (debugSurface && params.get('qa') === 'catcolony') {
 				chk('the close button hides the tutorial', !!tut && tut.style.display === 'none' && tut.innerHTML === '');
 			}
 
+			// 9. buying cats mid-panel refreshes the roster without a reload.
+			// Regression: M.draw() previously never re-rendered
+			// colonyRoster/colonyMissions when cats.amount changed (only a
+			// dispatch/resolve/purchase did), so buying more cats after an
+			// ascension left the panel showing the old idle count until a
+			// full page reload re-ran M.init().
+			M.away.length = 0; //clear the in-flight expedition left by the load test above
+			M.resting.length = 0;
+			cats.amount = 12;
+			M.draw(); //sync M.lastAmount to the current amount first
+			chk('idle count reflects 12 cats before the buy', (document.getElementById('colonyRoster')!.textContent || '').includes('12 idle'));
+			cats.amount = 13; //simulate a purchase: only bumps amount, no refresh call
+			chk('roster HTML is stale immediately after the buy (M.draw not yet run)', (document.getElementById('colonyRoster')!.textContent || '').includes('12 idle'));
+			M.draw();
+			chk('M.draw() picks up the new amount and refreshes the roster to 13 idle', (document.getElementById('colonyRoster')!.textContent || '').includes('13 idle'));
+
 			// cleanup: the QA page is disposable, but leave the colony state sane
 			M.away.length = 0;
 			M.resting.length = 0;
