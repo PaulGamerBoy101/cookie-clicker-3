@@ -1362,6 +1362,31 @@ if (debugSurface && params.get('qa') === 'cracking') {
 				} finally {
 					G.LeftBackground.fillText = fillTextOrig;
 				}
+				// ascend guard: the overlay must never paint during the ascend
+				// intro / heavenly tree (the engine draws its own crumbling-cookie
+				// animation there). The void's radial gradient is created only
+				// when the overlay actually paints, so spying on the hook's
+				// gradient calls (engine's own pass excluded) detects a paint.
+				const realGrad = G.LeftBackground.createRadialGradient.bind(G.LeftBackground);
+				let gradCalls = 0;
+				G.LeftBackground.createRadialGradient = function (...a: any[]) { gradCalls++; return realGrad(...a); };
+				try {
+					CC.reset(); st.progress = 1; G.OnAscend = 1; G.AscendTimer = 0;
+					G.DrawBackground(); // engine's own ascend paint (spy not counting)
+					gradCalls = 0;
+					G.runModHook('draw');
+					const gradsDuringAscend = gradCalls;
+					G.OnAscend = 0;
+					G.DrawBackground();
+					gradCalls = 0;
+					G.runModHook('draw');
+					const gradsBackToGame = gradCalls;
+					chk('crumble overlay skipped while OnAscend (gradients=' + gradsDuringAscend + ')', gradsDuringAscend === 0);
+					chk('crumble overlay paints once back in the game (gradients=' + gradsBackToGame + ')', gradsBackToGame >= 1);
+					CC.reset();
+				} finally {
+					G.LeftBackground.createRadialGradient = realGrad;
+				}
 				CC.reset();
 			} finally {
 				G.particlesDraw = realParticlesDraw;
