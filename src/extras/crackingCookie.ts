@@ -155,7 +155,7 @@ import type { Game as EngineGame } from '../engine/types';
 		 * drawn at the same on-screen size as the big cookie (256*BigCookieSize,
 		 * as in DrawBackground). The ten assembled frames form the cracked
 		 * cookie; separation opens the gaps between them like in the ascend. */
-		const chunkSize = r * 2 * (1 + tS * 0.08); // full cookie tile, barely swelling
+		const chunkSize = r * 2; // full cookie tile, kept at the cookie's own size
 		/* Dark space growing behind the wedges: hides the intact cookie
 		 * underneath (which DrawBackground repaints every frame) and fills the
 		 * widening crack gaps. Opaque to near the rim so the intact cookie
@@ -200,9 +200,9 @@ import type { Game as EngineGame } from '../engine/types';
 			const fi = CHUNK_MAP[i]; // frame index in the sprite sheet
 			const angle = -(((fi + 4) % 10) / 10) * Math.PI * 2;
 			/* Modest separation: the crack gaps stay hairline-thin through most
-			 * of the cycle and only open to ~16-32px on a full-size cookie at
+			 * of the cycle and only open to ~10-20px on a full-size cookie at
 			 * the very end, instead of exploding apart like the ascend intro. */
-			const spread = tS * (16 + ((i + 2) % 3) * 8) * (r / 128); // px offset
+			const spread = tS * (10 + ((i + 2) % 3) * 5) * (r / 128); // px offset
 			const jx = (Math.random() * 2 - 1) * shake * 6;
 			const jy = (Math.random() * 2 - 1) * shake * 6;
 			const dx = Math.sin(angle) * spread + jx;
@@ -221,7 +221,7 @@ import type { Game as EngineGame } from '../engine/types';
 		const haloAlpha = Math.min(1, t * 8) * Math.max(0, 1 - tS * 2.5);
 		if (haloAlpha > 0.01) {
 			ctx.globalAlpha = haloAlpha * 0.6;
-			const haloSize = chunkSize * 1.5;
+			const haloSize = chunkSize * 1.3;
 			ctx.drawImage(
 				Pic('brokenCookieHalo.webp'),
 				-haloSize / 2, -haloSize / 2,
