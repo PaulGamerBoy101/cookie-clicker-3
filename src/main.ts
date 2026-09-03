@@ -1301,17 +1301,27 @@ if (debugSurface && params.get('qa') === 'cracking') {
 			const calls: number[] = [];
 			const realParticlesDraw = G.particlesDraw;
 			G.particlesDraw = function (z: number, c?: { x: number; y: number; r: number }) { calls.push(z); return realParticlesDraw(z, c); };
+			const dwCalls: number[] = []; // 0 = engine pass, 1 = noFx re-draw
+			const realDrawWrinklers = G.DrawWrinklers;
+			G.DrawWrinklers = function (noFx?: boolean) { dwCalls.push(noFx ? 1 : 0); return realDrawWrinklers(noFx); };
+			// fake feeding wrinkler so DrawWrinklers actually paints below
+			const wr = G.wrinklers[0];
+			wr.phase = 2; wr.close = 1; wr.hp = 3; wr.type = 0; wr.sucked = 100;
+			wr.r = 0; wr.x = G.cookieOriginX; wr.y = G.cookieOriginY - 150;
 			try {
 				CC.reset();
-				calls.length = 0;
+				calls.length = 0; dwCalls.length = 0;
 				G.DrawBackground(); G.runModHook('draw');
 				const frontAtP0 = calls.filter((z) => z === 2).length;
 				chk('front particle layer drawn once per frame at progress 0 (got ' + frontAtP0 + ')', frontAtP0 === 1);
+				chk('wrinklers drawn once per intact frame (got ' + dwCalls.length + ')', dwCalls.length === 1 && dwCalls[0] === 0);
 				st.progress = 0.5;
-				calls.length = 0;
+				calls.length = 0; dwCalls.length = 0;
 				G.DrawBackground(); G.runModHook('draw');
 				const frontAtP5 = calls.filter((z) => z === 2).length;
 				chk('front particle layer re-drawn above the crumble overlay (got ' + frontAtP5 + ')', frontAtP5 === 2);
+				chk('wrinklers re-drawn above the crumble overlay (calls=' + dwCalls.join(',') + ')', dwCalls.length === 2 && dwCalls[1] === 1);
+				wr.phase = 0; wr.close = 0; wr.sucked = 0; // remove the fake wrinkler
 				// end to end: a click particle over the fully-cracked cookie must
 				// leave bright pixels just above the cookie rim — the only thing
 				// that can paint there is the particle itself (the crumble is
@@ -1355,6 +1365,7 @@ if (debugSurface && params.get('qa') === 'cracking') {
 				CC.reset();
 			} finally {
 				G.particlesDraw = realParticlesDraw;
+				G.DrawWrinklers = realDrawWrinklers;
 			}
 			out.textContent = lines.join('\n') + '\n[QA-cracking] ' + (pass ? 'PASS: cracking cookie verified end to end' : 'FAIL: see checks above');
 		} catch (e: any) {

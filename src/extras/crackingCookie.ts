@@ -260,6 +260,17 @@ import type { Game as EngineGame } from '../engine/types';
 			 * frame's draws aren't affected. */
 			ctx.globalAlpha = 1;
 		}
+		/* Same story for wrinklers: DrawWrinklers paints them onto the cookie
+		 * before this hook, so the crumble overlay hides any wrinkler feeding
+		 * on a cracked cookie (they keep eating while invisible). Re-draw them
+		 * above the overlay — noFx keeps the re-draw deterministic (no doubled
+		 * glint/crumb particles). Layering matches vanilla: wrinklers sit below
+		 * the front particle layer. */
+		if (typeof G.DrawWrinklers === 'function')
+		{
+			G.DrawWrinklers(true);
+			ctx.globalAlpha = 1;
+		}
 	}
 
 	/* Golden pulsing halo + ring around the fully-crumbled, clickable cookie.

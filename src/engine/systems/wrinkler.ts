@@ -309,7 +309,12 @@ function inRect(x: any,y: any,rect: any)
 				Game.mousePointer=1;
 			}
 		}
-		export function DrawWrinklers()
+		/* CC3: optional noFx flag — skips the non-deterministic effects (the
+		 * shiny-wrinkler glint and the 3% crumb particle) so a re-draw within
+		 * the same frame can't double-spawn them. Used by the cracking-cookie
+		 * mod, which re-draws wrinklers above its crumble overlay (the overlay
+		 * paints after DrawWrinklers and would otherwise hide them). */
+		export function DrawWrinklers(noFx?: boolean)
 		{
 			var ctx=Game.LeftBackground;
 			var selected:any=0;//CC3 rewrite: `any` annotation — later assigned a wrinkler object
@@ -342,7 +347,7 @@ function inRect(x: any,y: any,rect: any)
 					if (!Game.WINKLERS && Game.prefs.notScary) ctx.drawImage(Pic(Math.sin(Game.T*0.003+(i as any)*11+137+Math.sin(Game.T*0.017+(i as any)*13))>0.9997?'wrinklerBlink.webp':'wrinklerGooglies.webp'),-sw/2,-10+1*Math.sin(Game.T*0.2+(i as any)*3+1.2),sw,sh);
 					//ctx.drawImage(Pic(pic),-50,-10);
 					//ctx.fillText(me.id+' : '+me.sucked,0,0);
-					if (me.type==1 && Math.random()<0.3 && Game.prefs.particles)//sparkle
+					if (!noFx && me.type==1 && Math.random()<0.3 && Game.prefs.particles)//sparkle
 					{
 						ctx.globalAlpha=Math.random()*0.65+0.1;
 						var s=Math.random()*30+5;
@@ -351,7 +356,7 @@ function inRect(x: any,y: any,rect: any)
 					}
 					ctx.restore();
 					
-					if (Game.prefs.particles && me.phase==2 && Math.random()<0.03)
+					if (!noFx && Game.prefs.particles && me.phase==2 && Math.random()<0.03)
 					{
 						Game.particleAdd(me.x,me.y,Math.random()*4-2,Math.random()*-2-2,Math.random()*0.5+0.5,1,2);
 					}
