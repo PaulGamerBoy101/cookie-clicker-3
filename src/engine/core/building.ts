@@ -109,7 +109,7 @@ export class Building {
 	 * old interface's required param never matched that. */
 	declare getPrice: (n?: number) => number;
 	declare getSumPrice: (amount: number) => number;
-	declare switchMinigame: (on: number | boolean) => void;
+	declare switchMinigame: (on: number | boolean, animated?: boolean) => void;
 	declare refresh: () => void;
 	declare redraw: () => void;
 	declare mute: (n: number) => void;
@@ -200,25 +200,187 @@ export class Building {
 			this.onMinigame=false;
 			this.minigameLoaded=false;
 			
-			this.switchMinigame=function(on: any)//change whether we're on the building's minigame
+			/* CC3: expand/collapse the minigame panel over ~180ms with an ease-out
+			 * curve instead of the old single-frame swap. JS-driven (not a CSS
+			 * transition) so the scroll compensation can run per-frame: the row's
+			 * bottom edge — where the minigame button sits — stays pinned for the
+			 * whole motion, not just at the endpoints. Only invoked from real user
+			 * clicks (see switchMinigame's `animated` argument); the save-restore
+			 * auto-open path stays instant and scroll-neutral.
+			 *
+			 * Both children stay in normal flow for the whole motion (an inline
+			 * display:block on the canvas overrides the .onMinigame display rules)
+			 * and their inline heights are tweened so they always sum to the row's
+			 * current height — the row's height is continuous every frame, which is
+			 * what keeps the pinned edge honest. Returns false (leaving the row
+			 * untouched) when there is nothing to animate.
+			 *
+			 * Robustness: rAF chains die silently when a frame throws or the tab is
+			 * backgrounded (browsers stall rAF but still fire timeouts), which used
+			 * to leave the row frozen at an intermediate height. So every animation
+			 * carries a watchdog timer that finish-jumps it if the chain stalls, and
+			 * a throwing frame finishes instead of dying. */
+			this.animateMinigameToggle=function(row: any, scroller: any, open: any)
+			{
+				var self=this;
+				// Supersede a still-running animation (rapid double-click): finish it
+				// synchronously — exactly what its own finish() would have done — so
+				// no half-applied inline styles leak into the new animation.
+				if (self.__minigameAnim) { cancelAnimationFrame(self.__minigameAnim.raf); clearTimeout(self.__minigameAnim.watchdog); self.__minigameAnim.finish(); }
+				var canvas=row.querySelector('.rowCanvas');
+				var panel=row.querySelector('.rowSpecial');
+				if (!canvas || !panel) return false;
+				var dur=180;
+				var canvasH=canvas.style.height, canvasOv=canvas.style.overflow, canvasDisp=canvas.style.display;
+				var panelH=panel.style.height, panelOv=panel.style.overflow, panelOp=panel.style.opacity, panelDisp=panel.style.display;
+				var fromH=row.offsetHeight; //row height before the toggle, whichever way it goes
+				// Anchor BEFORE touching anything: applying the inline styles (class
+				// swap + overflow:hidden) can shift the row's box by a few px before
+				// the first frame runs, and that initial displacement must be part of
+				// what we compensate, not part of the anchor.
+				var prevBottom=row.offsetTop+row.offsetHeight;
+				var expectedScroll=scroller?scroller.scrollTop:0;
+				var c0=0,c1=0,p0=0,p1=0, toH=0;
+				//keep both children in flow for the whole motion (inline beats the .onMinigame class):
+				//without this, removing the class on close would set .rowSpecial display:none and the
+				//row would collapse in a single frame before the tween even starts.
+				canvas.style.display='block';
+				panel.style.display='block';
+				canvas.style.overflow='hidden';
+				panel.style.overflow='hidden';
+				if (open)
+				{
+					row.classList.add('onMinigame');
+					toH=panel.offsetHeight; //natural panel height, read before clamping it
+					c0=fromH; c1=0; p0=0; p1=toH;
+					canvas.style.height=fromH+'px';
+					panel.style.height='0px';
+					panel.style.opacity='0';
+				}
+				else
+				{
+					row.classList.remove('onMinigame');
+					toH=canvas.offsetHeight; //natural canvas height (128), read before clamping it
+					c0=0; c1=toH; p0=fromH; p1=0;
+					canvas.style.height='0px';
+					panel.style.height=fromH+'px';
+				}
+				if (toH<=0 || fromH<=0)
+				{
+					canvas.style.height=canvasH; canvas.style.overflow=canvasOv; canvas.style.display=canvasDisp;
+					panel.style.height=panelH; panel.style.overflow=panelOv; panel.style.opacity=panelOp; panel.style.display=panelDisp;
+					return false; //caller falls back to the instant path
+				}
+				// The class swap + overflow:hidden above already shifted the row's box
+				// (~16px). Cancel that synchronously, in this same task, so no frame
+				// ever paints with the click point displaced — the first rAF frame only
+				// ever sees our own tweened heights.
+				if (scroller)
+				{
+					var b0=row.offsetTop+row.offsetHeight;
+					if (b0!==prevBottom)
+					{
+						scroller.scrollTop=expectedScroll+(b0-prevBottom);
+						prevBottom=b0;
+						expectedScroll=scroller.scrollTop;
+					}
+				}
+				var start=0;
+				// Incremental scroll compensation: each frame, cancel only the layout
+				// displacement this animation caused — everything else (user scrolling,
+				// other code moving the row or the scrollbar) is left untouched. We
+				// track the scrollTop we last wrote; the difference between the real
+				// scrollTop and that is movement we didn't cause, and it is preserved.
+				// (prevBottom/expectedScroll are anchored above, before any styling.)
+				var state={raf:0,watchdog:(0 as unknown as NodeJS.Timeout),finish:(null as unknown as ()=>void),canvas:canvas,panel:panel,canvasH:canvasH,canvasOv:canvasOv,canvasDisp:canvasDisp,panelH:panelH,panelOv:panelOv,panelOp:panelOp,panelDisp:panelDisp};
+				var finish=function()
+				{
+					clearTimeout(state.watchdog);
+					canvas.style.height=canvasH; canvas.style.overflow=canvasOv; canvas.style.display=canvasDisp;
+					panel.style.height=panelH; panel.style.overflow=panelOv; panel.style.opacity=panelOp; panel.style.display=panelDisp;
+					// The end state may differ from the last animated frame (watchdog
+					// finish-jump, or a mid-flight reflow) — cancel that final snap's
+					// displacement too, so every exit path keeps the edge pinned.
+					if (scroller)
+					{
+						var b=row.offsetTop+row.offsetHeight;
+						if (b!==prevBottom) scroller.scrollTop=expectedScroll+(b-prevBottom);
+					}
+					if (self.toResize!==undefined) self.toResize=true; //a purchase mid-anim may have resized the canvas attr — re-fit the art
+					if (self.__minigameAnim===state) self.__minigameAnim=null;
+				};
+				state.finish=finish;
+				self.__minigameAnim=state;
+				var step=function(ts: any)
+				{
+					if (self.__minigameAnim!==state) return; //superseded or finished
+					try
+					{
+						if (!start) start=ts;
+						var t=Math.min(1,(ts-start)/dur);
+						var e=1-Math.pow(1-t,3); //ease-out cubic
+						canvas.style.height=(c0+(c1-c0)*e)+'px';
+						panel.style.height=(p0+(p1-p0)*e)+'px';
+						panel.style.opacity=String(open?e:1-e); //fade in on open, out on close
+						if (scroller)
+						{
+							var b=row.offsetTop+row.offsetHeight;
+							scroller.scrollTop=expectedScroll+(b-prevBottom); //cancel only our own displacement
+							prevBottom=b;
+							expectedScroll=scroller.scrollTop;
+						}
+						if (t<1) state.raf=requestAnimationFrame(step);
+						else finish();
+					}
+					catch (err)
+					{
+						console.error('[CC3] minigame panel animation frame failed:',err);
+						finish(); //never leave the row frozen mid-height
+					}
+				};
+				state.raf=requestAnimationFrame(step);
+				state.watchdog=setTimeout(function(){ if (self.__minigameAnim===state) finish(); },dur+200); //rAF stalls (background tab) must not freeze the row
+				if (open && this.minigame.onResize) this.minigame.onResize();
+				return true;
+			};
+			
+			this.switchMinigame=function(on: any, animated: any)//change whether we're on the building's minigame; [animated] is only set by real user clicks — save restores and QA harnesses toggle instantly
 			{
 				if (!Game.isMinigameReady(this)) on=false;
 				if (on==-1) on=!this.onMinigame;
 				this.onMinigame=on;
 				if (this.id!=0)
 				{
-					if (this.onMinigame)
+					var row=l('row'+this.id);
+					var scroller=row.offsetParent as HTMLElement;
+					var beforeBottom=row.offsetTop+row.offsetHeight;
+					// CC3: opening or closing the minigame swaps the row's fixed-height
+					// canvas for a much taller panel. The minigame button is absolutely
+					// positioned at the row's bottom edge, so every element below the row
+					// — including the very button that was just clicked — would teleport
+					// vertically by the full panel height (224px for Grandma's Sitting
+					// Room, ~460px for the Cat Colony). Compensate the buildings scroller
+					// so that bottom edge stays under the cursor: the panel unfolds
+					// upward instead of shoving the page around. With [animated], the
+					// compensation runs per-frame inside animateMinigameToggle instead.
+					var motion=animated && !(document.body && document.body.classList.contains('noMotion')) && typeof requestAnimationFrame==='function';
+					var near=!scroller || (beforeBottom<=scroller.scrollTop+scroller.clientHeight+row.offsetHeight);
+					var animated2=false;
+					if (motion && near) animated2=this.animateMinigameToggle(row,scroller,this.onMinigame?1:0);
+					if (!animated2)
 					{
-						l('row'+this.id).classList.add('onMinigame');
-						//l('rowSpecial'+this.id).style.display='block';
-						//l('rowCanvas'+this.id).style.display='none';
-						if (this.minigame.onResize) this.minigame.onResize();
-					}
-					else
-					{
-						l('row'+this.id).classList.remove('onMinigame');
-						//l('rowSpecial'+this.id).style.display='none';
-						//l('rowCanvas'+this.id).style.display='block';
+						if (this.onMinigame) row.classList.add('onMinigame');
+						else row.classList.remove('onMinigame');
+						//l('rowSpecial'+this.id).style.display=this.onMinigame?'block':'none';
+						//l('rowCanvas'+this.id).style.display=this.onMinigame?'none':'block';
+						if (scroller && typeof scroller.scrollTop==='number' && near && row.offsetHeight>0)
+						{
+							var delta=(row.offsetTop+row.offsetHeight)-beforeBottom;
+							// Only adjust when the row is on (or near) screen: if it's fully
+							// above the viewport, clamping would drag the view up to the row.
+							if (delta!==0) scroller.scrollTop+=delta;
+						}
+						if (this.onMinigame && this.minigame.onResize) this.minigame.onResize();
 					}
 				}
 				this.refresh();
@@ -699,7 +861,7 @@ export class Building {
 			if (this.id!=0) str+='<div class="row" id="row'+this.id+'"><div class="separatorBottom"></div>';
 			str+='<div class="productButtons">';
 				str+='<div id="productLevel'+this.id+'" class="productButton productLevel lumpsOnly" onclick="Game.ObjectsById['+this.id+'].levelUp()" '+Game.getDynamicTooltip('Game.ObjectsById['+this.id+'].levelTooltip','this')+'></div>';
-				str+='<div id="productMinigameButton'+this.id+'" class="productButton productMinigameButton lumpsOnly" onclick="Game.ObjectsById['+this.id+'].switchMinigame(-1);PlaySound(Game.ObjectsById['+this.id+'].onMinigame?\'snd/clickOn2.mp3\':\'snd/clickOff2.mp3\');"></div>';
+				str+='<div id="productMinigameButton'+this.id+'" class="productButton productMinigameButton lumpsOnly" onclick="Game.ObjectsById['+this.id+'].switchMinigame(-1,1);PlaySound(Game.ObjectsById['+this.id+'].onMinigame?\'snd/clickOn2.mp3\':\'snd/clickOff2.mp3\');"></div>';
 				if (this.id!=0) str+='<div class="productButton productMute" '+Game.getTooltip('<div style="width:150px;text-align:center;font-size:11px;" id="tooltipMuteBuilding"><b>'+loc("Mute")+'</b><br>('+loc("Minimize this building")+')</div>','this')+' onclick="Game.ObjectsById['+this.id+'].mute(1);PlaySound(Game.ObjectsById['+this.id+'].muted?\'snd/clickOff2.mp3\':\'snd/clickOn2.mp3\');" id="productMute'+this.id+'">'+loc("Mute")+'</div>';
 				str+='<div id="productDragonBoost'+this.id+'" style="display:none;" class="productButton productDragonBoost" '+Game.getDynamicTooltip('function(){if (Game.ObjectsById['+this.id+'].minigame && Game.ObjectsById['+this.id+'].minigame.dragonBoostTooltip) return Game.ObjectsById['+this.id+'].minigame.dragonBoostTooltip(); else return 0;}','this')+'><div class="icon" style="vertical-align:middle;display:inline-block;background-position:'+(-30*48)+'px '+(-12*48)+'px;transform:scale(0.5);margin:-20px -16px;"></div></div>';
 			str+='</div>';
