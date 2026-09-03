@@ -292,7 +292,7 @@ declare global {
 			doctrineHas: (id: number) => boolean;
 			hasMilestone: (threshold: number) => boolean;
 			showDoctrineTree: () => void;
-			closeDoctrineTree: () => void;
+			closeDoctrineTree: (instant?: boolean) => void;
 			_addTranscendUI: () => void;
 			save: () => string;
 			load: (str: string) => void;

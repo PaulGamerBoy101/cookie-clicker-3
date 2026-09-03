@@ -672,6 +672,15 @@
   overflow:hidden; user-select:none;
   color:#fff; font-family:serif;
 }
+/* Eased enter/exit (fade + gentle zoom-out), same treatment as the heavenly
+   tree's browse view. The view is a fixed overlay — nothing scrolls, so no
+   pinning is needed, just a soft entrance. The hidden pre-state is the base
+   rule below; .in flips it visible via transition. body.noMotion never sees
+   the hidden state (the JS adds .in synchronously, and .noAnim/QA paths can
+   force the end state). */
+body:not(.noMotion) #doctrineFullView:not(.in) { opacity:0; transform:scale(1.06); }
+body:not(.noMotion) #doctrineFullView.in { opacity:1; transform:scale(1); transition:opacity 200ms ease-out, transform 200ms ease-out; }
+body:not(.noMotion) #doctrineFullView.out { opacity:0; transform:scale(1.03); transition:opacity 180ms ease-in, transform 180ms ease-in; }
 #doctrineTopBar {
   width:100%; height:48px; display:flex; align-items:center;
   background:rgba(0,0,0,0.55); flex-shrink:0;
@@ -779,7 +788,17 @@
 	function showDoctrineTree(): void {
 		const G = window.Game;
 		if (!G) return;
-		if (document.getElementById('doctrineFullView')) return;
+		const existing = document.getElementById('doctrineFullView');
+		if (existing) {
+			// Reopening while an eased close is still pending: cancel the removal
+			// and bring the view back instead of early-returning on a dying view.
+			if (existing.classList.contains('out')) {
+				if ((existing as any).__cc3CloseTimer) { clearTimeout((existing as any).__cc3CloseTimer); (existing as any).__cc3CloseTimer = null; }
+				existing.classList.remove('out');
+				existing.classList.add('in');
+			}
+			return;
+		}
 
 		_injectSolarCSS();
 
@@ -821,16 +840,44 @@
 
 		document.body.appendChild(view);
 
+		// Eased entrance: start hidden (CSS base state), then flip to the visible
+		// state one frame later so the transition always plays. Skipped when the
+		// engine is set to reduced motion.
+		const noMotion = document.body && document.body.classList.contains('noMotion');
+		if (!noMotion && typeof requestAnimationFrame === 'function') {
+			requestAnimationFrame(function () { requestAnimationFrame(function () { view.classList.add('in'); }); });
+		} else {
+			view.classList.add('in');
+		}
 		_renderSun(system);
 		_renderSolarSystem(system);
 		_updateDoctrineInfo();
 		_initDoctrinePanZoom(canvas, viewport);
 	}
 
-	/** Close the Doctrine full-screen view. */
-	function closeDoctrineTree(): void {
+	/** Close the Doctrine full-screen view. Eased exit on user clicks (matches
+	 *  the eased entrance); instant when QA/QA-driven (the `instant` argument)
+	 *  or under reduced motion. The view's removal is deferred until the exit
+	 *  transition ends, but `Game.AscendBrowse`-style state has none here —
+	 *  the function is re-entrant safe: a re-show while closing cancels the
+	 *  pending removal. */
+	function closeDoctrineTree(instant?: boolean): void {
 		const view = document.getElementById('doctrineFullView');
-		if (view) view.remove();
+		if (view) {
+			if ((view as any).__cc3CloseTimer) { clearTimeout((view as any).__cc3CloseTimer); (view as any).__cc3CloseTimer = null; }
+			const noMotion = document.body && document.body.classList.contains('noMotion');
+			if (instant || noMotion || !view.classList.contains('in') || typeof requestAnimationFrame !== 'function') {
+				view.remove(); //never entered, reduced motion, or QA: remove now
+			} else {
+				view.classList.remove('in');
+				view.classList.add('out');
+				(view as any).__cc3CloseTimer = setTimeout(function () {
+					(view as any).__cc3CloseTimer = null;
+					const v = document.getElementById('doctrineFullView');
+					if (v && v.classList.contains('out')) v.remove(); //a re-show cleared .out
+				}, 240);
+			}
+		}
 		_viewOffX = 0; _viewOffY = 0; _viewZoom = 1;
 	}
 
