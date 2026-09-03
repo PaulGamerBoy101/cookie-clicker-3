@@ -3060,6 +3060,26 @@ p
 }
 .ascending #ascend
 {display:block;}
+/* CC3: eased enter/exit for the browse-only heavenly tree (AscendBrowseView/
+   AscendBrowseClose). Only visibility animates — the .ascending state flip
+   itself stays synchronous (QA harnesses poll OnAscend/AscendBrowse/this
+   class). body.noMotion never sees the animated rules. */
+body:not(.noMotion) #ascend
+{
+	transition:opacity 200ms ease-out,transform 200ms ease-out;
+}
+body:not(.noMotion) #ascend.viewEnter
+{
+	transition:none;
+	opacity:0;
+	transform:scale(1.15);
+}
+body:not(.noMotion) #ascend.viewExit
+{
+	opacity:0;
+	transform:scale(1.05);
+	transition:opacity 180ms ease-in,transform 180ms ease-in;
+}
 #ascendContent
 {
 	position:absolute;

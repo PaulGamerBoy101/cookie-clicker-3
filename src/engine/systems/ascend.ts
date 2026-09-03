@@ -147,12 +147,47 @@
 			Game.heavenlyChipsDisplayed=Game.heavenlyChips;
 			l('ascendButton').innerHTML='<span class="fancyText" style="font-size:20px;">'+loc("Back to game")+'</span>';
 			l('ascendInfo').innerHTML='<div class="ascendData smallFramed" style="margin-top:22px;width:75%;font-size:11px;">'+loc("You are just looking around.<br>Drag the screen around<br>or use arrow keys!<br>Nothing will be reset.<br>Click Back when you're done.")+'</div>';
+			//CC3: eased entrance (fade + gentle zoom-in) for the browse view.
+			//The .ascending state flip above stays synchronous — QA harnesses and
+			//the escape-key path poll OnAscend/AscendBrowse/the class — only the
+			//visibility animates. The hidden pre-state is applied with
+			//transition:none, then removed after a double-rAF so the transition
+			//always plays. Skipped entirely under reduced motion (body.noMotion).
+			if (!(document.body && document.body.classList.contains('noMotion')) && typeof requestAnimationFrame==='function')
+			{
+				var el=l('ascend');
+				//cancel a pending eased exit (rapid close→reopen)
+				if ((Game as any).__ascendViewExitTimer) { clearTimeout((Game as any).__ascendViewExitTimer); (Game as any).__ascendViewExitTimer=0; el.classList.remove('viewExit'); }
+				el.classList.add('viewEnter');
+				requestAnimationFrame(function(){requestAnimationFrame(function(){el.classList.remove('viewEnter');});});
+			}
 		}
 		export function AscendBrowseClose()
 		{
 			Game.OnAscend=0;
 			Game.AscendBrowse=0;
-			Game.removeClass('ascending');
+			//CC3: eased exit (fade out) on the normal close path; instant under
+			//reduced motion, if the view never finished entering, or if an exit is
+			//already playing (idempotent re-close). The .ascending removal is
+			//deferred only for the ~180ms of the fade — OnAscend/AscendBrowse are
+			//already cleared above, so every state poll sees the close immediately.
+			var el=l('ascend');
+			if (!(document.body && document.body.classList.contains('noMotion')) && typeof requestAnimationFrame==='function' && !el.classList.contains('viewEnter') && !el.classList.contains('viewExit'))
+			{
+				el.classList.add('viewExit');
+				(Game as any).__ascendViewExitTimer=setTimeout(function()
+				{
+					(Game as any).__ascendViewExitTimer=0;
+					el.classList.remove('viewExit');
+					//the view may have been reopened during the fade — only tear down
+					//if the close is still the live state
+					if (Game.OnAscend===0 && Game.AscendBrowse===0) Game.removeClass('ascending');
+				},180);
+			}
+			else
+			{
+				Game.removeClass('ascending');
+			}
 			l('ascendButton').innerHTML=Game.ascendButtonHTML;
 			l('ascendInfo').innerHTML=Game.ascendInfoHTML;
 		}

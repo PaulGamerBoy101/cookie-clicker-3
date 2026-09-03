@@ -71,8 +71,12 @@ if (debugSurface) {
  *   ?qa=dailycrumb exercise the daily crumb: claim a single missed day, a
  *                  multi-day backfill, the streak-reset after a long absence,
  *                  the no-double-claim guard, and the save round-trip
+ *   ?qa=minipanel exercise the pinned-edge ease on all four classic building
+ *                  minigame panels (Garden/Market/Pantheon/Grimoire): a real
+ *                  button click per panel must animate, keep the row's bottom
+ *                  edge (the click point) in place, converge, and clean up
  * Never active in a plain production load. */
-if (debugSurface && params.has('qa') && params.get('qa') !== 'golden' && params.get('qa') !== 'save' && params.get('qa') !== 'backup' && params.get('qa') !== 'sound' && params.get('qa') !== 'perf' && params.get('qa') !== 'ascend' && params.get('qa') !== 'ascendbrowse' && params.get('qa') !== 'arrange' && params.get('qa') !== 'offline' && params.get('qa') !== 'special' && params.get('qa') !== 'a11y' && params.get('qa') !== 'wrinkler' && params.get('qa') !== 'icon' && params.get('qa') !== 'onecol' && params.get('qa') !== 'anim' && params.get('qa') !== 'binverter' && params.get('qa') !== 'content' && params.get('qa') !== 'destiny' && params.get('qa') !== 'amseason' && params.get('qa') !== 'casino' && params.get('qa') !== 'dailycrumb') {
+if (debugSurface && params.has('qa') && params.get('qa') !== 'golden' && params.get('qa') !== 'save' && params.get('qa') !== 'backup' && params.get('qa') !== 'sound' && params.get('qa') !== 'perf' && params.get('qa') !== 'ascend' && params.get('qa') !== 'ascendbrowse' && params.get('qa') !== 'arrange' && params.get('qa') !== 'offline' && params.get('qa') !== 'special' && params.get('qa') !== 'a11y' && params.get('qa') !== 'wrinkler' && params.get('qa') !== 'icon' && params.get('qa') !== 'onecol' && params.get('qa') !== 'anim' && params.get('qa') !== 'binverter' && params.get('qa') !== 'content' && params.get('qa') !== 'destiny' && params.get('qa') !== 'amseason' && params.get('qa') !== 'casino' && params.get('qa') !== 'dailycrumb' && params.get('qa') !== 'minipanel') {
 	const qaMode = params.get('qa'); // null for bare ?qa, else the value
 	const MINIGAME_BUILDINGS = ['Farm', 'Bank', 'Temple', 'Wizard tower'];
 	const tick = window.setInterval(() => {
@@ -2567,6 +2571,100 @@ if (debugSurface && params.get('qa') === 'catcolony') {
 			out.textContent = '[QA-catcolony] ERROR: ' + e.constructor.name + ': ' + e.message;
 		}
 		window.clearInterval(tick);
+	}, 250);
+}
+
+/* QA: the pinned-edge minigame panel toggle across all four classic building
+ * minigames (Garden/Market/Pantheon/Grimoire). The animated click path is
+ * shared by every panel (productMinigameButton -> switchMinigame(-1,1)), but
+ * each panel has its own natural height and onResize needs, so this seeds all
+ * four minigames and per panel: clicks the real minigame button, asserts the
+ * ease started and the row's bottom edge (the click point) holds, waits for
+ * convergence, checks onResize side effects, then clicks again to close and
+ * re-checks pinning + the clean collapse back to the 144px canvas row.
+ * Usage: ?debug=1&qa=minipanel */
+if (debugSurface && params.get('qa') === 'minipanel') {
+	const BUILDINGS = ['Farm', 'Bank', 'Temple', 'Wizard tower'];
+	const tick = window.setInterval(() => {
+		const G = window.Game;
+		if (!G || !G.ready || !G.Objects) return;
+		if (!G.__qaMiniPanelSeeded) {
+			G.__qaMiniPanelSeeded = 1;
+			try {
+				G.cookies += 1e6;
+				for (const name of BUILDINGS) {
+					const b = G.Objects[name];
+					if (!b) continue;
+					b.amount = 1; b.unlocked = 1; b.bought = 1; b.highest = 1; b.level = 1;
+				}
+				G.recalculateGains = 1;
+				if (G.LoadMinigames) G.LoadMinigames();
+			} catch (e: any) {
+				console.error('QA minipanel seed failed:', e);
+			}
+		}
+		if (!BUILDINGS.every((n) => G.Objects[n] && G.Objects[n].minigameLoaded)) return;
+		window.clearInterval(tick);
+		const out = document.createElement('div');
+		out.id = '__dbgqa';
+		out.style.cssText = 'position:fixed;top:0;left:0;z-index:99999;background:#fff;color:#060;font:12px monospace;white-space:pre-wrap;max-width:700px;';
+		document.body.appendChild(out);
+		const lines: string[] = [];
+		let pass = true;
+		const chk = (label: string, cond: boolean) => { lines.push((cond ? 'PASS: ' : 'FAIL: ') + label); if (!cond) pass = false; };
+		const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+		(async () => {
+			try {
+				const area = document.getElementById('centerArea') as HTMLElement;
+				chk('the buildings scroller exists', !!area);
+				// A spacer above the first target row gives the scroller real depth
+				// so the per-frame compensation is measured away from the scrollTop=0
+				// clamp edge.
+				const firstRow = document.getElementById('row' + G.Objects['Farm'].id) as HTMLElement;
+				const spacer = document.createElement('div');
+				spacer.id = 'qaMiniSpacer';
+				spacer.style.height = '600px';
+				firstRow.parentNode!.insertBefore(spacer, firstRow);
+				for (const name of BUILDINGS) {
+					const b: any = G.Objects[name];
+					const row = document.getElementById('row' + b.id) as HTMLElement;
+					const btn = document.getElementById('productMinigameButton' + b.id) as HTMLElement;
+					if (!row || !btn) { chk(name + ': row and minigame button exist', false); continue; }
+					chk(name + ': minigame ready (loaded, level > 0)', !!G.isMinigameReady(b));
+					const rowBottom = () => row.offsetTop + row.offsetHeight;
+					// Pin the row's bottom edge (where the button sits) at viewport y=400.
+					area.scrollTop = rowBottom() - 400;
+					const anchor = rowBottom() - area.scrollTop;
+					// --- open via the real button (animated path) ---
+					btn.click();
+					chk(name + ': a real click starts the ease (state set synchronously)', !!b.__minigameAnim);
+					const startDrift = Math.abs(rowBottom() - area.scrollTop - anchor);
+					chk(name + ': the pinned edge holds at animation start (drift ' + startDrift + 'px)', startDrift <= 4);
+					// Wait for the rAF chain to finish (the watchdog guarantees it cannot
+					// stall past dur+200ms even in a throttled tab).
+					let t = performance.now();
+					while (b.__minigameAnim && performance.now() - t < 2000) await sleep(25);
+					chk(name + ': the open ease converged and cleaned up (no frozen state)', !b.__minigameAnim);
+					const openDrift = Math.abs(rowBottom() - area.scrollTop - anchor);
+					chk(name + ': open keeps the click point pinned (drift ' + openDrift + 'px)', b.onMinigame && openDrift <= 4);
+					chk(name + ': the panel is taller than the canvas row once open', row.offsetHeight > 145);
+					if (name === 'Farm') chk('Garden: onResize sized the field panel', (document.getElementById('gardenField') as HTMLElement).style.width !== '');
+					if (name === 'Bank') { const mg: any = b.minigame; chk('Market: onResize sized the graph canvas', !!(mg && mg.graph && mg.graph.width > 0)); }
+					// --- close via the real button (animated path) ---
+					btn.click();
+					t = performance.now();
+					while (b.__minigameAnim && performance.now() - t < 2000) await sleep(25);
+					const closeDrift = Math.abs(rowBottom() - area.scrollTop - anchor);
+					chk(name + ': close converges to the canvas row with the edge pinned (drift ' + closeDrift + 'px)', !b.__minigameAnim && !b.onMinigame && row.offsetHeight === 144 && closeDrift <= 4);
+				}
+				spacer.remove();
+				area.scrollTop = 0;
+			} catch (e: any) {
+				lines.push('ERROR: ' + e.constructor.name + ': ' + e.message);
+				pass = false;
+			}
+			out.textContent = lines.join('\n') + '\n[QA-minipanel] ' + (pass ? 'PASS: all four minigame panels ease open/shut with the click point pinned' : 'FAIL: see checks above');
+		})();
 	}, 250);
 }
 

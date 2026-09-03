@@ -933,6 +933,69 @@ test('minigame panel toggle animates on click, snaps instantly under noMotion', 
 	await assertNoUncaughtErrors(page);
 });
 
+// The two full-screen expanding panels get the same eased open/close treatment
+// as the minigame rows (fade + gentle zoom). Both flip their real state
+// synchronously — only visibility animates — so QA harnesses and pollers are
+// unaffected, and body.noMotion keeps both instant.
+//   - Doctrine view: #doctrineFullView overlay (.in/.out classes) from the
+//     Transcendence mod, reachable once the Transcendence gate is seeded.
+//   - Heavenly tree: #ascend (.ascending on <body>, .viewEnter/.viewExit) via
+//     Game.AscendBrowseView/Close with a seeded 100 chips.
+test('doctrine view and heavenly tree open and close with an ease', async ({ page }) => {
+	await boot(page, '&qa=transcend');
+	await qaReport(page, /PASS: transcendence/, 60_000);
+	const noMotion = () => page.evaluate(() => document.body.classList.contains('noMotion'));
+	expect(await noMotion()).toBe(false);
+
+	// --- Doctrine view: seeded by the transcend harness (gate unlocked) ---
+	await page.evaluate(() => window.__cc3Transcendence.showDoctrineTree());
+	await expect(page.locator('#doctrineFullView')).toHaveCount(1);
+	await expect(page.locator('#doctrineFullView')).toHaveClass(/\bin\b/, { timeout: 2_000 }); //entrance started
+	await expect
+		.poll(async () => page.evaluate(() => parseFloat(getComputedStyle(document.getElementById('doctrineFullView')).opacity)), { timeout: 2_000 })
+		.toBeGreaterThan(0.9); //entrance completed
+	// Exit is eased: .out is applied immediately and removal is deferred
+	const doctrineOut = await page.evaluate(() => {
+		window.__cc3Transcendence.closeDoctrineTree();
+		const v = document.getElementById('doctrineFullView');
+		return !!v && v.classList.contains('out');
+	});
+	expect(doctrineOut).toBe(true); //eased: still in the DOM mid-exit
+	await expect(page.locator('#doctrineFullView')).toHaveCount(0, { timeout: 2_000 }); //removed after the fade
+
+	// --- Heavenly tree browse view ---
+	await page.evaluate(() => {
+		window.Game.heavenlyChips = 100;
+		window.Game.AscendBrowseView();
+	});
+	await expect(page.locator('#ascend')).toBeVisible();
+	await expect(page.locator('#ascend')).not.toHaveClass(/viewEnter/, { timeout: 2_000 }); //entrance started
+	await expect
+		.poll(async () => page.evaluate(() => parseFloat(getComputedStyle(document.getElementById('ascend')).opacity)), { timeout: 2_000 })
+		.toBeGreaterThan(0.9); //entrance completed
+	expect(await page.evaluate(() => document.getElementById('game').classList.contains('ascending'))).toBe(true); //Game.addClass targets #game
+	// Exit is eased: the class flips immediately (state), removal is deferred
+	await page.evaluate(() => window.Game.AscendBrowseClose());
+	expect(await page.evaluate(() => window.Game.OnAscend)).toBe(0); //state is synchronous
+	expect(await page.evaluate(() => document.getElementById('ascend').classList.contains('viewExit'))).toBe(true); //fade in flight
+	await expect
+		.poll(async () => page.evaluate(() => !document.getElementById('ascend').classList.contains('viewExit')), { timeout: 2_000 })
+		.toBe(true); //fade finished, class cleaned up
+	expect(await page.evaluate(() => document.getElementById('game').classList.contains('ascending'))).toBe(false); //teardown happened after the fade
+	await assertNoUncaughtErrors(page);
+});
+
+test('?qa=minipanel: all four classic minigame panels ease with the click point pinned', async ({ page }) => {
+	await boot(page, '&qa=minipanel');
+	const report = await qaReport(
+		page,
+		/PASS: all four minigame panels ease open\/shut/,
+		60_000
+	);
+	expect(report).not.toMatch(/FAIL/);
+	expect(report).not.toMatch(/ERROR/);
+	await assertNoUncaughtErrors(page);
+});
 test('?qa=dailycrumb: daily crumb weekly calendar (claims, streak, reset, save round-trip) verified', async ({ page }) => {
 	await boot(page, '&qa=dailycrumb');
 	const report = await qaReport(
