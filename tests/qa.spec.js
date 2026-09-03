@@ -1003,7 +1003,7 @@ test('?qa=minipanel: all four classic minigame panels ease with the click point 
 	expect(report).not.toMatch(/ERROR/);
 	await assertNoUncaughtErrors(page);
 });
-test('?qa=dailycrumb: daily crumb weekly calendar (claims, streak, reset, save round-trip) verified', async ({ page }) => {
+test('?qa=dailycrumb: daily crumb weekly calendar (claims, streak, reset, save round-trip, popup screenshot) verified', async ({ page }) => {
 	await boot(page, '&qa=dailycrumb');
 	const report = await qaReport(
 		page,
@@ -1013,6 +1013,54 @@ test('?qa=dailycrumb: daily crumb weekly calendar (claims, streak, reset, save r
 	expect(report).not.toMatch(/FAIL/);
 	expect(report).not.toMatch(/ERROR/);
 	await assertNoUncaughtErrors(page);
+
+	// Screenshot check for the collect popup (the in-page probe asserts its
+	// content/fallback; a raster check must live in the test): re-arm one
+	// missed day (the probe's final state is lastClaim = yesterday), open
+	// the popup, and verify it renders as a real dialog — the game dims,
+	// the dialog is centered on the anchor's horizontal axis, the capture
+	// actually contains text raster (not a blank panel), and Collect closes
+	// it, changing the pixels under the dialog.
+	await page.evaluate(() => {
+		const DC = window.__cc3DailyCrumb;
+		DC.state.lastClaim = DC.startOfDay(Date.now()) - 86400000;
+		DC.claim();
+	});
+	await page.waitForFunction(() => window.Game.promptOn === 1, null, { timeout: 10_000 });
+	const prompt = page.locator('#prompt');
+	await expect(prompt).toBeVisible();
+	const shot = await prompt.screenshot();
+	const distinctColors = await page.evaluate(async (b64) => {
+		const img = new Image();
+		img.src = 'data:image/png;base64,' + b64;
+		await img.decode();
+		const c = document.createElement('canvas');
+		c.width = img.width;
+		c.height = img.height;
+		const ctx = c.getContext('2d');
+		ctx.drawImage(img, 0, 0);
+		const data = ctx.getImageData(0, 0, c.width, c.height).data;
+		const set = new Set();
+		for (let i = 0; i < data.length; i += 40) set.add(data[i] + ',' + data[i + 1] + ',' + data[i + 2]);
+		return set.size;
+	}, shot.toString('base64'));
+	expect(distinctColors).toBeGreaterThan(24); // title + reward lines + streak raster
+	const box = await prompt.boundingBox();
+	expect(box.width).toBeGreaterThanOrEqual(200);
+	expect(box.height).toBeGreaterThan(80);
+	const geo = await page.evaluate(() => {
+		const p = document.getElementById('prompt').getBoundingClientRect();
+		return { cx: p.left + p.width / 2, vw: innerWidth, dim: document.getElementById('darken').style.display === 'block' };
+	});
+	expect(geo.dim).toBe(true); // the game is dimmed behind the dialog
+	expect(Math.abs(geo.cx - geo.vw / 2)).toBeLessThanOrEqual(2); // centered on the anchor axis
+	const region = { x: Math.max(0, box.x - 24), y: Math.max(0, box.y - 24), width: box.width + 48, height: box.height + 48 };
+	const before = await page.screenshot({ clip: region });
+	await page.locator('#promptOption0').click();
+	await expect(page.locator('#darken')).toBeHidden();
+	await expect(prompt).toBeHidden();
+	const after = await page.screenshot({ clip: region });
+	expect(Buffer.compare(before, after)).not.toBe(0); // the popup visibly overlaid the game
 });
 test('?qa=cracking: cursors crack the big cookie (progress, payoff, save round-trip) verified', async ({ page }) => {
 	await boot(page, '&qa=cracking');

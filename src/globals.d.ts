@@ -244,13 +244,15 @@ declare global {
 		/* Set by extras/tutorial.ts once it has registered. */
 		__cc3Tutorial?: number;
 		/* Test/inspection surface of extras/dailyCrumb.ts (live crumb state,
-		 * persistence round-trip, forced claim); used by ?qa=dailycrumb. */
+		 * persistence round-trip, forced claim, last collect announcement);
+		 * used by ?qa=dailycrumb. */
 		__cc3DailyCrumb?: {
 			state: { lastClaim: number | null; streak: number; totalClaims: number };
 			save: () => string;
 			load: (str: string) => void;
 			startOfDay: (ms: number) => number;
 			claim: () => boolean;
+			lastAnnouncement: () => string;
 		};
 		/* Test/inspection surface of extras/crackingCookie.ts (live crack
 		 * state, persistence round-trip, forced payoff, speed readout and

@@ -1184,15 +1184,35 @@ if (debugSurface && params.get('qa') === 'dailycrumb') {
 			chk('import restores crumb state (streak=' + st.streak + ', claims=' + st.totalClaims + ')', imported && st.streak === 12 && st.totalClaims === 42 && st.lastClaim === today - DAY);
 			// 6. the UI text renders fully substituted (the loc() fallback for
 			// CC3-native ids must fill %N params, never show a raw "%1"): the
-			// Stats-menu crumb section and the collect notification log line.
+			// Stats-menu crumb section and the collect announcement (a centered
+			// prompt dialog, like the welcome prompt; toast fallback when a
+			// dialog is already open).
 			G.ShowMenu('stats');
 			const crumbUi = document.getElementById('cc3CrumbStats');
 			const uiText = crumbUi ? (crumbUi.textContent || '') : '';
 			chk('stats menu crumb section renders', !!crumbUi && uiText.indexOf('Streak:') !== -1);
 			chk('no raw %N placeholders in the crumb section', uiText !== '' && !/%\d/.test(uiText));
 			chk('weekly bonus line shows substituted values', uiText.indexOf('3 golden cookies') !== -1 && uiText.indexOf('14 missed days') !== -1);
-			const logEntry = (G.Log || []).find((s: any) => String(s).indexOf('Daily crumb') !== -1) || '';
-			chk('collect notification text has no raw %N placeholders', logEntry.indexOf('Daily crumb') !== -1 && !/%\d/.test(String(logEntry)));
+			// announcement text: popup content when it fired as a dialog, the
+			// toast log entry when it fell back
+			const ann = DC.lastAnnouncement();
+			chk('collect announcement recorded (len=' + ann.length + ')', ann.indexOf('Daily crumb') !== -1 && !/%\d/.test(ann));
+			const promptEl = document.getElementById('promptContent');
+			const promptText = promptEl ? (promptEl.textContent || '') : '';
+			const popupShown = G.promptOn && promptText.indexOf('Daily crumb') !== -1;
+			const toastShown = (G.Log || []).some((s: any) => String(s).indexOf('Daily crumb') !== -1);
+			chk('collect announcement shown (popup=' + popupShown + ', toast=' + toastShown + ')', popupShown || toastShown);
+			if (popupShown) chk('collect popup has a Collect button', !!document.getElementById('promptOption0'));
+			// toast-fallback path: a claim while a dialog is already open must
+			// announce via a notification instead of clobbering the dialog
+			G.Prompt('<h3>' + loc('Placeholder dialog') + '</h3>', [[loc('OK'), 'Game.ClosePrompt();']]);
+			const savedLast = st.lastClaim;
+			st.lastClaim = today - DAY;
+			const claimedFb = DC.claim();
+			const toastAfter = (G.Log || []).some((s: any) => String(s).indexOf('Daily crumb') !== -1);
+			chk('claim under an open dialog falls back to a toast (claimed=' + claimedFb + ', toast=' + toastAfter + ', prompt intact=' + !!G.promptOn + ')', claimedFb && toastAfter && G.promptOn && (document.getElementById('promptContent')?.textContent || '').indexOf('Placeholder dialog') !== -1);
+			G.ClosePrompt();
+			st.lastClaim = savedLast;
 			out.textContent = lines.join('\n') + '\n[QA-dailycrumb] ' + (pass ? 'PASS: daily crumb verified end to end' : 'FAIL: see checks above');
 		} catch (e: any) {
 			out.textContent = '[QA-dailycrumb] ERROR: ' + e.constructor.name + ': ' + e.message;

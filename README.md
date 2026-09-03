@@ -243,7 +243,12 @@ increments, the swallowed cookies are refunded (+10%), and the debuff clears.
    a multi-day absence backfills each missed day and keeps the streak
    continuous, an absence over 14 days resets the streak (today only), and the
    streak/claims state round-trips through the save's Custom mod section
-   (WriteSave → corrupt → ImportSaveCode).
+   (WriteSave → corrupt → ImportSaveCode). A collect announces itself in a
+   centered popup dialog (like the welcome dialog), falling back to a
+   notification toast when another dialog is already open. The Playwright
+   test also screenshots the open popup and verifies it renders as a real
+   dialog (raster content, centered on the anchor axis, game dimmed behind
+   it) and that dismissing it visibly changes the pixels underneath.
    `?qa=cracking` verifies the Cracking cookie (CC3-native Cursor incentive,
    `src/extras/crackingCookie.ts`): with at least 10 Cursors the big cookie
    slowly cracks — speed scales with Cursor count and is wall-clock driven so

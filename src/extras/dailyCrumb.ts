@@ -27,8 +27,9 @@
  * the streak survives save import/export and ascension (mod data is not
  * touched by Reincarnate). UI: a "Daily crumb" subsection on the Stats menu
  * (a 7-slot week strip with claimed/today markers, streak, lifetime claims,
- * next-day preview) plus a notification when a crumb is collected. Three
- * achievements (First crumb / On a roll / Crumb machine).
+ * next-day preview) plus a centered prompt dialog when a crumb is collected
+ * (like the welcome prompt; falls back to a toast when a dialog is already
+ * open). Three achievements (First crumb / On a roll / Crumb machine).
  *
  * New strings use loc() with English source text. CC3's loc() substitutes
  * %N params into the source text of ids missing from the language tables,
@@ -132,8 +133,37 @@ import type { Game as EngineGame } from '../engine/types';
 		lines.push(loc('Weekly crumb: %1 golden cookies + %2 cookies', [String(WEEKLY_GOLDENS), Beautify(amt)]));
 	}
 
+	/* Announce a collection like the engine's welcome prompt: a centered
+	 * Game.Prompt dialog (title, reward lines, streak, a Collect button).
+	 * Falls back to the old toast notification when a prompt dialog is
+	 * already open (never clobber another dialog, e.g. the tutorial's
+	 * welcome prompt) or while an ascend animation is running. Rewards are
+	 * granted in tryClaim before this runs — the dialog is the announcement,
+	 * so day bookkeeping never waits on the player clicking it.
+	 * lastAnnouncement mirrors what was shown so the QA probe can assert the
+	 * rendered text. */
+	let lastAnnouncement = '';
+	function announce(Game: EngineGame, days: number, lines: string[]): void {
+		const title = loc("Daily crumb");
+		const body =
+			'<div class="block">' + loc("You collected %1 %2 of crumbs!", [String(days), days > 1 ? loc("days") : loc("day")]) + '</div>' +
+			'<div class="block">' + lines.join('<br>') + '</div>' +
+			'<div class="block">' + loc("Streak: %1", [String(state.streak)]) + '</div>';
+		lastAnnouncement = title + ' ' + body;
+		const canPrompt = !Game.promptOn && !Game.OnAscend && Game.AscendTimer <= 0 && !Game.ReincarnateTimer;
+		if (canPrompt) {
+			Game.Prompt(
+				'<h3>' + title + '</h3>' + body,
+				[[loc('Collect'), 'Game.ClosePrompt();PlaySound(\'snd/tick.mp3\');']]
+			);
+		} else {
+			const summary = lines.length > 3 ? lines[0] + '  ·  +' + (lines.length - 1) + loc(" more") : lines.join('  ·  ');
+			Game.Notify(title, loc("Collected %1 %2: %3", [String(days), days > 1 ? loc("days") : loc("day"), summary]), [22, 6]);
+		}
+	}
+
 	/* Collect every missed day up to today (capped), update the streak,
-	 * grant rewards + weekly bonus, notify. No-op when nothing is owed. */
+	 * grant rewards + weekly bonus, announce. No-op when nothing is owed. */
 	function tryClaim(Game: EngineGame): boolean {
 		const today = startOfDay(Date.now());
 		if (state.lastClaim === null) {
@@ -175,8 +205,7 @@ import type { Game as EngineGame } from '../engine/types';
 		if (state.streak >= 7) Game.Win(ACHIEVEMENT_ROLL);
 		if (state.streak >= 30) Game.Win(ACHIEVEMENT_MACHINE);
 
-		const summary = lines.length > 3 ? lines[0] + '  ·  +' + (lines.length - 1) + loc(" more") : lines.join('  ·  ');
-		Game.Notify(loc("Daily crumb"), loc("Collected %1 %2: %3", [String(days), days > 1 ? loc("days") : loc("day"), summary]), [22, 6]);
+		announce(Game, days, lines);
 		Game.toSave = true;
 		return true;
 	}
@@ -322,5 +351,6 @@ import type { Game as EngineGame } from '../engine/types';
 		load,
 		startOfDay,
 		claim: function () { return tryClaim(window.Game); },
+		lastAnnouncement: function () { return lastAnnouncement; },
 	};
 })();
