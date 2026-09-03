@@ -257,6 +257,11 @@ increments, the swallowed cookies are refunded (+10%), and the debuff clears.
    engine's front particle layer (culled to the area the overlay can cover)
    and any wrinklers above itself, so click feedback and feeding wrinklers
    stay visible on a cracked cookie.
+`?qa=saveimport` imports a fresh export back into a live, played session and
+  verifies every built-in mod's state round-trips (cracking cookie, daily
+  crumb, transcendence, Black Hole Inverter, Decide Your Destiny, American
+  Season), every mod loader survives garbage input, and the store/product DOM
+  stays intact afterward.
 `?qa=perf&qlvl=N` seeds all four
   minigame buildings at level `N` (default 1), opens the Garden, and reports the
   actual game-loop rate (`Game.T` ticks/sec) versus the 30-tick `Game.fps`

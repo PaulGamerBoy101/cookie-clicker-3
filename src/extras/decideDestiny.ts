@@ -271,6 +271,7 @@ import type { Game as EngineGame, Upgrade } from '../engine/types';
 		return str;
 	}
 	function load(str: string) {
+		if (!str) return;// corrupt/empty Custom-section entry: keep the live state
 		const Game = window.Game as EngineGame;
 		let spl = str.split(';');
 		if (spl.length == 1) {
@@ -283,7 +284,9 @@ import type { Game as EngineGame, Upgrade } from '../engine/types';
 			state.timesDecided = parseInt(spl[1] || '0', 10) || 0;
 		} else {
 			const data = spl[1].split(',');
-			state.decidedDestiny = data[0] || AllDestinies[0].name;
+			// Unknown fate name (corrupt entry or a save from a future version):
+			// fall back to the first destiny instead of carrying a dead name.
+			state.decidedDestiny = AllDestiniesByName[data[0]] ? data[0] : AllDestinies[0].name;
 			state.timesDecided = parseInt(data[1] || '0', 10) || 0;
 		}
 		Game.Upgrades[DECIDER].priceLumps = calcCost();

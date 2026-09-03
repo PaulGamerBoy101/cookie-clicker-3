@@ -1020,6 +1020,16 @@ test('?qa=cracking: cursors crack the big cookie (progress, payoff, save round-t
 		page,
 		/PASS: cracking cookie verified end to end/,
 		60_000
+	);expect(report).not.toMatch(/FAIL/);
+expect(report).not.toMatch(/ERROR/);
+await assertNoUncaughtErrors(page);
+});
+test('?qa=saveimport: every built-in mod survives a live-session save import', async ({ page }) => {
+	await boot(page, '&qa=saveimport');
+	const report = await qaReport(
+		page,
+		/PASS: all built-in mods survive a live-session save import/,
+		60_000
 	);
 	expect(report).not.toMatch(/FAIL/);
 	expect(report).not.toMatch(/ERROR/);

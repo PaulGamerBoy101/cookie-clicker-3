@@ -1400,6 +1400,99 @@ if (debugSurface && params.get('qa') === 'cracking') {
 	}, 250);
 }
 
+// QA: save-import hygiene for every built-in mod (Game.mods save/load), driven
+// like the real player flow — import into a LIVE, PLAYED session (the existing
+// QA probes and the save-compat spec only import on fresh boots, so a mod that
+// desyncs its DOM or keeps stale live state on re-import would slip through).
+// Verifies: each mod save() round-trips its own live state through a real
+// WriteSave -> ImportSaveCode import; loaders survive garbage input; the store
+// and product DOM survive the import intact (rows, icons, prices, owned).
+// Usage: ?debug=1&qa=saveimport
+if (debugSurface && params.get('qa') === 'saveimport') {
+	const tick = window.setInterval(() => {
+		const G: any = window.Game;
+		if (!G || !G.ready || (G.T | 0) < 3 || !G.Objects) return;
+		if (G.__qaSaveImport) return;
+		G.__qaSaveImport = 1;
+		const out = document.createElement('div');
+		out.id = '__dbgqa';
+		out.style.cssText = 'position:fixed;top:0;left:0;z-index:99999;background:#fff;color:#060;font:12px monospace;white-space:pre-wrap;max-width:760px;';
+		document.body.appendChild(out);
+		const lines: string[] = [];
+		let pass = true;
+		const chk = (label: string, ok: boolean) => { if (!ok) pass = false; lines.push((ok ? '✓ ' : '✗ ') + label); };
+		const read = (path: string[], obj: any) => path.reduce((o, k) => (o == null ? o : o[k]), obj);
+		try {
+			// 1. play the session a little: real purchases so live mod DOM/state exist
+			G.cookies = 1e9;
+			G.Objects['Cursor'].amount = 15; // past the crack threshold
+			G.ClickProduct(0); G.ClickProduct(0); G.ClickProduct(1);
+			chk('live session has purchases (Cursor=' + G.Objects['Cursor'].amount + ', Grandma=' + G.Objects['Grandma'].amount + ')', G.Objects['Cursor'].amount >= 15 && G.Objects['Grandma'].amount >= 1);
+			// dirty every mod's live state to non-default values
+			const mods: any = G.mods;
+			const CC3 = (window as any).__cc3CrackingCookie;
+			const DC = (window as any).__cc3DailyCrumb;
+			const TR = (window as any).__cc3Transcendence;
+			mods['CC3CrackingCookie'].load(JSON.stringify({ progress: 0.6, totalTriggers: 7, lastTickMs: Date.now(), notified: true, cooldownUntil: 0 }));
+			DC.state.lastClaim = Date.now() - 86400000; DC.state.streak = 3; DC.state.totalClaims = 9;
+			TR.state.ee = 123; TR.state.transcendences = 4; TR.state.totalPrestigeAllTime = 5e7; TR.state.doctrine = TR.state.doctrine || {};
+			const am: any = mods['American Season'];
+			if (am && am.load) am.load(JSON.stringify({ config: { LAUNCH_INTERVAL: 555, STAR_COUNT: 200 }, rocketsPopped: 33 }));
+			const binv: any = mods['Black Hole Inverter'];
+			if (binv && binv.load) binv.load('1|50|1|100000|0|0|0@');
+			const dd: any = mods['Decide Your Destiny'];
+			if (dd && dd.load) dd.load('1;Lucky,4');
+			// 2. round-trip: export the full save, import it back into THIS session
+			const saveCode = G.WriteSave(1);
+			const ok = G.ImportSaveCode(saveCode);
+			chk('ImportSaveCode accepts its own fresh export (ok=' + ok + ')', !!ok);
+			const st = CC3.state;
+			chk('cracking state restored (progress=' + st.progress.toFixed(2) + ', triggers=' + st.totalTriggers + ')', Math.abs(st.progress - 0.6) < 0.001 && st.totalTriggers === 7 && st.notified === true);
+			chk('daily crumb state restored (streak=' + DC.state.streak + ', claims=' + DC.state.totalClaims + ')', DC.state.streak === 3 && DC.state.totalClaims === 9);
+			chk('transcendence state restored (ee=' + TR.state.ee + ', trans=' + TR.state.transcendences + ')', TR.state.ee === 123 && TR.state.transcendences === 4);
+			chk('black hole inverter restored (amount=' + read(['amount'], G.Objects['Black hole inverter']) + ')', G.Objects['Black hole inverter'].amount === 50);
+			chk('decide destiny restored (decided=' + mods['Decide Your Destiny'].save().split(';')[1].split(',')[0] + ')', mods['Decide Your Destiny'].save().indexOf('Lucky') !== -1);
+			chk('american season config restored', am.save().indexOf('555') !== -1);
+			// 3. garbage loaders must not throw, run AFTER the round-trip assertions
+			// (loaders may legitimately reset live state on garbage — e.g. the
+			// transcendence catch policy — and must not taint the restore checks).
+			// LoadSave's mod dispatch is NOT try-wrapped (verbatim 2.048), so a
+			// throw here aborts the whole import mid-way — every mod must guard
+			// its own load() (the Decide Your Destiny falsy-guard bug did throw).
+			const garbage = [null, undefined, '', 'not json at all', '{"ee":"x"', '1@garbage', '99;Bogus,9999'];
+			let garbageOk = true;
+			for (const id in mods) {
+				const m = mods[id];
+				if (!m || !m.load) continue;
+				for (const g of garbage) {
+					try { m.load(g as any); } catch (e: any) { garbageOk = false; lines.push('  ✗ ' + id + '.load threw on ' + String(g).slice(0, 20) + ': ' + e.message); }
+				}
+			}
+			chk('every mod loader survives garbage input', garbageOk);
+			// 4. store DOM intact after the import (screenreader-pref BuildStore path;
+			// the rebuild-cache reset must have cleared on any re-created rows)
+			const rowsOk = G.ObjectsById.every(function (b: any) {
+				if (b.id <= 0) return true;
+				const row = document.getElementById('product' + b.id);
+				const owned = document.getElementById('productOwned' + b.id);					// rebuild() renders me.amount, or an empty string while amount is 0
+					return !!row && !!owned && row.classList.contains('product') && owned.textContent === (b.amount ? String(b.amount) : '');
+			});
+			chk('product rows + owned counts intact after import', rowsOk);
+			const bhiIcon = document.getElementById('productIcon' + G.Objects['Black hole inverter'].id);
+			const icOk = !bhiIcon || !!bhiIcon.style.backgroundImage;
+			chk('custom store icons intact after import', icOk);
+			G.Objects['Cursor'].refresh();
+			const curOwned = document.getElementById('productOwned0');
+			chk('cursor row refreshes with the guarded cache after import (owned=' + (curOwned ? curOwned.textContent : 'missing') + ')', !!curOwned && curOwned.textContent === String(G.Objects['Cursor'].amount));
+			CC3.reset();
+			out.textContent = lines.join('\n') + '\n[QA-saveimport] ' + (pass ? 'PASS: all built-in mods survive a live-session save import' : 'FAIL: see checks above');
+		} catch (e: any) {
+			out.textContent = '[QA-saveimport] ERROR: ' + e.constructor.name + ': ' + e.message;
+		}
+		window.clearInterval(tick);
+	}, 250);
+}
+
 // QA: measure the 4-minigame frame cost. Seeds the four minigame buildings
 // (Garden/Market/Pantheon/Grimoire) so all four minigame logic() functions run
 // every tick, opens the Garden (the realistic "one minigame open" draw cost),
