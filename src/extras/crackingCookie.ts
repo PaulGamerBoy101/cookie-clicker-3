@@ -170,15 +170,22 @@ import type { Game as EngineGame } from '../engine/types';
 		/* Dark void fill — grows with the crack: shadows the intact cookie
 		 * under the wedges and shows through the widening gaps as the
 		 * "broken space" between them, matching the ascend animation's look
-		 * (there the background itself goes dark). No clip needed: the
-		 * gradient stays inside the cookie silhouette. */
+		 * (there the background itself goes dark). Clipped to the cookie
+		 * silhouette: a radial gradient paints its last stop beyond its own
+		 * radius, so the unclipped square fillRect used to leave a faint
+		 * gray box around the cookie. The rim stop fades out for blending. */
 		if (voidAlpha > 0.01) {
+			ctx.save();
+			ctx.beginPath();
+			ctx.arc(cx, cy, r, 0, Math.PI * 2);
+			ctx.clip();
 			const grad = ctx.createRadialGradient(cx, cy, 0, cx, cy, r);
 			grad.addColorStop(0, 'rgba(10,8,5,' + voidAlpha.toFixed(3) + ')');
-			grad.addColorStop(0.85, 'rgba(10,8,5,' + voidAlpha.toFixed(3) + ')');
-			grad.addColorStop(1, 'rgba(10,8,5,' + (voidAlpha * 0.6).toFixed(3) + ')');
+			grad.addColorStop(0.8, 'rgba(10,8,5,' + voidAlpha.toFixed(3) + ')');
+			grad.addColorStop(1, 'rgba(10,8,5,' + (voidAlpha * 0.3).toFixed(3) + ')');
 			ctx.fillStyle = grad;
 			ctx.fillRect(cx - r, cy - r, r * 2, r * 2);
+			ctx.restore();
 		}
 
 		/* Crumble chunks — each is a frame from the brokenCookie sprite. As in
