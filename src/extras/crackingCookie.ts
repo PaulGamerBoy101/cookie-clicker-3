@@ -146,29 +146,44 @@ import type { Game as EngineGame } from '../engine/types';
 		/* Mapping: t = p (0→1). The ascend animation uses tBase for the
 		 * post-breakpoint phase; here the whole 0→1 range is the crumble. */
 		const t = Math.min(1, p);
-		const chunkAlpha = Math.pow(t, 1.5); // 0→1, slow then fast
-		const chunkSize = 256 * (0.7 + 0.3 * t); // ~179→256
-		const voidAlpha = t * 0.85;
+		/* Chunks are frames of the intact cookie: each brokenCookie.webp frame
+		 * is a 256×256 slice that only lines up with the cookie silhouette when
+		 * drawn at the same on-screen size as the big cookie (256*BigCookieSize,
+		 * as in DrawBackground). The wedges separate from the center as the
+		 * crumble deepens, like in the ascend animation. */
+		const chunkSize = r * 2 * (1 + t * 0.1); // full cookie tile, growing slightly
+		/* The intact cookie underneath must actually disappear: cover it with an
+		 * opaque core that fades out toward the rim, where the spread chunks
+		 * take over. Alpha ramps early so the intact cookie never ghosts
+		 * through the broken one. */
+		const coverAlpha = Math.min(1, t * 2); // fully opaque by t=0.5
+		/* Chunks start overlaid on the intact cookie and separate as the
+		 * crumble spreads, so they only need a short fade-in. */
+		const chunkAlpha = Math.min(1, t * 3);
 		const shake = 0.5 * t; // jitter intensity
 
 		ctx.save();
-		ctx.beginPath();
-		ctx.arc(cx, cy, r, 0, Math.PI * 2);
-		ctx.clip();
 
-		/* Dark void fill — covers the intact cookie so the chunks look
-		 * like they are floating in a broken space, matching the ascend
-		 * animation's visual. */
-		if (voidAlpha > 0.01) {
+		/* Dark void fill — covers the intact cookie where the chunks have
+		 * moved away from it, matching the ascend animation's "broken space"
+		 * look. The gradient stays inside the cookie silhouette (opaque core,
+		 * faded rim), so no clip is needed here. */
+		if (coverAlpha > 0.01) {
 			const grad = ctx.createRadialGradient(cx, cy, 0, cx, cy, r);
-			grad.addColorStop(0, 'rgba(10,8,5,' + (voidAlpha * 0.9).toFixed(3) + ')');
-			grad.addColorStop(0.6, 'rgba(10,8,5,' + (voidAlpha * 0.6).toFixed(3) + ')');
+			grad.addColorStop(0, 'rgba(10,8,5,' + coverAlpha.toFixed(3) + ')');
+			grad.addColorStop(0.55, 'rgba(10,8,5,' + coverAlpha.toFixed(3) + ')');
 			grad.addColorStop(1, 'rgba(10,8,5,0)');
 			ctx.fillStyle = grad;
 			ctx.fillRect(cx - r, cy - r, r * 2, r * 2);
 		}
 
-		/* Crumble chunks — each is a frame from the brokenCookie sprite. */
+		/* Crumble chunks — each is a frame from the brokenCookie sprite. Like
+		 * in the ascend animation they are not clipped, they slowly spin as
+		 * the cookie breaks apart, and the wedges visibly separate and drift
+		 * past the original silhouette. */
+		ctx.save();
+		ctx.translate(cx, cy);
+		ctx.rotate(t * -0.1 * Math.PI * 2); // slow spin while crumbling
 		ctx.globalAlpha = chunkAlpha;
 		for (let i = 0; i < 10; i++) {
 			const fi = CHUNK_MAP[i]; // frame index in the sprite sheet
@@ -181,21 +196,25 @@ import type { Game as EngineGame } from '../engine/types';
 			ctx.drawImage(
 				Pic('brokenCookie.webp'),
 				fi * 256, 0, 256, 256,
-				cx - chunkSize / 2 + dx, cy - chunkSize / 2 + dy,
+				-chunkSize / 2 + dx, -chunkSize / 2 + dy,
 				chunkSize, chunkSize,
 			);
 		}
 
-		/* Broken halo — drawn behind the chunks in the ascend animation. */
-		if (chunkAlpha > 0.05) {
-			ctx.globalAlpha = chunkAlpha * 0.6;
+		/* Broken halo — in the ascend animation it is a brief flash when the
+		 * cookie gives way: flash it in at the start of the crumble and let
+		 * it fade as the chunks take over. */
+		const haloAlpha = Math.min(1, t * 8) * Math.max(0, 1 - t * 3);
+		if (haloAlpha > 0.01) {
+			ctx.globalAlpha = haloAlpha * 0.6;
 			const haloSize = chunkSize * 1.5;
 			ctx.drawImage(
 				Pic('brokenCookieHalo.webp'),
-				cx - haloSize / 2, cy - haloSize / 2,
+				-haloSize / 2, -haloSize / 2,
 				haloSize, haloSize,
 			);
 		}
+		ctx.restore();
 
 		ctx.globalAlpha = 1;
 		ctx.restore();
