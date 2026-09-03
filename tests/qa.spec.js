@@ -830,6 +830,109 @@ test('?qa=catcolony: Cat Colony minigame + repeatable treat upgrades verified en
 	await assertNoUncaughtErrors(page);
 });
 
+// Animated minigame-panel toggle: a real click opens the Cat Colony panel
+// with a ~180ms ease (canvas slides out, panel slides in, per-frame scroll
+// compensation keeps the click point pinned). Asserts the animation actually
+// ran, stayed pinned mid-flight, converged to the natural expanded height,
+// and cleaned up its inline styles — then the same on close, plus the
+// reduced-motion (body.noMotion) instant-snap path.
+test('minigame panel toggle animates on click, snaps instantly under noMotion', async ({ page }) => {
+	await boot(page, '&qa=catcolony');
+	await qaReport(page, /PASS: Cat Colony minigame/, 60_000);
+	// Spacer above the row gives the scroller real depth so the compensation
+	// is measured away from the scrollTop=0 clamp edge.
+	await page.evaluate(() => {
+		const row = document.getElementById('row' + window.Game.Objects['Cats'].id);
+		const sp = document.createElement('div');
+		sp.id = 'qaSpacer';
+		sp.style.height = '600px';
+		row.parentNode.insertBefore(sp, row);
+	});
+	const rowBottom = () => page.evaluate(() => {
+		const row = document.getElementById('row' + window.Game.Objects['Cats'].id);
+		const area = document.getElementById('centerArea');
+		return { bottom: row.offsetTop + row.offsetHeight, scroll: area.scrollTop };
+	});
+	const ANIM = { timeout: 2_000 }; //generous: 180ms animation + headless jitter
+	// --- open (animated) ---
+	await page.evaluate(() => {
+		const cats = window.Game.Objects['Cats'];
+		const row = document.getElementById('row' + cats.id);
+		const area = document.getElementById('centerArea');
+		area.scrollTop = row.offsetTop + row.offsetHeight - 400; //pin the click point at viewport y=400
+		window.__qaAnchor = (row.offsetTop + row.offsetHeight) - area.scrollTop;
+	});
+	const openClick = await page.evaluate(() => {
+		const cats = window.Game.Objects['Cats'];
+		document.getElementById('productMinigameButton' + cats.id).click();
+		return { animStarted: !!cats.__minigameAnim }; //set synchronously by the click handler
+	});
+	expect(openClick.animStarted).toBe(true); //a real click must animate, not snap
+	// Mid-flight: the pinned edge holds within a few px.
+	const mid = await rowBottom();
+	expect(Math.abs(mid.bottom - mid.scroll - (await page.evaluate(() => window.__qaAnchor)))).toBeLessThanOrEqual(4);
+	await page.waitForFunction(() => !window.Game.Objects['Cats'].__minigameAnim, null, ANIM);
+	const opened = await page.evaluate(() => {
+		const cats = window.Game.Objects['Cats'];
+		const row = document.getElementById('row' + cats.id);
+		return {
+			on: row.classList.contains('onMinigame'),
+			h: row.offsetHeight,
+			canvasDisp: row.querySelector('.rowCanvas').style.display,
+			panelH: row.querySelector('.rowSpecial').style.height,
+			panelOp: row.querySelector('.rowSpecial').style.opacity,
+			bottom: row.offsetTop + row.offsetHeight,
+			scroll: document.getElementById('centerArea').scrollTop,
+		};
+	});
+	expect(opened.on).toBe(true);
+	expect(opened.h).toBeGreaterThanOrEqual(560); //expanded: the colony panel is ~592px
+	expect(opened.canvasDisp).toBe(''); //inline overrides cleaned up
+	expect(opened.panelH).toBe('');
+	expect(opened.panelOp).toBe('');
+	// End state: click point still pinned.
+	expect(Math.abs(opened.bottom - opened.scroll - (await page.evaluate(() => window.__qaAnchor)))).toBeLessThanOrEqual(4);
+	// --- close (animated) ---
+	const closeClick = await page.evaluate(() => {
+		const cats = window.Game.Objects['Cats'];
+		document.getElementById('productMinigameButton' + cats.id).click();
+		return { animStarted: !!cats.__minigameAnim };
+	});
+	expect(closeClick.animStarted).toBe(true);
+	await page.waitForFunction(() => !window.Game.Objects['Cats'].__minigameAnim, null, ANIM);
+	const closed = await page.evaluate(() => {
+		const cats = window.Game.Objects['Cats'];
+		const row = document.getElementById('row' + cats.id);
+		return {
+			h: row.offsetHeight,
+			canvasDisp: row.querySelector('.rowCanvas').style.display,
+			panelH: row.querySelector('.rowSpecial').style.height,
+			bottom: row.offsetTop + row.offsetHeight,
+			scroll: document.getElementById('centerArea').scrollTop,
+		};
+	});
+	expect(closed.h).toBe(144); //back to the plain canvas row
+	expect(closed.canvasDisp).toBe('');
+	expect(closed.panelH).toBe('');
+	expect(Math.abs(closed.bottom - closed.scroll - (await page.evaluate(() => window.__qaAnchor)))).toBeLessThanOrEqual(4);
+	await page.evaluate(() => document.getElementById('qaSpacer').remove());
+	// --- reduced motion: body.noMotion must snap instantly (no animation state) ---
+	await page.evaluate(() => {
+		document.body.classList.add('noMotion');
+		document.getElementById('productMinigameButton' + window.Game.Objects['Cats'].id).click();
+	});
+	await page.waitForTimeout(50);
+	const snapped = await page.evaluate(() => {
+		const cats = window.Game.Objects['Cats'];
+		return { on: cats.onMinigame, anim: !!cats.__minigameAnim, h: document.getElementById('row' + cats.id).offsetHeight };
+	});
+	expect(snapped.on).toBe(true);
+	expect(snapped.anim).toBe(false);
+	expect(snapped.h).toBeGreaterThanOrEqual(560);
+	await page.evaluate(() => document.body.classList.remove('noMotion'));
+	await assertNoUncaughtErrors(page);
+});
+
 test('?qa=dailycrumb: daily crumb weekly calendar (claims, streak, reset, save round-trip) verified', async ({ page }) => {
 	await boot(page, '&qa=dailycrumb');
 	const report = await qaReport(

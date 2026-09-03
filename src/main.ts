@@ -2517,6 +2517,40 @@ if (debugSurface && params.get('qa') === 'catcolony') {
 			M.draw();
 			chk('M.draw() picks up the new amount and refreshes the roster to 13 idle', (document.getElementById('colonyRoster')!.textContent || '').includes('13 idle'));
 
+			// 10. toggling the minigame panel must not jerk the layout.
+			// Regression: switchMinigame() used to swap the row's fixed-height canvas
+			// for the much taller panel with no scroll compensation, so everything
+			// below the row — including the very button that was clicked (it is
+			// absolutely positioned at the row's bottom edge) — teleported by the
+			// full panel height. The scroller now compensates so that bottom edge
+			// stays put on both open and close.
+			const scroller = document.getElementById('centerArea') as HTMLElement;
+			const colRow = document.getElementById('row' + cats.id) as HTMLElement;
+			const colBtn = document.getElementById('productMinigameButton' + cats.id) as HTMLElement;
+			chk('the colony row and its minigame button exist', !!scroller && !!colRow && !!colBtn);
+			if (scroller && colRow && colBtn) {
+				// A 600px spacer above the row gives the scroller real depth so the
+				// compensation is measured away from the scrollTop=0 clamp edge.
+				const spacer = document.createElement('div');
+				spacer.style.height = '600px';
+				colRow.parentNode!.insertBefore(spacer, colRow);
+				const rowBottom = () => colRow.offsetTop + colRow.offsetHeight;
+				// Pin the row's bottom edge (where the button sits) to a fixed viewport y.
+				scroller.scrollTop = rowBottom() - 400;
+				const anchorY = rowBottom() - scroller.scrollTop;
+				chk('test setup: the scroller has real depth around the colony row', scroller.scrollTop > 100);
+				// Toggle via the instant path (no [animated] argument): the animated
+				// click path is covered asynchronously by the Playwright suite — here we
+				// assert the scroll-compensation math synchronously.
+				cats.switchMinigame(1); //open
+				const openDrift = Math.abs(rowBottom() - scroller.scrollTop - anchorY);
+				chk('opening the colony panel keeps the row bottom (the click point) in place (drift ' + openDrift + 'px)', colRow.classList.contains('onMinigame') && openDrift <= 1);
+				cats.switchMinigame(0); //close (both directions' pinning is covered on the real click path by the Playwright suite)
+				chk('closing the colony panel collapses the row back to the canvas', !colRow.classList.contains('onMinigame') && colRow.offsetHeight === 144);
+				spacer.remove();
+				scroller.scrollTop = 0;
+			}
+
 			// cleanup: the QA page is disposable, but leave the colony state sane
 			M.away.length = 0;
 			M.resting.length = 0;

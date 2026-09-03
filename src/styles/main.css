@@ -690,6 +690,11 @@ a.orangeLink:hover,#topBar a.orangeLink:hover
 {
 	overflow-x:hidden;
 	overflow-y:scroll;
+	/* CC3: the engine rewrites building/store HTML every frame, so the
+	 * browser's built-in scroll anchoring fires constantly (and races the
+	 * minigame panel's own scroll compensation). All scroll stability is
+	 * handled explicitly; disable the heuristic. */
+	overflow-anchor:none;
 	position:absolute;
 	top:112px;
 	left:16px;
