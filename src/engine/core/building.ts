@@ -764,6 +764,14 @@ export class Building {
 			this.rebuild=function()
 			{
 				var me=this;
+				//CC3 perf: this used to rewrite every product node unconditionally
+				//(name innerHTML, icon styles, button states) on every refresh — i.e.
+				//a full parse+layout of every store row on every single purchase,
+				//when a buy only changes the owned count and the price. Each write is
+				//now guarded by the last value it rendered, so repeat refreshes only
+				//touch the nodes whose value actually changed. BuildStore resets the
+				//cache whenever it recreates the product DOM.
+				var cache=me.__rebuildCache||(me.__rebuildCache={});
 				//var classes='product';
 				var price=me.bulkPrice;
 				/*if (Game.cookiesEarned>=me.basePrice || me.bought>0) {classes+=' unlocked';me.locked=0;} else {classes+=' locked';me.locked=1;}
@@ -780,12 +788,12 @@ export class Building {
 				if (Game.season=='fools')
 				{
 					if (!Game.foolObjects[me.name])
-					{
-						icon=[2,0];
-						iconOff=[3,0];
-						name=Game.foolObjects['Unknown'].name;
-						//desc=Game.foolObjects['Unknown'].desc; //dropped (desc was write-only)
-					}
+						{
+							icon=[2,0];
+							iconOff=[3,0];
+							name=Game.foolObjects['Unknown'].name;
+							//desc=Game.foolObjects['Unknown'].desc; //dropped (desc was write-only)
+						}
 					else
 					{
 						icon=[2,me.icon];
@@ -801,14 +809,13 @@ export class Building {
 				icon=[icon[0]*64,icon[1]*64];
 				iconOff=[iconOff[0]*64,iconOff[1]*64];
 				
-				//me.l.className=classes;
-				//l('productIcon'+me.id).style.backgroundImage='url(img/'+icon+')';
-				l('productIcon'+me.id).style.backgroundPosition='-'+icon[0]+'px -'+icon[1]+'px';
-				//l('productIconOff'+me.id).style.backgroundImage='url(img/'+iconOff+')';
-				l('productIconOff'+me.id).style.backgroundPosition='-'+iconOff[0]+'px -'+iconOff[1]+'px';
 				var customStoreIcon=(me.art as any).storeIcon;
 				if (customStoreIcon)
 				{
+					//a custom store icon fully replaces the default sprite (the
+					//original wrote the default position first and immediately
+					//overwrote it) — so the guarded default writes below are skipped
+					//entirely for these buildings.
 					var customStoreSize=(me.art as any).storeIconSize||'48px 48px';
 					//storeIconPosition centers multi-frame sheets whose frames are
 					//wider than the 64px icon window (e.g. the Cats strips, 80px
@@ -818,33 +825,55 @@ export class Building {
 					//pixelated keeps 2x-upscaled pixel-art strips (Cats) crisp
 					//instead of bilinearly blurring them
 					var customStoreImageRendering=(me.art as any).storeIconRendering||'pixelated';
-					l('productIcon'+me.id).style.backgroundImage=customStoreUrl;
-					l('productIconOff'+me.id).style.backgroundImage=customStoreUrl;
-					l('productIcon'+me.id).style.backgroundSize=customStoreSize;
-					l('productIconOff'+me.id).style.backgroundSize=customStoreSize;
-					l('productIcon'+me.id).style.backgroundPosition=customStorePosition;
-					l('productIconOff'+me.id).style.backgroundPosition=customStorePosition;
-					l('productIcon'+me.id).style.imageRendering=customStoreImageRendering;
-					l('productIconOff'+me.id).style.imageRendering=customStoreImageRendering;
+					var customKey=customStoreUrl+'|'+customStoreSize+'|'+customStorePosition+'|'+customStoreImageRendering;
+					if (cache.customIcon!==customKey)
+					{
+						cache.customIcon=customKey;
+						l('productIcon'+me.id).style.backgroundImage=customStoreUrl;
+						l('productIconOff'+me.id).style.backgroundImage=customStoreUrl;
+						l('productIcon'+me.id).style.backgroundSize=customStoreSize;
+						l('productIconOff'+me.id).style.backgroundSize=customStoreSize;
+						l('productIcon'+me.id).style.backgroundPosition=customStorePosition;
+						l('productIconOff'+me.id).style.backgroundPosition=customStorePosition;
+						l('productIcon'+me.id).style.imageRendering=customStoreImageRendering;
+						l('productIconOff'+me.id).style.imageRendering=customStoreImageRendering;
+					}
 				}
-				l('productName'+me.id).innerHTML=displayName;
-				if (name.length>12/Langs[locId].w && (Game.season=='fools' || !EN)) l('productName'+me.id).classList.add('longProductName'); else l('productName'+me.id).classList.remove('longProductName');
-				l('productOwned'+me.id).textContent=me.amount?me.amount:'';
-				l('productPrice'+me.id).textContent=Beautify(Math.round(price));
-				l('productPriceMult'+me.id).textContent=(Game.buyBulk>1)?('x'+Game.buyBulk+' '):'';
-				l('productLevel'+me.id).textContent='lvl '+Beautify(me.level);
-				if (Game.isMinigameReady(me) && Game.ascensionMode!=1)
+				else
 				{
-					l('productMinigameButton'+me.id).style.display='block';
-					if (!me.onMinigame) l('productMinigameButton'+me.id).textContent=loc("View %1",me.minigameName);
-					else l('productMinigameButton'+me.id).textContent=loc("Close %1",me.minigameName);
+					//me.l.className=classes;
+					//l('productIcon'+me.id).style.backgroundImage='url(img/'+icon+')';
+					var iconPos='-'+icon[0]+'px -'+icon[1]+'px';
+					if (cache.iconPos!==iconPos) {cache.iconPos=iconPos;l('productIcon'+me.id).style.backgroundPosition=iconPos;}
+					//l('productIconOff'+me.id).style.backgroundImage='url(img/'+iconOff+')';
+					var iconOffPos='-'+iconOff[0]+'px -'+iconOff[1]+'px';
+					if (cache.iconOffPos!==iconOffPos) {cache.iconOffPos=iconOffPos;l('productIconOff'+me.id).style.backgroundPosition=iconOffPos;}
 				}
-				else l('productMinigameButton'+me.id).style.display='none';
-				if (Game.isMinigameReady(me) && Game.ascensionMode!=1 && me.minigame.dragonBoostTooltip && Game.hasAura('Supreme Intellect'))
+				if (cache.name!==displayName) {cache.name=displayName;l('productName'+me.id).innerHTML=displayName;}
+				var longName=name.length>12/Langs[locId].w && (Game.season=='fools' || !EN);
+				if (cache.longName!==longName)
 				{
-					l('productDragonBoost'+me.id).style.display='block';
+					cache.longName=longName;
+					if (longName) l('productName'+me.id).classList.add('longProductName'); else l('productName'+me.id).classList.remove('longProductName');
 				}
-				else l('productDragonBoost'+me.id).style.display='none';
+				var ownedVal=me.amount?me.amount:'';
+				if (cache.owned!==ownedVal) {cache.owned=ownedVal;l('productOwned'+me.id).textContent=ownedVal;}
+				var priceStr=Beautify(Math.round(price));
+				if (cache.price!==priceStr) {cache.price=priceStr;l('productPrice'+me.id).textContent=priceStr;}
+				var priceMultStr=(Game.buyBulk>1)?('x'+Game.buyBulk+' '):'';
+				if (cache.priceMult!==priceMultStr) {cache.priceMult=priceMultStr;l('productPriceMult'+me.id).textContent=priceMultStr;}
+				var levelStr='lvl '+Beautify(me.level);
+				if (cache.level!==levelStr) {cache.level=levelStr;l('productLevel'+me.id).textContent=levelStr;}
+				var minigameReady=Game.isMinigameReady(me) && Game.ascensionMode!=1;
+				var minigameShow=minigameReady?'block':'none';
+				if (cache.minigameShow!==minigameShow) {cache.minigameShow=minigameShow;l('productMinigameButton'+me.id).style.display=minigameShow;}
+				if (minigameReady)
+				{
+					var minigameText=!me.onMinigame?loc("View %1",me.minigameName):loc("Close %1",me.minigameName);
+					if (cache.minigameText!==minigameText) {cache.minigameText=minigameText;l('productMinigameButton'+me.id).textContent=minigameText;}
+				}
+				var dragonBoostShow=(Game.isMinigameReady(me) && Game.ascensionMode!=1 && me.minigame.dragonBoostTooltip && Game.hasAura('Supreme Intellect'))?'block':'none';
+				if (cache.dragonBoostShow!==dragonBoostShow) {cache.dragonBoostShow=dragonBoostShow;l('productDragonBoost'+me.id).style.display=dragonBoostShow;}
 			}
 			this.muted=false;
 			this.mute=function(val: any)

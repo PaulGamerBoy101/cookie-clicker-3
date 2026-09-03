@@ -71,6 +71,13 @@ test('?qa=golden: golden-cookie click path spawns a frenzy buff', async ({ page 
 	await assertNoUncaughtErrors(page);
 });
 
+test('?qa=cpslatency: purchases apply to CpS state and display within a frame or two', async ({ page }) => {
+	await boot(page, '&qa=cpslatency');
+	const report = await qaReport(page, /PASS: purchases apply to the CpS state and the rendered counter/);
+	expect(report).not.toMatch(/FAIL/);
+	await assertNoUncaughtErrors(page);
+});
+
 test('?qa=content: typed content validation and economy report pass', async ({ page }) => {
 	await boot(page, '&qa=content');
 	const report = await qaReport(page, /PASS: typed content validation and economy report verified/);

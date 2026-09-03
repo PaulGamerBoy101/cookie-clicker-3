@@ -115,6 +115,9 @@ export function BuildStore()//create the DOM for the store's buildings
 	{
 		var me=storeObjects[i];
 		me.l=l('product'+me.id);
+		//CC3 perf: rebuild() guards each DOM write with the last value it
+		//rendered; fresh product DOM means every cached value is stale.
+		me.__rebuildCache=null;
 		
 		//these are a bit messy but ah well
 		if (!Game.touchEvents)

@@ -166,7 +166,11 @@ These weaken the CSP's XSS protection. That is an accepted, documented trade-off
 - `?qa` (with `?debug=1`) — QA seed: gives a level-1 Farm/Bank/Temple/Wizard
   tower so the engine dynamically imports every minigame, then opens the
   Garden. `?qa=cookies` seeds cookies only (no minigames) for light
-  store-buy testing. `?qa=golden` spawns and pops a forced "frenzy" golden
+  store-buy testing. `?qa=cpslatency` audits the purchase→CpS latency: it
+  performs a real building and a real upgrade purchase through the engine buy
+  path and measures how long `Game.cookiesPs` (engine state) and the rendered
+  `#cookiesPerSecond` counter take to reflect each — both must land within
+  1–2 frames of the 30 Hz logic loop. `?qa=golden` spawns and pops a forced "frenzy" golden
   cookie and reports the resulting buff/CpS (verifies the golden-cookie click
   path).  `?qa=save` exports a save, corrupts the live state, re-imports it, and
   verifies the round-trip restores the state. `?qa=backup` verifies the

@@ -75,8 +75,12 @@ if (debugSurface) {
  *                  minigame panels (Garden/Market/Pantheon/Grimoire): a real
  *                  button click per panel must animate, keep the row's bottom
  *                  edge (the click point) in place, converge, and clean up
+ *   ?qa=cpslatency measure purchase -> CpS update latency: performs a real
+ *                  building and upgrade purchase, then reports how long the
+ *                  engine state (Game.cookiesPs) and the rendered counter
+ *                  (#cookiesPerSecond) take to reflect each
  * Never active in a plain production load. */
-if (debugSurface && params.has('qa') && params.get('qa') !== 'golden' && params.get('qa') !== 'save' && params.get('qa') !== 'backup' && params.get('qa') !== 'sound' && params.get('qa') !== 'perf' && params.get('qa') !== 'ascend' && params.get('qa') !== 'ascendbrowse' && params.get('qa') !== 'arrange' && params.get('qa') !== 'offline' && params.get('qa') !== 'special' && params.get('qa') !== 'a11y' && params.get('qa') !== 'wrinkler' && params.get('qa') !== 'icon' && params.get('qa') !== 'onecol' && params.get('qa') !== 'anim' && params.get('qa') !== 'binverter' && params.get('qa') !== 'content' && params.get('qa') !== 'destiny' && params.get('qa') !== 'amseason' && params.get('qa') !== 'casino' && params.get('qa') !== 'dailycrumb' && params.get('qa') !== 'minipanel') {
+if (debugSurface && params.has('qa') && params.get('qa') !== 'golden' && params.get('qa') !== 'save' && params.get('qa') !== 'backup' && params.get('qa') !== 'sound' && params.get('qa') !== 'perf' && params.get('qa') !== 'ascend' && params.get('qa') !== 'ascendbrowse' && params.get('qa') !== 'arrange' && params.get('qa') !== 'offline' && params.get('qa') !== 'special' && params.get('qa') !== 'a11y' && params.get('qa') !== 'wrinkler' && params.get('qa') !== 'icon' && params.get('qa') !== 'onecol' && params.get('qa') !== 'anim' && params.get('qa') !== 'binverter' && params.get('qa') !== 'content' && params.get('qa') !== 'destiny' && params.get('qa') !== 'amseason' && params.get('qa') !== 'casino' && params.get('qa') !== 'dailycrumb' && params.get('qa') !== 'minipanel' && params.get('qa') !== 'cpslatency') {
 	const qaMode = params.get('qa'); // null for bare ?qa, else the value
 	const MINIGAME_BUILDINGS = ['Farm', 'Bank', 'Temple', 'Wizard tower'];
 	const tick = window.setInterval(() => {
@@ -261,6 +265,92 @@ if (debugSurface && params.get('qa') === 'golden') {
 			out.textContent = '[QA-golden] ERROR: ' + e.constructor.name + ': ' + e.message;
 		}
 		window.clearInterval(tick);
+	}, 250);
+}
+
+// QA: measure the purchase -> CpS latency end to end. A store purchase sets
+// Game.recalculateGains=1 (a dirty flag); the engine's logic loop recomputes
+// Game.cookiesPs on its next tick (setTimeout, 30/s) and the draw pass writes
+// the number into #cookiesPerSecond in the same tick. This probe performs a
+// real building purchase and a real upgrade purchase through the engine buy
+// path, then measures how long the engine state and the rendered counter take
+// to reflect each. Budgets (60/100 ms ~ 1-2 frames) are generous for CI load
+// while still catching a genuinely perceived delay (which starts around 150 ms).
+// Usage: ?debug=1&qa=cpslatency
+if (debugSurface && params.get('qa') === 'cpslatency') {
+	const tick = window.setInterval(() => {
+		const G = window.Game;
+		if (!G || !G.ready || !G.Objects) return;
+		if (G.__qaCpsLatency) return;
+		G.__qaCpsLatency = 1;
+		const out = document.createElement('div');
+		out.id = '__dbgqa';
+		out.style.cssText = 'position:fixed;top:0;left:0;z-index:99999;background:#fff;color:#060;font:12px monospace;white-space:pre-wrap;max-width:760px;';
+		document.body.appendChild(out);
+		try {
+			const lines: string[] = [];
+			let allPass = true;
+			G.cookies += 1e12; // afford everything the probe buys
+			G.recalculateGains = 1; G.CalculateGains(); G.RefreshStore(); G.RebuildUpgrades();
+			const phases: { label: string; click: () => void }[] = [
+				{ label: 'building purchase (Cursor.buy)', click: () => { G.Objects['Cursor'].buy(1); } },
+				{ label: 'upgrade purchase (Reinforced index finger)', click: () => { const u = G.Upgrades['Reinforced index finger']; u.unlocked = 1; u.buy(); } },
+			];
+			let phaseIdx = 0;
+			let armed = false; // baseline captured + purchase performed
+			let t0 = 0; let cpsBefore = 0; let cpsAfter = 0; let domBefore = '';
+			let applyAt = -1; // frame time when the engine state changed (-2 = timed out)
+			let domAt = -1; // frame time when the DOM changed (-2 = timed out)
+			let finished = false;
+			const domText = () => { const el = document.getElementById('cookiesPerSecond'); return el ? (el.textContent || '') : '(missing)'; };
+			const fmt = (ms: number) => (ms < 0 ? 'TIMEOUT (>2 s)' : ms.toFixed(1) + ' ms');
+			const finish = () => {
+				finished = true;
+				lines.push('[QA-cpslatency] ' + (allPass ? 'PASS: purchases apply to the CpS state and the rendered counter within 1-2 frames' : 'FAIL: see measurements above'));
+				out.textContent = lines.join('\n');
+				window.clearInterval(tick);
+			};
+			const step = () => {
+				if (finished) return;
+				if (phaseIdx >= phases.length) { finish(); return; }
+				const now = performance.now();
+				if (!armed) {
+					// arm: capture the baseline, then perform the purchase
+					t0 = now;
+					cpsBefore = G.cookiesPs;
+					domBefore = domText();
+					armed = true;
+					phases[phaseIdx].click();
+				} else {
+					if (applyAt === -1) {
+						if (G.cookiesPs !== cpsBefore) { applyAt = now; cpsAfter = G.cookiesPs; }
+						else if (now - t0 > 2000) applyAt = -2;
+					}
+					if (applyAt >= 0 && domAt === -1 && domText() !== domBefore) domAt = now;
+					else if (applyAt === -2 && domAt === -1 && now - t0 > 2400) domAt = -2;
+					else if (applyAt >= 0 && domAt === -1 && now - applyAt > 2000) domAt = -2;
+					if (applyAt !== -1 && domAt !== -1) {
+						const engineMs = applyAt >= 0 ? applyAt - t0 : -1;
+						const domMs = domAt >= 0 ? domAt - t0 : -1;
+						const engineOk = engineMs >= 0 && engineMs <= 60;
+						const domOk = domMs >= 0 && domMs <= 100;
+						if (!engineOk || !domOk) allPass = false;
+						lines.push(
+							'[QA-cpslatency] ' + phases[phaseIdx].label + ':' +
+							'\n[QA-cpslatency]   CpS ' + cpsBefore.toFixed(1) + ' -> ' + (applyAt >= 0 ? cpsAfter.toFixed(1) : cpsBefore.toFixed(1)) +
+							'\n[QA-cpslatency]   engine state (Game.cookiesPs): ' + fmt(engineMs) + ' (budget <=60 ms) ' + (engineOk ? 'PASS' : 'FAIL') +
+							'\n[QA-cpslatency]   DOM (#cookiesPerSecond): ' + fmt(domMs) + ' (budget <=100 ms) ' + (domOk ? 'PASS' : 'FAIL')
+						);
+						phaseIdx++; armed = false; applyAt = -1; domAt = -1;
+					}
+				}
+				requestAnimationFrame(step);
+			};
+			requestAnimationFrame(step);
+		} catch (e: any) {
+			out.textContent = '[QA-cpslatency] ERROR: ' + e.constructor.name + ': ' + e.message;
+			window.clearInterval(tick);
+		}
 	}, 250);
 }
 
