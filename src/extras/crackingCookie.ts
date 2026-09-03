@@ -235,6 +235,31 @@ import type { Game as EngineGame } from '../engine/types';
 
 		/* Ready glow when fully crumbled. */
 		if (p >= 1) drawReadyGlow(ctx, cx, cy, r, G.T);
+
+		/* The engine's front particle layer — the +amount click text and the
+		 * cookie-burst sprites — is drawn by DrawBackground *before* this
+		 * draw hook runs, so the crumble overlay above (dark void + wedges)
+		 * paints right over it: as soon as the cookie cracks even slightly,
+		 * click feedback disappears behind it. Re-draw the layer on top of
+		 * the crumble (same canvas, same call the engine uses) to restore
+		 * the vanilla layering: particles always sit on top of the cookie.
+		 * Redundant double-draw per frame only while p>0, and particles are
+		 * stateless to draw (life advances in Logic, not Draw), so it is
+		 * visually identical to the engine's own pass. The cull circle keeps
+		 * that re-draw proportional to the crack, not the whole layer: the
+		 * overlay's opaque void is clipped to the cookie disc and its wedges
+		 * drift only ~25px past the rim, so particles beyond r+56 were
+		 * already painted by the engine's own pass and nothing covers them
+		 * (the ready glow is additive and doesn't need re-drawing under). */
+		if (typeof G.particlesDraw === 'function')
+		{
+			G.particlesDraw(2, { x: cx, y: cy, r: r });
+			/* particlesDraw leaves globalAlpha at the last particle's opacity;
+			 * the engine resets it right after its own call (DrawBackground does
+			 * this before the shaded-border draw) — mirror that so the next
+			 * frame's draws aren't affected. */
+			ctx.globalAlpha = 1;
+		}
 	}
 
 	/* Golden pulsing halo + ring around the fully-crumbled, clickable cookie.

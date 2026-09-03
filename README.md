@@ -252,7 +252,10 @@ increments, the swallowed cookies are refunded (+10%), and the debuff clears.
    cookie burst plus a Click frenzy, resets the crack, and round-trips the
    progress/trigger count through the save's Custom mod section. The crack
    cycle is floored (derived from the frenzy length + a hard downtime) so the
-   ×777 Click frenzy can never be permanently active at any cursor count.
+   ×777 Click frenzy can never be permanently active at any cursor count. It
+   also asserts click-particle layering: the crumble overlay re-draws the
+   engine's front particle layer above itself, culled to the area the overlay
+   can cover.
 `?qa=perf&qlvl=N` seeds all four
   minigame buildings at level `N` (default 1), opens the Garden, and reports the
   actual game-loop rate (`Game.T` ticks/sec) versus the 30-tick `Game.fps`

@@ -1210,7 +1210,9 @@ if (debugSurface && params.get('qa') === 'cracking') {
 	const tick = window.setInterval(() => {
 		const G: any = window.Game;
 		const CC = (window as any).__cc3CrackingCookie;
-		if (!G || !G.ready || !G.Objects || !CC) return;
+		// Game.T>=3: ClickCookie ignores clicks while Game.T<3, so don't run
+		// the probe before the logic loop has ticked a few times.
+		if (!G || !G.ready || (G.T | 0) < 3 || !G.Objects || !CC) return;
 		if (G.__qaCracking) return;
 		G.__qaCracking = 1;
 		const out = document.createElement('div');
@@ -1240,7 +1242,10 @@ if (debugSurface && params.get('qa') === 'cracking') {
 			st.progress = 1;
 			st.notified = false;
 			const cookiesBefore = G.cookies;
-			// click the cookie to trigger the payoff
+			// click the cookie to trigger the payoff. ClickCookie skips its body
+			// (and the mod 'click' hook with it) while now-lastClick<20ms —
+			// pin lastClick to its fresh-page value so the run is deterministic.
+			G.lastClick = 0;
 			G.ClickCookie(null, 0);
 			const dCookies = G.cookies - cookiesBefore;
 			const hasFrenzy = !!G.buffs['Click frenzy'];
@@ -1287,6 +1292,70 @@ if (debugSurface && params.get('qa') === 'cracking') {
 			// 6. reset hook clears the crack
 			CC.reset();
 			chk('reset clears progress (progress=' + st.progress + ')', st.progress === 0 && st.notified === false && st.cooldownUntil === 0);
+			// 7. regression: click particles must stay visible while the cookie is
+			// cracked. The engine paints the front particle layer (+amount text,
+			// cookie bursts) inside DrawBackground; the crumble overlay paints in
+			// the later 'draw' hook and used to cover it. The mod re-draws the
+			// layer above the crumble, so a cracked frame runs the layer twice —
+			// but culled to the area the overlay can cover.
+			const calls: number[] = [];
+			const realParticlesDraw = G.particlesDraw;
+			G.particlesDraw = function (z: number, c?: { x: number; y: number; r: number }) { calls.push(z); return realParticlesDraw(z, c); };
+			try {
+				CC.reset();
+				calls.length = 0;
+				G.DrawBackground(); G.runModHook('draw');
+				const frontAtP0 = calls.filter((z) => z === 2).length;
+				chk('front particle layer drawn once per frame at progress 0 (got ' + frontAtP0 + ')', frontAtP0 === 1);
+				st.progress = 0.5;
+				calls.length = 0;
+				G.DrawBackground(); G.runModHook('draw');
+				const frontAtP5 = calls.filter((z) => z === 2).length;
+				chk('front particle layer re-drawn above the crumble overlay (got ' + frontAtP5 + ')', frontAtP5 === 2);
+				// end to end: a click particle over the fully-cracked cookie must
+				// leave bright pixels just above the cookie rim — the only thing
+				// that can paint there is the particle itself (the crumble is
+				// clipped to the cookie, the ready glow is faint additive orange).
+				st.progress = 1;
+				G.DrawBackground(); G.runModHook('draw'); // settle a fully-cracked frame
+				const cx2 = G.cookieOriginX;
+				const py = G.cookieOriginY - 180;
+				G.particleAdd(cx2, py, 0, 0, 1, 2, 2, 0, '+123');
+				G.DrawBackground(); G.runModHook('draw');
+				const img = G.LeftBackground.getImageData(Math.max(0, Math.floor(cx2) - 40), Math.max(0, Math.floor(py) - 16), 80, 32).data;
+				let maxSum = 0;
+				for (let i = 0; i < img.length; i += 4) { const s = img[i] + img[i + 1] + img[i + 2]; if (s > maxSum) maxSum = s; }
+				chk('click particle renders above the cracked cookie (maxSum=' + maxSum + ')', maxSum > 300);
+				// cull: the re-draw must skip particles the crumble cannot cover —
+				// a far-away text particle is only drawn if the cull failed. Spy on
+				// fillText ('FAR' is unique to the planted particle): the culled
+				// count wraps only the mod's re-draw (a cracked frame must not
+				// re-draw it), the uncalled count wraps the engine's own pass (an
+				// intact frame must draw it — proves the particle was drawable).
+				const farX = (G.cookieOriginX || 640) + 600;
+				const farY = (G.cookieOriginY || 288) + 600;
+				G.particleAdd(farX, farY, 0, 0, 1, 2, 2, 0, 'FAR');
+				const texts: string[] = [];
+				const fillTextOrig = G.LeftBackground.fillText.bind(G.LeftBackground);
+				G.LeftBackground.fillText = function (t: string, x: number, y: number) { if (t === 'FAR') texts.push(t); return fillTextOrig(t, x, y); };
+				try {
+					st.progress = 0.5;
+					G.DrawBackground(); // engine's own uncalled pass (spy not counting)
+					texts.length = 0;
+					G.runModHook('draw'); // the mod's culled re-draw only
+					const drawnThroughCull = texts.length;
+					st.progress = 0; // overlay skips: engine's own pass has no cull
+					texts.length = 0;
+					G.DrawBackground();
+					const drawnUncalled = texts.length;
+					chk('crumble re-draw culls far particles (culled=' + drawnThroughCull + ', uncalled=' + drawnUncalled + ')', drawnThroughCull === 0 && drawnUncalled >= 1);
+				} finally {
+					G.LeftBackground.fillText = fillTextOrig;
+				}
+				CC.reset();
+			} finally {
+				G.particlesDraw = realParticlesDraw;
+			}
 			out.textContent = lines.join('\n') + '\n[QA-cracking] ' + (pass ? 'PASS: cracking cookie verified end to end' : 'FAIL: see checks above');
 		} catch (e: any) {
 			out.textContent = '[QA-cracking] ERROR: ' + e.constructor.name + ': ' + e.message;

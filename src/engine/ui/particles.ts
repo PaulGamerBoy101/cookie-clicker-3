@@ -9,7 +9,8 @@
  *
  * Slice scope (all closure-free — they read only `Game`, `Math` and the
  * window-shim globals `choose`, `Pic`, `l`, `App`; no Init-scoped vars):
- *   - `particlesUpdate` / `particleAdd` / `particlesDraw`
+ *   - `particlesUpdate` / `particleAdd` / `particlesDraw` (CC3: `particlesDraw`
+ *     takes an optional cull circle — see its doc comment)
  *   - `textParticlesUpdate` / `textParticlesAdd` / `Popup`
  *   - `SparkleAt` / `SparkleOn`
  *
@@ -106,13 +107,27 @@ export function particleAdd(x: any,y: any,xd: any,yd: any,size: any,dur: any,z: 
 			return {};
 		}
 
-export function particlesDraw(z: any)
+export function particlesDraw(z: any,cull?: {x: number;y: number;r: number})
 		{
 			var ctx=Game.LeftBackground;
 			ctx.fillStyle='#fff';
 			ctx.font='20px Merriweather';
 			ctx.textAlign='center';
-			
+			/* Optional cull circle: when set, only particles whose current center
+			 * lies within cull.r+56 of (cull.x,cull.y) are drawn. CC3: used by the
+			 * cracking-cookie mod to re-draw just the front-layer particles its
+			 * crumble overlay can cover — the overlay's opaque void is clipped to
+			 * the cookie disc and its wedges drift only ~spread+art past the rim
+			 * (~56px covers any sane cookie size), so particles outside the circle
+			 * were already painted by the main pass and nothing covers them:
+			 * skipping them renders identically while keeping the overlay re-draw
+			 * proportional to the covered area instead of the whole layer. */
+			var cullX:number=0,cullY:number=0,cullR2:number=0;
+			if (cull)
+			{
+				cullX=cull.x;cullY=cull.y;
+				cullR2=(cull.r+56)*(cull.r+56);
+			}
 			for (var i=0;i<Game.particlesN;i++)
 			{
 				var me=Game.particles[i];
@@ -120,6 +135,11 @@ export function particlesDraw(z: any)
 				{
 					if (me.life!=-1)
 					{
+						if (cull)
+						{
+							var cdx=me.x-cullX,cdy=me.y-cullY;
+							if (cdx*cdx+cdy*cdy>cullR2) continue;
+						}
 						var opacity=1-(me.life/(Game.fps*me.dur));
 						ctx.globalAlpha=opacity;
 						if (me.text)
