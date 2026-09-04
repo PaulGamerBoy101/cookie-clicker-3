@@ -171,6 +171,31 @@ var holdBuyId: any=-1;//building id being held (-1 = none)
 var holdBuyFired: any=false;//a repeat purchase happened during the current hold
 var holdBuyDocBound: any=false;//document/window teardown listeners bound once
 
+/* CC3: the setting lives in localStorage (NOT the Game.prefs bitfield — the
+ * save-compat test diffs the save sections byte-for-byte, and prefs must not
+ * grow a new entry), same pattern as cc3_heavenly_layout. Default ON.
+ * Read through Game.HoldToBuyPref (assigned in engine/main.ts next to the
+ * other Game slot assignments) so the menu toggle and QA probes read the
+ * same source of truth; startHoldBuy/holdBuyTick gate on it every time. */
+export function HoldToBuyPref()
+{
+	var v=localStorageGet('cc3_holdToBuy');
+	return v===null?1:(v==='0'?0:1);
+}
+export function ToggleHoldToBuy()//menu toggle; also stops a hold mid-flight when disabling
+{
+	var on=HoldToBuyPref();
+	localStorageSet('cc3_holdToBuy',''+(on?0:1));
+	if (on) stopHoldBuy();
+	on=1-on;
+	var b=l('holdToBuyButton');//refresh the Options button (mirrors Game.Toggle's class/label swap)
+	if (b)
+	{
+		b.innerHTML=loc("Hold to buy")+(on?ON:OFF);
+		b.className='smallFancyButton prefButton option'+(on?'':' off');
+	}
+}
+
 function stopHoldBuy()//end the current hold (safe to call when not holding)
 {
 	if (holdBuyTimer!==null) {clearTimeout(holdBuyTimer);holdBuyTimer=null;}
@@ -182,6 +207,7 @@ function holdBuyTick()//repeat-purchase timer: validate the hold, buy once, resc
 	if (holdBuyTimer===null) return;//stopped between scheduling and firing
 	var me=holdBuyId>=0?Game.ObjectsById[holdBuyId]:null;
 	if (!me
+		|| !Game.HoldToBuyPref()//setting flipped off mid-hold (ToggleHoldToBuy also stops us; belt and suspenders)
 		|| !Game.mouseDown//press ended (mouse and touch; also covers lost mouseups)
 		|| Game.OnAscend || Game.promptOn//game paused: menus, prompts, ascension
 		|| Game.buyMode==-1//never repeat sells
@@ -197,6 +223,7 @@ function holdBuyTick()//repeat-purchase timer: validate the hold, buy once, resc
 
 function startHoldBuy(id: any,e: any)//called on a row's mousedown/touchstart
 {
+	if (!Game.HoldToBuyPref()) return;//the setting can disable the feature entirely
 	if (e && typeof e.button!=='undefined' && e.button!=0) return;//primary button only (matches what fires 'click'; touch events have no button)
 	if (Game.OnAscend || Game.promptOn) return;
 	if (!Game.ObjectsById[id]) return;

@@ -3422,7 +3422,9 @@ export default { id: "EN", name: "english", strings: {
 	"Start the tour": "/",
 	"No thanks": "/",
 
-	"Click and hold a building to buy it over and over.": "/"
+	"Click and hold a building to buy it over and over.": "/",
+	"Hold to buy": "/",
+	"click and hold a building to buy it over and over": "/"
 
 }
 } satisfies LanguageData;

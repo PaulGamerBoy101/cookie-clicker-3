@@ -155,6 +155,10 @@ export function UpdateMenu()
 					Game.WritePrefButton('monospace','monospaceButton',loc("Alt font")+ON,loc("Alt font")+OFF)+'<label>('+loc("your cookies are displayed using a monospace font")+')</label><br>'+
 					Game.WritePrefButton('format','formatButton',loc("Short numbers")+OFF,loc("Short numbers")+ON,'BeautifyAll();Game.RefreshStore();Game.upgradesToRebuild=1;',1)+(EN?'<label>(shorten big numbers)</label>':'')+'<br>'+
 					Game.WritePrefButton('notifs','notifsButton',loc("Fast notes")+ON,loc("Fast notes")+OFF)+'<label>('+loc("notifications disappear much faster")+')</label><br>'+
+					//CC3: hold-to-buy toggle (localStorage-backed, not a Game.prefs pref — the save's
+					//prefs bitfield is byte-locked by the save-compat test; see ui/store.ts).
+					//Same markup Game.Toggle produces, with a custom click handler.
+					'<a class="smallFancyButton prefButton option'+(Game.HoldToBuyPref()?'':' off')+'" id="holdToBuyButton" '+Game.clickStr+'="Game.ToggleHoldToBuy();">'+loc("Hold to buy")+(Game.HoldToBuyPref()?ON:OFF)+'</a>'+(EN?'<label>(click and hold a building to buy it over and over)</label>':'')+'<br>'+
 					//Game.WritePrefButton('autoupdate','autoupdateButton','Offline mode OFF','Offline mode ON',0,1)+'<label>(disables update notifications)</label><br>'+
 					(!App?Game.WritePrefButton('warn','warnButton',loc("Closing warning")+ON,loc("Closing warning")+OFF)+'<label>('+loc("the game will ask you to confirm when you close the window")+')</label><br>':'')+
 					//Game.WritePrefButton('focus','focusButton',loc("Defocus")+OFF,loc("Defocus")+ON,0,1)+'<label>('+loc("the game will be less resource-intensive when out of focus")+')</label><br>'+

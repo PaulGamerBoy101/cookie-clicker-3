@@ -40,7 +40,7 @@ import { Reset, HardReset } from "./systems/reset";
 
 import { tooltipDraw, tooltipUpdate, tooltipHide, tooltipWobble, getTooltip, getDynamicTooltip, attachTooltip } from "./ui/tooltip";
 import { crate, crateTooltip, costDetails } from "./ui/crate";
-import { modifyBuildingPrice, storeBulkButton, BuildStore, ClickProduct, RefreshStore } from "./ui/store";
+import { modifyBuildingPrice, storeBulkButton, BuildStore, ClickProduct, RefreshStore, HoldToBuyPref, ToggleHoldToBuy } from "./ui/store";
 import { ShowMenu, tinyCookie, ClickTinyCookie, setVolume, setVolumeMusic, setWubMusic, showLangSelection, UpdateMenu } from "./ui/menu";
 import { DrawBackground } from "./ui/drawBackground";/* CC3: the original relied on implicit globals; declare them for module strict mode. */
 
@@ -2318,6 +2318,8 @@ Game.Launch=function()
 		Game.BuildStore=BuildStore;//CC3 rewrite (phase 6, slice 4): moved verbatim to ui/store.ts; same Game slot, same Init position.
 		Game.ClickProduct=ClickProduct;//CC3 rewrite (phase 6, slice 4): moved verbatim to ui/store.ts; same Game slot, same Init position.
 		Game.RefreshStore=RefreshStore;//CC3 rewrite (phase 6, slice 4): moved verbatim to ui/store.ts; same Game slot, same Init position.
+		Game.HoldToBuyPref=HoldToBuyPref;//CC3: click-and-hold setting accessor (localStorage-backed; see ui/store.ts)
+		Game.ToggleHoldToBuy=ToggleHoldToBuy;//CC3: Options-menu toggle for the hold-to-buy setting
 		
 		Game.ComputeCps=ComputeCps;//CC3 rewrite (phase 4, slice 1): moved verbatim to systems/economy.ts; same Game slot, same Init position.
 		

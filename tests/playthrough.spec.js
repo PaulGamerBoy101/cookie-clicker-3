@@ -92,6 +92,37 @@ test('playthrough: cookie, store, golden cookie, menu, ticker, save/reload', asy
 	console.log('[3b] held Farm: bought', st - farmBefore, 'via hold-to-buy');
 	expect(st).toBeGreaterThanOrEqual(farmBefore + 3);
 
+	// ---- 3c. the Options toggle disables hold-to-buy ----
+	expect(await page.evaluate(() => Game.HoldToBuyPref())).toBe(1); // default ON
+	await page.locator('#prefsButton').click();
+	await page.locator('#holdToBuyButton').click();
+	expect(await page.evaluate(() => Game.HoldToBuyPref())).toBe(0);
+	await expect(page.locator('#holdToBuyButton')).toContainText('OFF');
+	await page.locator('.menuClose').click();
+	// a held row now buys exactly one (the release click) — no repeats
+	await page.evaluate(() => { Game.cookies = 1e6; });
+	const farmBefore2 = await page.evaluate(() => Game.Objects['Farm'].amount);
+	await page.locator('#product2').hover();
+	await page.mouse.down();
+	await page.waitForTimeout(1000); // far past the 500ms arm delay
+	await page.mouse.up();
+	expect(await page.evaluate(() => Game.Objects['Farm'].amount)).toBe(farmBefore2 + 1);
+	// re-enable: a hold repeats again
+	await page.locator('#prefsButton').click();
+	await page.locator('#holdToBuyButton').click();
+	await page.locator('.menuClose').click();
+	await page.locator('#product2').hover();
+	await page.mouse.down();
+	await page.waitForFunction(
+		(before) => Game.Objects['Farm'].amount >= before + 3,
+		farmBefore2 + 1,
+		{ timeout: 5_000 }
+	);
+	await page.mouse.up();
+	// leave it disabled for the rest of the run so the reload check below is meaningful
+	await page.evaluate(() => Game.ToggleHoldToBuy());
+	console.log('[3c] hold-to-buy toggle: disabled buys 1, re-enabled repeats, setting persisted');
+
 	// ---- 4. buy an upgrade from the store ----
 	const upBefore = await page.evaluate(
 		() => Object.keys(Game.UpgradesById).filter((k) => Game.UpgradesById[k].bought).length
@@ -175,6 +206,7 @@ test('playthrough: cookie, store, golden cookie, menu, ticker, save/reload', asy
 		numbers: Game.prefs.numbers,
 		bakery: Game.bakeryName,
 		owned: Object.keys(Game.UpgradesById).filter((k) => Game.UpgradesById[k].bought).length,
+		holdToBuy: Game.HoldToBuyPref(),
 	}));
 	console.log('[9] after save + reload:', JSON.stringify(st));
 	expect(st.cookies).toBeGreaterThan(0);
@@ -183,6 +215,7 @@ test('playthrough: cookie, store, golden cookie, menu, ticker, save/reload', asy
 	expect(st.numbers).toBe(1);
 	expect(st.bakery).toBe('Playthrough Bakery');
 	expect(st.owned).toBeGreaterThan(0);
+	expect(st.holdToBuy).toBe(0); // step 3c left the toggle off; localStorage survives the reload
 
 	// ---- 10. export a save ----
 	const exported = await page.evaluate(() => Game.WriteSave(1));

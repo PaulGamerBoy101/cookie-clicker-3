@@ -11,8 +11,11 @@ picked up, traded, or dropped as we go. Checked items are shipped.
   price rules apply. The hold ends on release, sliding off the row, a
   dragging finger, a lost mouseup (window blur), menus/prompts/ascension,
   sell mode, or the next unit being unaffordable, and a hold that fired
-  repeats swallows its trailing release click so nothing double-buys. No new
-  save state. Covered by the playthrough test's hold-to-buy step.
+  repeats swallows its trailing release click so nothing double-buys. An
+  Options toggle ("Hold to buy") disables it entirely; the setting persists
+  in localStorage (`cc3_holdToBuy`) rather than the prefs bitfield, which
+  stays byte-locked for save compatibility. No new save state. Covered by
+  the playthrough test's hold-to-buy and toggle steps.
 - **Challenge modes** — 4 new ascension modes, each a distinct self-imposed
   handicap with a completion reward: **Trigger finger** (scroll over the
   cookie = click it; no clicking achievements), **Ascetic** (golden and wrath
