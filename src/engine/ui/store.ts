@@ -3,6 +3,10 @@
  * `Game.BuildStore`, `Game.ClickProduct`, `Game.RefreshStore` are
  * re-assigned onto the same Game slots at the same Init positions.
  *
+ * CC3 addition: click-and-hold building purchases — press and hold a store
+ * row and, after a short delay, it repeats its purchase through the same
+ * Game.ClickProduct path a click takes (the hold-buy block below).
+ *
  * Runtime imports: none — `Game`, `l`, `loc`, `AddEvent`, `PlaySound`,
  * `LBeautify` resolve through src/globals.d.ts.
  */
@@ -85,7 +89,7 @@ export function BuildStore()//create the DOM for the store's buildings
 	
 	var str='';
 	str+='<div id="storeBulk" class="storePre" '+Game.getTooltip(
-					'<div style="padding:8px;min-width:200px;text-align:center;font-size:11px;" id="tooltipStoreBulk">'+loc("You can also press %1 to bulk-buy or sell %2 of a building at a time, or %3 for %4.",['<b>'+loc("Ctrl")+'</b>','<b>10</b>','<b>'+loc("Shift")+'</b>','<b>100</b>'])+'</div>'
+					'<div style="padding:8px;min-width:200px;text-align:center;font-size:11px;" id="tooltipStoreBulk">'+loc("You can also press %1 to bulk-buy or sell %2 of a building at a time, or %3 for %4.",['<b>'+loc("Ctrl")+'</b>','<b>10</b>','<b>'+loc("Shift")+'</b>','<b>100</b>'])+'<div class="line"></div>'+loc("Click and hold a building to buy it over and over.")+'</div>'
 					,'store')+
 		'>'+
 		'<div id="storeBulkBuy" class="storePreButton storeBulkMode" '+Game.clickStr+'="Game.storeBulkButton(0);">'+loc("Buy")+'</div>'+
@@ -111,6 +115,8 @@ export function BuildStore()//create the DOM for the store's buildings
 		return function(id){Game.Prompt('<div class="block">Do you really want to sell your '+loc("%1 "+Game.ObjectsById[id].bsingle,LBeautify(Game.ObjectsById[id].amount))+'?</div>',[['Yes','Game.ObjectsById['+id+'].sell(-1);Game.ClosePrompt();'],['No','Game.ClosePrompt();']]);}(id);
 	}*/
 	
+	holdBuyDocBind();//CC3: document/window hold teardown is per-session, not per-rebuild
+	
 	for (var i=0;i<storeObjects.length;i++)
 	{
 		var me=storeObjects[i];
@@ -122,11 +128,20 @@ export function BuildStore()//create the DOM for the store's buildings
 		//these are a bit messy but ah well
 		if (!Game.touchEvents)
 		{
-			AddEvent(me.l,'click',function(what: any){return function(e: any){Game.ClickProduct(what);e.preventDefault();};}(me.id));
+			//CC3: mousedown arms the hold-to-buy timer; the click still makes the
+			//initial purchase (and is swallowed when repeats already fired)
+			AddEvent(me.l,'mousedown',function(what: any){return function(e: any){startHoldBuy(what,e);};}(me.id));
+			AddEvent(me.l,'mouseleave',function(){stopHoldBuy();});//CC3: sliding off the row cancels the hold, like it cancels a click
+			AddEvent(me.l,'click',function(what: any){return function(e: any){if (holdBuyFired) {holdBuyFired=false;e.preventDefault();return;}//a hold repeat bought for us
+				Game.ClickProduct(what);e.preventDefault();};}(me.id));
 		}
 		else
 		{
-			AddEvent(me.l,'touchend',function(what: any){return function(e: any){Game.ClickProduct(what);e.preventDefault();};}(me.id));
+			//CC3: touchstart arms the hold-to-buy timer; the touchend still makes
+			//the initial purchase (and is swallowed when repeats already fired)
+			AddEvent(me.l,'touchstart',function(what: any){return function(e: any){startHoldBuy(what,e);};}(me.id));
+			AddEvent(me.l,'touchend',function(what: any){return function(e: any){if (holdBuyFired) {holdBuyFired=false;e.preventDefault();return;}//a hold repeat bought for us
+				Game.ClickProduct(what);e.preventDefault();};}(me.id));
 		}
 	}
 }
@@ -134,6 +149,76 @@ export function BuildStore()//create the DOM for the store's buildings
 export function ClickProduct(what: any)
 {
 	Game.ObjectsById[what].buy();
+}
+
+/* CC3 addition: click-and-hold building purchases (store QoL).
+ *
+ * Pressing a store row starts a hold timer; after a short delay the row
+ * repeats its purchase through the same Game.ClickProduct path a click
+ * takes, so the current bulk amount and every price rule apply. The hold
+ * ends when the press ends (the engine's document-level Game.mouseDown is
+ * the same mouse/touch press state, checked every tick as a backstop), when
+ * the pointer leaves the row, when a menu/prompt/ascension opens, in sell
+ * mode, or as soon as the next unit is unaffordable — so a stale hold can
+ * never keep spending (or error-sound spamming) on its own. When repeats
+ * fired, the gesture's release click/touchend is swallowed so a hold never
+ * double-buys the final tap; quick taps behave exactly as before.
+ */
+var holdBuyDelay=500;//ms to hold before the repeat purchases kick in
+var holdBuyRepeat=80;//ms between repeat purchases once holding
+var holdBuyTimer: any=null;//pending repeat setTimeout id, or null
+var holdBuyId: any=-1;//building id being held (-1 = none)
+var holdBuyFired: any=false;//a repeat purchase happened during the current hold
+var holdBuyDocBound: any=false;//document/window teardown listeners bound once
+
+function stopHoldBuy()//end the current hold (safe to call when not holding)
+{
+	if (holdBuyTimer!==null) {clearTimeout(holdBuyTimer);holdBuyTimer=null;}
+	holdBuyId=-1;
+}
+
+function holdBuyTick()//repeat-purchase timer: validate the hold, buy once, reschedule
+{
+	if (holdBuyTimer===null) return;//stopped between scheduling and firing
+	var me=holdBuyId>=0?Game.ObjectsById[holdBuyId]:null;
+	if (!me
+		|| !Game.mouseDown//press ended (mouse and touch; also covers lost mouseups)
+		|| Game.OnAscend || Game.promptOn//game paused: menus, prompts, ascension
+		|| Game.buyMode==-1//never repeat sells
+		|| Game.cookies<me.getPrice())//can't afford the next one: stop instead of error-sound spamming
+	{
+		stopHoldBuy();
+		return;
+	}
+	Game.ClickProduct(holdBuyId);
+	holdBuyFired=true;
+	holdBuyTimer=setTimeout(holdBuyTick,holdBuyRepeat);
+}
+
+function startHoldBuy(id: any,e: any)//called on a row's mousedown/touchstart
+{
+	if (e && typeof e.button!=='undefined' && e.button!=0) return;//primary button only (matches what fires 'click'; touch events have no button)
+	if (Game.OnAscend || Game.promptOn) return;
+	if (!Game.ObjectsById[id]) return;
+	//no "locked row" guard here on purpose: vanilla clicks buy locked rows too
+	//(a locked row is just dimmed; hidden rows are positional via toggledOff),
+	//and me.locked is stale for up to 5 draw frames after it changes
+	stopHoldBuy();
+	holdBuyId=id;
+	holdBuyTimer=setTimeout(holdBuyTick,holdBuyDelay);
+}
+
+function holdBuyDocBind()//document/window-level hold teardown, bound once per session
+{
+	if (holdBuyDocBound) return;
+	holdBuyDocBound=true;
+	//BuildStore can run more than once (init, save load, store rebuilds)
+	AddEvent(document,'mouseup',function(){stopHoldBuy();});//release anywhere ends the hold (the tick's mouseDown check is the backstop)
+	AddEvent(document,'touchend',function(){holdBuyFired=false;stopHoldBuy();});//bubbles AFTER the row's handler, which consumed holdBuyFired
+	AddEvent(document,'mousedown',function(e: any){holdBuyFired=false;if (e && e.button!=0) stopHoldBuy();});//a fresh gesture invalidates any leftover state
+	AddEvent(document,'touchstart',function(){holdBuyFired=false;});
+	AddEvent(document,'touchmove',function(){stopHoldBuy();});//a dragging finger means scroll intent, not a hold
+	AddEvent(window,'blur',function(){stopHoldBuy();});//a lost mouseup (alt-tab mid-hold) must not keep spending
 }
 
 export function RefreshStore()//refresh the store's buildings

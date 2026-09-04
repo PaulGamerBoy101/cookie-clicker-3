@@ -136,7 +136,8 @@ the gate:
   `master`-built save on `rewrite` and diffs the re-export. Needs a `master`
   build served on :4174 in addition to the :4173 preview.
 - `tests/playthrough.spec.js` — an end-to-end playthrough smoke test that
-  drives the real UI (big-cookie clicks, store purchases, a golden-cookie
+  drives the real UI (big-cookie clicks, store purchases, a hold-to-buy
+  repeat purchase, a golden-cookie
   pop, the menu tabs, a preference toggle, a bakery rename, the news ticker)
   and verifies persistence across a full page reload. Runs against the
   default :4173 preview (`npx playwright test tests/playthrough.spec.js`).

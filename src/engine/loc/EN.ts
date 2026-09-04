@@ -3420,7 +3420,9 @@ export default { id: "EN", name: "english", strings: {
 	"Welcome to Cookie Clicker!": "/",
 	"Want a quick tour of the basics? It only takes a minute.": "/",
 	"Start the tour": "/",
-	"No thanks": "/"
+	"No thanks": "/",
+
+	"Click and hold a building to buy it over and over.": "/"
 
 }
 } satisfies LanguageData;

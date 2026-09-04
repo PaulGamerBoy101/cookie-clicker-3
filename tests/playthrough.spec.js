@@ -77,6 +77,21 @@ test('playthrough: cookie, store, golden cookie, menu, ticker, save/reload', asy
 	console.log('[3] CpS after Farm #2:', cps1.toFixed(2), '->', cps2.toFixed(2));
 	expect(cps2).toBeGreaterThan(cps1);
 
+	// ---- 3b. click-and-hold a building: repeats purchase after a delay ----
+	await page.evaluate(() => { Game.cookies = 1e6; });
+	const farmBefore = await page.evaluate(() => Game.Objects['Farm'].amount);
+	await page.locator('#product2').hover();
+	await page.mouse.down();
+	await page.waitForFunction(
+		(before) => Game.Objects['Farm'].amount >= before + 3,
+		farmBefore,
+		{ timeout: 5_000 }
+	); // 500ms delay + 80ms repeats; don't release until repeats fired
+	await page.mouse.up();
+	st = await page.evaluate(() => Game.Objects['Farm'].amount);
+	console.log('[3b] held Farm: bought', st - farmBefore, 'via hold-to-buy');
+	expect(st).toBeGreaterThanOrEqual(farmBefore + 3);
+
 	// ---- 4. buy an upgrade from the store ----
 	const upBefore = await page.evaluate(
 		() => Object.keys(Game.UpgradesById).filter((k) => Game.UpgradesById[k].bought).length
