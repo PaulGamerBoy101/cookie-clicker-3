@@ -1780,13 +1780,21 @@ if (debugSurface && params.get('qa') === 'transcend') {
 			const resetOk = G.Objects['Cursor'].amount === 3 && G.Objects['Grandma'].amount === 0 && G.prestige === 0 && G.heavenlyChips === 0;
 			const savedOk = (() => { try { const s = JSON.parse(T.save()); return s.ee === eeAfter && s.trans === trans; } catch (e) { return false; } })();
 			const gateOk = T.canTranscend();
-			const pass = eeOk && transOk && resetOk && savedOk && gateOk;
+			// announcement: the completion dialog (like the daily crumb collect
+		// popup) — content recorded and actually shown on screen
+		const ann = T.lastAnnouncement();
+			const annOk = ann.indexOf('Transcendence complete!') !== -1 && ann.indexOf('Eternal Essence') !== -1;
+			const promptEl = document.getElementById('promptContent');
+			const promptText = promptEl ? (promptEl.textContent || '') : '';
+			const dialogOk = G.promptOn === 1 && promptText.indexOf('Transcendence complete!') !== -1 && !!document.getElementById('promptOption0');
+			const pass = eeOk && transOk && resetOk && savedOk && gateOk && annOk && dialogOk;
 			a.out.textContent =
 				'[QA-transcend] results\n' +
 				'[QA-transcend] EE: ' + a.eeBefore + ' -> ' + eeAfter + ' (lifetime ' + eeEarned + ') ' + (eeOk ? 'OK' : 'FAIL') +
 				'\n[QA-transcend] transcendences: ' + trans + ' (expect 1) ' + (transOk ? 'OK' : 'FAIL') +
 				'\n[QA-transcend] run reset: Cursor=' + G.Objects['Cursor'].amount + ' (expect 3: Inner Fire milestone), Grandma=' + G.Objects['Grandma'].amount + ', prestige=' + G.prestige + ', chips=' + G.heavenlyChips + ' ' + (resetOk ? 'OK' : 'FAIL') +
 				'\n[QA-transcend] save round-trip ' + (savedOk ? 'OK' : 'FAIL') +
+				'\n[QA-transcend] completion dialog shown (announcement len=' + ann.length + ') ' + (annOk && dialogOk ? 'OK' : 'FAIL') +
 				'\n[QA-transcend] gate still unlocked (canTranscend) ' + (gateOk ? 'OK' : 'FAIL') +
 				'\n[QA-transcend] ' + (pass ? 'PASS: transcendence earned EE, reset the run, and persisted' : 'FAIL');
 			window.clearInterval(tick);

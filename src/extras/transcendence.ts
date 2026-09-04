@@ -212,8 +212,11 @@
 	 * TRANSCENDENCE FLOW
 	 * ================================================================ */
 
-	/** Track the most-owned building type before a reset (for Legacy Echo). */
+	/* Track the most-owned building type before a reset (for Legacy Echo). */
 	let _lastMostOwnedBuilding = 0;
+
+	/* What the last completion announced (dialog HTML or toast body). */
+	let _lastAnnouncement = '';
 
 	/* The crumbling-cookie ascend intro is driven by Game.AscendTimer in
 	 * drawBackground.ts (the `else` of `if (Game.AscendTimer==0)` at line 173)
@@ -357,13 +360,30 @@
 		// 9. Check achievements
 		checkAchievements();
 
-		// 10. Notify
-		G.Notify(
-			'Transcendence complete!',
-			'+' + eeGain + ' Eternal Essence (lifetime: ' + state.eeEarned + ').<br>Transcendences: ' + state.transcendences,
-			[19, 7],
-			6
-		);
+		// 10. Announce the per-reset payoff in a centered prompt dialog (like
+		// the daily crumb's collect popup) — the reset and EE grant already
+		// happened, so the dialog is pure announcement. Falls back to the old
+		// toast when another dialog is open (never clobber it) or an
+		// ascend/reincarnate animation is running.
+		const body =
+			'<div class="block">+' + eeGain + ' Eternal Essence (lifetime: ' + state.eeEarned + ')</div>' +
+			'<div class="block">Transcendences: ' + state.transcendences + '</div>';
+		const canPrompt = !G.promptOn && !G.OnAscend && G.AscendTimer <= 0 && !G.ReincarnateTimer;
+		if (canPrompt) {
+			_lastAnnouncement = '<h3>Transcendence complete!</h3>' + body;
+			G.Prompt(
+				_lastAnnouncement,
+				[['Continue', 'Game.ClosePrompt();PlaySound(\'snd/tick.mp3\');']]
+			);
+		} else {
+			_lastAnnouncement = '+' + eeGain + ' Eternal Essence (lifetime: ' + state.eeEarned + ').<br>Transcendences: ' + state.transcendences;
+			G.Notify(
+				'Transcendence complete!',
+				_lastAnnouncement,
+				[19, 7],
+				6
+			);
+		}
 		G.recalculateGains = 1;
 		G.storeToRefresh = 1;
 	}
@@ -1387,6 +1407,10 @@ body:not(.noMotion) #doctrineFullView.out { opacity:0; transform:scale(1.03); tr
 		_addTranscendUI,
 		save,
 		load,
+		/* What the last completion announced ('<h3>…</h3>…' for a dialog, the
+		 * plain toast body otherwise) — lets the QA probe assert the content
+		 * either way. */
+		lastAnnouncement: function () { return _lastAnnouncement; },
 		/* Seed a large cookiesReset for QA testing. */
 		seed: function (reset: number) {
 			const G = window.Game;

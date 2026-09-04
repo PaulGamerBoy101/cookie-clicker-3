@@ -298,6 +298,9 @@ declare global {
 			_addTranscendUI: () => void;
 			save: () => string;
 			load: (str: string) => void;
+			/* What the last completion announced ('<h3>…</h3>…' for a dialog,
+			 * the plain toast body otherwise); used by ?qa=transcend. */
+			lastAnnouncement: () => string;
 			seed: (reset: number) => void;
 		};
 		/* The American Season namespace (extras/americanSeason.ts): the

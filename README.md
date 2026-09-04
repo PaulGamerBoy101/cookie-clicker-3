@@ -268,6 +268,13 @@ increments, the swallowed cookies are refunded (+10%), and the debuff clears.
   crumb, transcendence, Black Hole Inverter, Decide Your Destiny, American
   Season), every mod loader survives garbage input, and the store/product DOM
   stays intact afterward.
+Announce-worthy moments use centered prompt dialogs (like the welcome
+  dialog): the daily crumb collect and the transcendence completion summary
+  both open one, falling back to a notification toast whenever another
+  dialog is already open (never clobber) or an ascend/reincarnate animation
+  is running. Ambient feedback — purchases, autosaves, golden-cookie
+  spawners, minigame events, achievement toasts — stays as toasts by design;
+  `?qa=transcend` and `?qa=dailycrumb` assert the dialog path.
 `?qa=perf&qlvl=N` seeds all four
   minigame buildings at level `N` (default 1), opens the Garden, and reports the
   actual game-loop rate (`Game.T` ticks/sec) versus the 30-tick `Game.fps`
