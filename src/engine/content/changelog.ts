@@ -68,6 +68,9 @@ export function declareVanillaChangelog(Game: EngineGame) {
 	Game.updateLog+=
 
 	'</div><div class="subsection update">'+
+	'<div class="title">04/09/2026 - soundtracks and a music picker</div>'+
+	'<div class="listing">&bull; Settings now has a music section: pick between the original soundtrack and the new Towns set (7 tracks from the same composer, Bert Cole), and choose exactly which track plays from a dropdown — your soundtrack and track are remembered between sessions, and each soundtrack resumes its own last track</div>'+
+	'</div><div class="subsection update">'+
 	'<div class="title">04/09/2026 - hold-to-buy, announcement dialogs, and smoother panels</div>'+
 	'<div class="listing">&bull; click and hold a building in the store to buy it over and over — the current bulk amount applies (Ctrl/Shift), the hold stops the moment you release, slide off the row, open a menu or can\'t afford the next one, and the repeats never double-buy your final click; a new "Hold to buy" option in Settings turns the feature off entirely</div>'+
 	'<div class="listing">&bull; milestone announcements are now centered dialogs (like the welcome popup) instead of notification toasts: the daily crumb collect and the transcendence completion summary — they still fall back to a toast when another dialog is already open or an ascension animation is running</div>'+

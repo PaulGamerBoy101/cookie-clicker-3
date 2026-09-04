@@ -52,12 +52,21 @@ changelog and in each port's file header.
 
 ## Music & sound effects
 
-- **Background music** — the 8 tracks in `public/snd/music/` (Farm Life,
-  Simpler Times, Origins, A Little R & R, Returning Home, Bustling Streets,
-  Long Road Ahead, Waiting) are from the free 16-Bit Starter Pack.
-  Music composed by **Bert Cole** — <https://bitbybitsound.com>.
+- **Background music** — the tracks in `public/snd/music/` are from the free
+  16-Bit Starter Pack by **Bert Cole** — <https://bitbybitsound.com>.
   Used under the pack's non-exclusive license; not to be re-sold or used in
   derivative works.
+  - **Original soundtrack** (8 tracks): Farm Life, Simpler Times, Origins,
+    A Little R & R, Returning Home, Bustling Streets, Long Road Ahead,
+    Waiting.
+  - **Towns soundtrack** (7 tracks, the pack's "Towns" folder): Bustling
+    Streets, Farm Life, Ghost Alley, Merch City, Remnants of What Once Was,
+    Returning Home, Smooth As Glass. Ghost Alley, Merch City, Remnants of
+    What Once Was and Smooth As Glass are converted from the pack's OGGs to
+    128 kbps MP3 to match the existing tracks; the three overlapping titles
+    reuse the existing files.
+  Music composed by Bert Cole; credit and homepage link required by the
+  pack license.
 - **Interface tones** — `snd/confirm1.mp3`, `snd/back1.mp3`, `snd/error1.mp3`
   are from the interface-sfx-pack-1 by **obsydianx**
   (<https://obsydianx.itch.io/interface-sfx-pack-1>), licensed CC0.

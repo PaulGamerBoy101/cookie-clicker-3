@@ -2648,9 +2648,27 @@ window.loadMinigameModule!(me.minigameUrl).then(function(){
 		Music.init(Game);
 		Game.jukebox.tracks.length=0;
 		for (var mi=0;mi<Music.names.length;mi++) Game.jukebox.tracks.push(Music.names[mi]);
+		//CC3 soundtracks: the Settings picker calls these; persistence lives in
+		//localStorage (systems/music.ts) — not the prefs bitfield (save-compat).
+		Game.SetMusicSoundtrack=function(id: any)
+		{
+			Music.setSoundtrack(id);
+			Game.jukebox.tracks.length=0;
+			for (var i=0;i<Music.names.length;i++) Game.jukebox.tracks.push(Music.names[i]);
+			Game.jukebox.onTrack=0;//repoint the jukebox selection (don't reset(): trackAuto/looped/shuffle are the user's own prefs)
+			//keep playing (respecting the user's gesture context): switch to the
+			//new pool's saved pick, or its first track
+			if (Game.prefs.bgMusic) Music.playTrack(Music.getStartName());
+			Game.UpdateMenu();
+		};
+		Game.SetMusicTrack=function(name: any)
+		{
+			Music.playTrack(name);//persist + start it (if bgMusic is on)
+			Game.UpdateMenu();
+		};
 		Game.ToggleMusic=function()
 		{
-			if (Game.prefs.bgMusic) {if (!Music.currentName) Music.playTrack(Music.names[0]); else Music.unpause();}
+			if (Game.prefs.bgMusic) {if (!Music.currentName) Music.playTrack(Music.getStartName()); else Music.unpause();}
 			else Music.pause();
 		};
 		var cc3MusicStarted=false;
@@ -2660,7 +2678,12 @@ window.loadMinigameModule!(me.minigameUrl).then(function(){
 			cc3MusicStarted=true;
 			document.removeEventListener('pointerdown',startMusicOnce);
 			document.removeEventListener('keydown',startMusicOnce);
-			if (Game.prefs.bgMusic && Music) Music.playTrack(Music.names[0]);
+			if (Game.prefs.bgMusic && Music)
+			{
+				//resume the saved soundtrack + track pick; getStartName falls back
+				//to the pool's first track when nothing was picked yet
+				Music.playTrack(Music.getStartName());
+			}
 		};
 		document.addEventListener('pointerdown',startMusicOnce);
 		document.addEventListener('keydown',startMusicOnce);

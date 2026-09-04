@@ -3424,7 +3424,10 @@ export default { id: "EN", name: "english", strings: {
 
 	"Click and hold a building to buy it over and over.": "/",
 	"Hold to buy": "/",
-	"click and hold a building to buy it over and over": "/"
+	"click and hold a building to buy it over and over": "/",
+
+	"Soundtrack": "/",
+	"Track": "/"
 
 }
 } satisfies LanguageData;

@@ -11,6 +11,14 @@ upstream Cookie Clicker 2.048 patch notes that the engine also displays
 (31/05/2022 back to 05/08/2013) are Orteil's, shown verbatim in the
 in-game log, and are not duplicated here.
 
+## 04/09/2026 - soundtracks and a music picker
+
+- Settings now has a music section: pick between the original soundtrack and
+  the new Towns set (7 tracks from the same composer, Bert Cole), and choose
+  exactly which track plays from a dropdown — your soundtrack and track are
+  remembered between sessions, and each soundtrack resumes its own last
+  track
+
 ## 04/09/2026 - hold-to-buy, announcement dialogs, and smoother panels
 
 - click and hold a building in the store to buy it over and over — the

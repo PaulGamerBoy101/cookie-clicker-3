@@ -24,9 +24,17 @@
  * the next track in the list is pre-buffered (src assigned, not played) so
  * jukebox auto-advance stays gapless.
  *
- * Browsers block audio before a user gesture, so the engine starts the first
- * track from a one-time pointerdown/keydown listener (Game.prefs.bgMusic is
- * the on/off switch, save-backed in the existing prefs bitfield).
+ * CC3 soundtracks: tracks are grouped into soundtracks (the Original OST and
+ * the Towns set from the same 16-Bit Starter Pack), and the player plays one
+ * soundtrack's pool at a time. The choice persists in localStorage
+ * (`cc3_musicSoundtrack`, `cc3_musicTrack`) — NOT the prefs bitfield, which
+ * is byte-locked for save compatibility. `names` exposes the active pool so
+ * the jukebox list, `next()`, auto-advance and pre-buffering stay inside it;
+ * `allTracks` keeps every registered track so switching soundtracks can
+ * re-point the pool without losing element state. Browsers block audio
+ * before a user gesture, so the engine starts the first track from a
+ * one-time pointerdown/keydown listener (Game.prefs.bgMusic is the on/off
+ * switch, save-backed in the existing prefs bitfield).
  */
 
 /** Displayed track author line (required by the music license). */
@@ -45,10 +53,50 @@ export const MUSIC_TRACKS: Array<[string, string]> = [
 	['Waiting', 'snd/music/Waiting.mp3'],
 ];
 
+/** The Towns soundtrack: the seven "Towns" folder tracks from the same
+ * 16-Bit Starter Pack (three overlap with the Original OST; the pack's
+ * copies are byte-identical sources, so the existing MP3s are reused and
+ * the other four are converted from the pack's OGGs). */
+export const MUSIC_TOWNS_TRACKS: Array<[string, string]> = [
+	['Bustling Streets', 'snd/music/Bustling Streets.mp3'],
+	['Farm Life', 'snd/music/Farm Life.mp3'],
+	['Ghost Alley', 'snd/music/Ghost Alley.mp3'],
+	['Merch City', 'snd/music/Merch City.mp3'],
+	['Remnants of What Once Was', 'snd/music/Remnants of What Once Was.mp3'],
+	['Returning Home', 'snd/music/Returning Home.mp3'],
+	['Smooth As Glass', 'snd/music/Smooth As Glass.mp3'],
+];
+
+/** Soundtrack registry: [id, display name, track table]. Order = menu order;
+ * index 0 is the default. */
+export const MUSIC_SOUNDTRACKS: Array<[string, string, Array<[string, string]>]> = [
+	['original', 'Original', MUSIC_TRACKS],
+	['towns', 'Towns', MUSIC_TOWNS_TRACKS],
+];
+
+/** Soundtrack choice persistence (localStorage; default 'original'). */
+export function GetMusicSoundtrackPref(): string {
+	const v = localStorageGet('cc3_musicSoundtrack');
+	return (v && MUSIC_SOUNDTRACKS.some((s) => s[0] === v)) ? v : MUSIC_SOUNDTRACKS[0][0];
+}
+export function SetMusicSoundtrackPref(id: string): void {
+	localStorageSet('cc3_musicSoundtrack', id);
+}
+
+/** Last-picked track persistence, per soundtrack (localStorage keys
+ * 'cc3_musicTrack:<soundtrackId>'; '' = none picked yet) so each pool
+ * resumes where the player left it when switched back to. */
+export function GetMusicTrackPref(): string {
+	return localStorageGet('cc3_musicTrack:' + GetMusicSoundtrackPref()) || '';
+}
+export function SetMusicTrackPref(name: string): void {
+	localStorageSet('cc3_musicTrack:' + GetMusicSoundtrackPref(), name);
+}
+
 /** Build the Music object the engine publishes (and the jukebox drives). */
 export function CreateMusic(): any {
-	const tracks: any = {};
-	const names: string[] = [];
+	const tracks: any = {};//every registered track, across all soundtracks
+	const names: string[] = [];//the ACTIVE soundtrack's pool (order = play order)
 	const srcs: any = {};//track name -> file path (assigned to audio.src on first play)
 	let currentName = '';
 
@@ -64,22 +112,60 @@ export function CreateMusic(): any {
 		}
 	};
 
+	/** (Re)point the active pool at a soundtrack's track table. Elements are
+	 * created on first registration and kept for the session (a re-switch
+	 * back reuses the same element and its buffered src). */
+	const setPool = (trackTable: Array<[string, string]>) => {
+		names.length = 0;
+		for (const [name, src] of trackTable) {
+			if (!tracks[name]) {
+				const audio = new Audio();
+				audio.preload = 'none';
+				audio.loop = true;
+				tracks[name] = { name, author: MUSIC_AUTHOR, audio };
+				srcs[name] = src;
+			}
+			names.push(name);
+		}
+	};
+
 	const me: any = {
 		tracks,
 		names,
+		allTracks: tracks,
 		get currentName() {
 			return currentName;
 		},
+		/** The active soundtrack's track table (kept for the menu's dropdown
+		 * and for pool switches). */
+		soundtracks: MUSIC_SOUNDTRACKS,
+		activeSoundtrack: GetMusicSoundtrackPref(),
+		setSoundtrack(id: string) {
+			const entry = MUSIC_SOUNDTRACKS.find((s) => s[0] === id);
+			if (!entry || entry[0] === me.activeSoundtrack) return;
+			//pause whatever is playing: it may not exist in the new pool, and a
+			//paused currentName makes the engine's restart logic pick the pool's
+			//saved track fresh
+			me.pause();
+			currentName = '';//no longer current: the pool is about to change
+			me.activeSoundtrack = entry[0];
+			SetMusicSoundtrackPref(entry[0]);//also switches which track pref is read/written
+			setPool(entry[2]);
+		},
 		setVolume(volume: number) {
 			for (const name of names) tracks[name].audio.volume = volume;
+			//also catch elements registered but not in the active pool (they'd
+			//miss the sweep otherwise on the next switch)
+			for (const name in tracks) if (names.indexOf(name) === -1) tracks[name].audio.volume = volume;
 		},
 		setFilter() {
 			/* no-op: the Steam "wub" filter has no web equivalent */
 		},
 		playTrack(name: string) {
-			if (!tracks[name]) return;
+			if (!tracks[name] || names.indexOf(name) === -1) return;//must be in the active pool
 			if (currentName && tracks[currentName]) tracks[currentName].audio.pause();
 			currentName = name;
+			SetMusicTrackPref(name);
 			const audio = tracks[name].audio;
 			ensureSrc(name);//first play: this is the moment the track is fetched
 			audio.currentTime = 0;
@@ -117,23 +203,24 @@ export function CreateMusic(): any {
 		next() {
 			if (!names.length) return;
 			const index = names.indexOf(currentName);
-			me.playTrack(names[(index + 1) % names.length]);
+			//currentName can fall outside the pool after a soundtrack switch
+			//(setSoundtrack clears it, so this is just belt and suspenders)
+			me.playTrack(names[(index === -1 ? 0 : (index + 1)) % names.length]);
+		},
+		/** The saved track pick for the active pool if it's still valid, else
+		 * the pool's first track — what "start/resume music" should play. */
+		getStartName(): string {
+			const saved = GetMusicTrackPref();
+			return (saved && names.indexOf(saved) !== -1) ? saved : (names[0] || '');
 		},
 		init(game: any) {
-			for (const [name, src] of MUSIC_TRACKS) {
-				//no src argument: the element starts attribute-less and the browser
-				//fetches nothing (a '' src would resolve to the document URL and
-				//fire a bogus load)
-				const audio = new Audio();
-				audio.preload = 'none';
-				audio.loop = true;
-				audio.volume = (game.volumeMusic || 50) / 100;
-				audio.addEventListener('ended', () => {
+			const entry = MUSIC_SOUNDTRACKS.find((s) => s[0] === GetMusicSoundtrackPref());
+			setPool(entry ? entry[2] : MUSIC_TRACKS);
+			for (const name in tracks) {
+				tracks[name].audio.volume = (game.volumeMusic || 50) / 100;
+				tracks[name].audio.addEventListener('ended', () => {
 					if (game.jukebox && game.jukebox.trackAuto) me.next();
 				});
-				tracks[name] = { name, author: MUSIC_AUTHOR, audio };
-				srcs[name] = src;
-				names.push(name);
 			}
 		},
 	};

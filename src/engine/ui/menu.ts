@@ -142,6 +142,17 @@ export function UpdateMenu()
 					/*(App?Game.WriteSlider('wubMusicSlider',loc("Wub"),'[$]%',function(){return 100;},'Game.setWubMusic(Math.round(l(\'wubMusicSlider\').value));l(\'wubMusicSliderRightText\').innerHTML=(Math.round(l(\'wubMusicSlider\').value))+\'%\';'):'')+*/
 					'<br>'+
 					Game.WritePrefButton('bgMusic','bgMusicButton',loc("Music")+ON,loc("Music")+OFF,'Game.ToggleMusic();')+'<label>('+loc("music will keep playing even when the game window isn't focused")+')</label><br>'+
+					//CC3: soundtrack + track pickers for the web music player (systems/music.ts).
+					//The jukebox upgrade UI stays a Steam prestige novelty, so Settings is where
+					//web players control what plays. Selections persist via Game.SetMusicSoundtrack
+					//and Game.SetMusicTrack (localStorage-backed, like cc3_holdToBuy — not a
+					//prefs-bitfield entry).
+					(Music?
+						'<div class="listing"><label>'+loc("Soundtrack")+'</label> '+
+						(function(){var s='';for (var i=0;i<Music.soundtracks.length;i++){var st=Music.soundtracks[i];s+='<a class="option smallFancyButton prefButton'+(Music.activeSoundtrack==st[0]?'':' off')+'" '+Game.clickStr+'="PlaySound(\'snd/tick.mp3\');Game.SetMusicSoundtrack(\''+st[0]+'\');">'+st[1]+'</a> ';}return s;})()+
+						'<br><label>'+loc("Track")+'</label> <select id="musicTrackSelect" onchange="Game.SetMusicTrack(Music.names[parseInt(this.value)]);">'+
+						(function(){var s='';var sel=Music.currentName||Music.getStartName();if (Music.names.indexOf(sel)==-1) sel=Music.names[0];for (var i=0;i<Music.names.length;i++){s+='<option value="'+i+'"'+(Music.names[i]==sel?' selected="true"':'')+'>'+Music.names[i]+'</option>';}return s;})()+
+						'</select></div>':'')+
 					(App?Game.WritePrefButton('fullscreen','fullscreenButton',loc("Fullscreen")+ON,loc("Fullscreen")+OFF,'Game.ToggleFullscreen();')+'<br>':'')+
 					Game.WritePrefButton('fancy','fancyButton',loc("Fancy graphics")+ON,loc("Fancy graphics")+OFF,'Game.ToggleFancy();')+'<label>('+loc("visual improvements; disabling may improve performance")+')</label><br>'+
 					Game.WritePrefButton('filters','filtersButton',loc("CSS filters")+ON,loc("CSS filters")+OFF,'Game.ToggleFilters();')+'<label>('+(EN?'cutting-edge visual improvements; disabling may improve performance':loc("visual improvements; disabling may improve performance"))+')</label><br>'+
