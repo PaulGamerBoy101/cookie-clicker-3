@@ -1,6 +1,7 @@
 # Cookie Clicker 3
 
-Cookie Clicker 3 is a modern Cookie Clicker experience based on [Cookie Clicker 2.048](https://github.com/DiSCooooo/Cookie-Clicker-2.048) (itself a port of Orteil's [Cookie Clicker](http://orteil.dashnet.org/cookieclicker/)). It is an unofficial fan port — not affiliated with or endorsed by Orteil. The project preserves the original game's behavior in a strictly typed TypeScript ES-module web app, built with a zero-runtime-dependency Vite pipeline — no jQuery, no IE polyfills, no CDN requests, no ads, no trackers. See [docs/ROADMAP.md](docs/ROADMAP.md) for where the project is headed.
+Cookie Clicker 3 is a modern Cookie Clicker experience based on [Cookie Clicker 2.048](https://github.com/DiSCooooo/Cookie-Clicker-2.048) (itself a port of Orteil's [Cookie Clicker](http://orteil.dashnet.org/cookieclicker/)). It is an unofficial fan port — not affiliated with or endorsed by Orteil. The project preserves the original game's behavior in a strictly typed TypeScript ES-module web app, built with a zero-runtime-dependency Vite pipeline — no jQuery, no IE polyfills, no CDN requests, no ads, no trackers. See [docs/ROADMAP.md](docs/ROADMAP.md) for where the project is headed and
+[docs/CHANGELOG.md](docs/CHANGELOG.md) for what has shipped (mirroring the in-game Info > Version history).
 
 ## [PLAY ME HERE](https://giveen.github.io/cookie-clicker-3/)
 
@@ -27,7 +28,7 @@ The engine started as the authentic 2.048 code, transformed mechanically so it r
 ```
 index.html              app shell (all ids the engine expects)
 tsconfig.json           TypeScript config (strict; tsc --noEmit is the type gate)
-docs/                   design docs (roadmap, feature designs)
+docs/                   design docs (roadmap, changelog, feature designs)
 src/
   main.ts               entry: module wiring, language + minigame dynamic imports, PWA
   config.ts             VERSION / BETA / App, published before the engine evaluates
