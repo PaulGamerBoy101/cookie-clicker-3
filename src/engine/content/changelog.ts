@@ -68,6 +68,15 @@ export function declareVanillaChangelog(Game: EngineGame) {
 	Game.updateLog+=
 
 	'</div><div class="subsection update">'+
+	'<div class="title">04/09/2026 - hold-to-buy, announcement dialogs, and smoother panels</div>'+
+	'<div class="listing">&bull; click and hold a building in the store to buy it over and over — the current bulk amount applies (Ctrl/Shift), the hold stops the moment you release, slide off the row, open a menu or can\'t afford the next one, and the repeats never double-buy your final click; a new "Hold to buy" option in Settings turns the feature off entirely</div>'+
+	'<div class="listing">&bull; milestone announcements are now centered dialogs (like the welcome popup) instead of notification toasts: the daily crumb collect and the transcendence completion summary — they still fall back to a toast when another dialog is already open or an ascension animation is running</div>'+
+	'<div class="listing">&bull; minigame panels now ease open and closed, anchored to where you clicked; the Doctrine view and the heavenly tree got the same eased full-screen takeover</div>'+
+	'<div class="listing">&bull; the Cracking cookie\'s crumble got a visual pass: the crack starts hairline and widens like the ascension intro, chunks fly tighter, the faint gray box is gone, and click particles and wrinklers stay visible above the cracked cookie</div>'+
+	'<div class="listing">&bull; store rows that haven\'t changed are no longer rewritten on every refresh, keeping purchases snappy even in a full store grid</div>'+
+	'<div class="listing">&bull; fixed the Cat Colony panel not refreshing when the cat count changes</div>'+
+	'<div class="listing">&bull; Decide Your Destiny now survives corrupt or hand-edited saves</div>'+
+	'</div><div class="subsection update">'+
 	'<div class="title">02/09/2026 - performance pass</div>'+
 	'<div class="listing">&bull; background music now loads lazily: nothing is fetched until you first play a track (previously the browser downloaded all ~12&nbsp;MB of music on page load, even with music off), and the next track is pre-buffered for gapless auto-advance</div>'+
 	'<div class="listing">&bull; the cookie counter and per-second readout are now updated in place instead of being rebuilt from HTML every frame</div>'+
