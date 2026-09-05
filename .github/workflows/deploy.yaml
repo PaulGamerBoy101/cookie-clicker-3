@@ -1,0 +1,51 @@
+name: Deploy Cookie Clicker 3 to Pages
+
+on:
+  push:
+    branches: [ "main", "master" ] # Triggers on whichever default branch your fork uses
+  workflow_dispatch: # Gives you the manual button to trigger the run
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: "pages"
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20 # Required for the node:fs and node:crypto modules in your vite.config.js
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build project
+        run: pnpm run build # Triggers your custom CSS rewrite and service worker hash stamping
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: ./dist # Uploads the fully compiled dist folder containing the modified sw.js
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
