@@ -1,0 +1,18 @@
+{
+	"name": "Cookie Clicker 3",
+	"short_name": "Cookie 3",
+	"description": "Cookie Clicker 3 — a modern Cookie Clicker experience.",
+	"start_url": ".",
+	"display": "standalone",
+	"orientation": "any",
+	"background_color": "#1a1108",
+	"theme_color": "#1a1108",
+	"icons": [
+		{
+			"src": "img/icon.png",
+			"sizes": "512x512",
+			"type": "image/png",
+			"purpose": "any"
+		}
+	]
+}

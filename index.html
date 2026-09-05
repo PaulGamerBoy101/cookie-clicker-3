@@ -1,0 +1,170 @@
+<!doctype html>
+<html lang="en">
+<head>
+	<meta charset="utf-8">
+	<!--
+		Content-Security-Policy. The game is fully self-contained: every script,
+		style, image, font and sound is same-origin (no CDN, no ads, no trackers).
+		This policy enforces that at the browser level and locks down the obvious
+		vectors (object embedding, <base> hijacking, off-origin form submission).
+
+		'script-src' keeps 'unsafe-inline' because the ported 2.048 engine builds
+		its many click handlers as inline onclick/ontouchend attributes
+		(Game.clickStr), and 'unsafe-eval' because the i18n plural-form compiler
+		uses `new Function` on the bundled, trusted language files. Both weaken
+		XSS protection; that is an accepted trade-off for a faithful port of a
+		local offline PWA with no untrusted input. Refactoring the legacy engine
+		off inline handlers / eval is out of scope. See README "Security".
+	-->
+	<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; media-src 'self' data: blob:; connect-src 'self' data: blob:; object-src 'none'; base-uri 'self'; form-action 'self';">
+	<meta name="viewport" content="width=900, initial-scale=1">
+	<title>Cookie Clicker 3</title>
+	<meta name="description" content="Cookie Clicker 3 — a modern fan-made take on Cookie Clicker. Not affiliated with or endorsed by Orteil.">
+	<meta name="theme-color" content="#1a1108">
+	<link rel="icon" type="image/x-icon" href="img/favicon.ico">
+	<!-- apple-touch-icon stays PNG: Safari ignores WebP touch icons -->
+	<link rel="apple-touch-icon" href="img/icon.png">
+	<!--CC3 perf: warm the sprite sheet during engine boot (before the Loader
+	    starts drawing); versionless to match the Loader's fetch (one cached copy).-->
+	<link rel="preload" as="image" href="img/icons.webp">
+	<link rel="manifest" href="manifest.webmanifest">
+	<!--
+		Cookie Clicker 3 — a modern port of the Cookie Clicker 2.048 source
+		(https://github.com/DiSCooooo/Cookie-Clicker-2.048).
+		Original code and graphics copyright Orteil, 2013-2022.
+		No ads, no trackers, no IE polyfills: just ES modules and Vite.
+	-->
+  <script type="module" crossorigin src="./assets/index-B-jyRLwn.js"></script>
+  <link rel="stylesheet" crossorigin href="./assets/index-lKSc7uBv.css">
+</head>
+<body>
+
+<div id="wrapper">
+
+	<div id="topBar">
+		<div><b style="font-weight:bold;">Cookie Clicker 3</b>&trade; &copy; <a href="//orteil.dashnet.org" target="_blank" rel="noopener" id="topbarOrteil">Orteil</a>, 2022-2026</div>
+		<div><a href="https://twitter.com/orteil42" target="_blank" rel="noopener" id="topbarTwitter">twitter</a></div>
+		<div><a href="https://orteil42.tumblr.com" target="_blank" rel="noopener" id="topbarTumblr">tumblr</a></div>
+		<div style="position:relative;"><div style="width:22px;height:32px;background:url(img/discord.webp);position:absolute;left:0px;top:0px;pointer-events:none;"></div><a href="https://discordapp.com/invite/cookie" target="_blank" rel="noopener" style="padding-left:16px;" id="topbarDiscord">Discord</a></div>
+		<div style="position:relative;"><div style="width:25px;height:32px;background:url(img/weeHoodie.webp);position:absolute;left:-2px;top:0px;pointer-events:none;"></div><a class="blueLink" href="http://www.redbubble.com/people/dashnet" target="_blank" rel="noopener" style="padding-left:12px;" id="topbarMerch">Merch!</a></div>
+		<div style="position:relative;"><div style="width:22px;height:32px;background:url(img/patreon.webp);position:absolute;left:0px;top:0px;pointer-events:none;"></div><a class="orangeLink" href="https://www.patreon.com/dashnet" target="_blank" rel="noopener" style="padding-left:16px;" id="topbarPatreon">Patreon</a></div>
+		<div style="position:relative;display:none;font-weight:bold;" id="heralds"><div style="position:absolute;top:-4px;width:31px;height:39px;background:url(img/heraldFlag.webp);left:50%;margin-left:-15px;pointer-events:none;"></div><div id="heraldsAmount" style="position:relative;z-index:10;text-shadow:0px 1px 0px #000,0px 0px 6px #ff00e4;color:#fff;">-</div></div>
+		<div><a class="lightblueLink" style="font-weight:bold;" href="https://play.google.com/store/apps/details?id=org.dashnet.cookieclicker" target="_blank" rel="noopener" id="topbarMobileCC">Android Version</a></div>
+		<div><a class="lightblueLink" style="font-weight:bold;" href="https://store.steampowered.com/app/1454400/Cookie_Clicker/" target="_blank" rel="noopener" id="topbarSteamCC">Steam Version</a></div>
+		<div><a class="purplelink" href="https://www.youtube.com/channel/UCP99woj07psKFyMQN56zMdg" target="_blank" rel="noopener" id="topbarIGM">Sushi8756</a></div>
+		<div style="position:relative;"><div style="width:26px;height:31px;background:url(img/update.webp);position:absolute;left:0px;top:0px;pointer-events:none;"></div><a href="https://github.com/giveen/cookie-clicker-3" target="_blank" rel="noopener" style="padding-left:18px;" id="topbarRandomgen">Source</a></div>
+		<div><a id="helpButton" style="font-weight:bold;cursor:pointer;">Help</a></div>
+		<div id="changeLanguageBar" style="float:right;"><a id="changeLanguage" style="font-variant:small-caps;">Change language</a></div>
+	</div>
+
+	<div id="game">
+		<div id="versionNumber" class="title"></div>
+		<div id="offGameMessageWrap">
+			<div id="offGameMessage">
+				<div id="loader">
+					<div class="spinnyBig"></div>
+					<div class="spinnySmall"></div>
+					<div id="loading" class="title">It Loading...</div>
+					<div id="failedToLoad" class="title">This is taking longer than expected.<br>
+					<div style="font-size:65%;line-height:120%;">Slow connection? If not, please make sure your javascript is enabled, then refresh.<br>
+					If problems persist, wait a few minutes, then hit ctrl+f5!</div></div>
+				</div>
+			</div>
+		</div>
+
+		<canvas id="backgroundCanvas"></canvas>
+
+		<div id="goldenCookie" class="goldenCookie"></div>
+		<div id="seasonPopup" class="seasonPopup"></div>
+		<div id="shimmers"></div>
+		<div id="alert"></div>
+		<div id="particles"></div>
+		<div id="sparkles" class="sparkles"></div>
+		<div id="notes"></div>
+		<div id="darken"></div>
+		<div id="toggleBox" class="framed prompt"></div>
+		<div id="promptAnchor"><div id="prompt" class="framed"><div id="promptContent"></div><div class="close" id="promptClose">x</div></div></div>
+		<div id="tutorialSpotlight" style="display:none;"></div>
+		<div id="tutorialCallout" class="framed prompt" style="display:none;"></div>
+		<div id="ascend">
+			<div id="ascendBG"></div>
+			<div id="ascendZoomable"><div id="ascendContent"><div id="ascendUpgrades" style="position:absolute;"></div></div></div>
+			<div id="ascendOverlay"></div>
+		</div>
+
+		<div id="debug"><div id="devConsole" class="framed"></div><div id="debugLog"></div></div>
+
+		<div id="sectionLeft" class="inset">
+			<canvas id="backgroundLeftCanvas" style="z-index:5;"></canvas>
+			<div class="blackFiller"></div>
+			<div class="blackGradient"></div>
+			<div id="sectionLeftInfo"></div>
+			<div id="cookies" class="title"></div>
+			<div id="bakeryNameAnchor"><div id="bakeryName" class="title"></div></div>
+			<div id="specialPopup" class="framed prompt offScreen"></div>
+			<div id="buffs" class="crateBox"></div>
+			<div id="cookieAnchor">
+				<button id="bigCookie"></button>
+				<div id="cookieNumbers"></div>
+			</div>
+			<div id="sectionLeftExtra"></div>
+		</div>
+
+		<div class="separatorLeft" id="leftBeam"></div>
+		<div class="separatorRight" id="rightBeam"></div>
+
+		<div id="sectionMiddle" class="inset">
+			<div id="comments" class="inset title">
+				<div id="prefsButton" class="panelButton"><div class="subButton">Options</div></div>
+				<div id="statsButton" class="panelButton"><div>Stats</div></div>
+				<div id="logButton" class="panelButton"><div>Info</div><div id="checkForUpdate">New update!</div></div>
+				<div id="legacyButton" class="panelButton"><div class="subButton">Legacy</div><div id="ascendMeterContainer" class="smallFramed meterContainer"><div id="ascendMeter" class="meter filling"></div></div><div class="roundedPanel" id="ascendNumber"></div><div id="ascendTooltip" class="framed"></div></div>
+				<div id="commentsText">
+					<div id="commentsText1" class="commentsText"></div>
+					<div id="commentsText2" class="commentsText"></div>
+				</div>
+				<div class="separatorBottom"></div>
+			</div>
+			<div id="centerArea">
+				<div id="buildingsTitle" class="inset title zoneTitle">Buildings</div>
+				<div id="buildingsMaster"></div>
+				<div id="rows"></div>
+				<div id="menu"></div>
+			</div>
+		</div>
+
+		<div id="sectionRight" class="inset">
+			<div id="cc3Card" class="cc3Card">
+				<b>Cookie Clicker 3</b>
+				<br>
+				A modern fan-made take. Not affiliated with or endorsed by Orteil.
+			</div>
+			<div id="store">
+				<div id="storeTitle" class="inset title zoneTitle">Store</div>
+				<div id="toggleUpgrades" class="storeSection upgradeBox"></div>
+				<div id="techUpgrades" class="storeSection upgradeBox"></div>
+				<div id="vaultUpgrades" class="storeSection upgradeBox"></div>
+				<div id="upgrades" class="storeSection upgradeBox"></div>
+				<div id="products" class="storeSection"></div>
+			</div>
+			<div id="detectAds" class="adBanner" style="background:transparent;width:1px;height:1px;"></div>
+		</div>
+
+		<div id="tooltipAnchor"><div id="tooltip" class="framed"></div></div>
+		<div id="preloadImages" style="display:none;"></div>
+
+		<!-- One-column responsive mode (narrow viewports): switch which column
+		     is on screen. Hidden in the classic 3-column layout. -->
+		<nav id="oneColTabs" aria-label="Sections">
+			<button type="button" data-col="left" aria-pressed="true">Cookie</button>
+			<button type="button" data-col="middle" aria-pressed="false">Buildings</button>
+			<button type="button" data-col="right" aria-pressed="false">Store</button>
+		</nav>
+
+	</div>
+
+</div>
+
+
+</body>
+</html>
