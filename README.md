@@ -1,4 +1,4 @@
-# Cookie Clicker 3
+# Cookie Clicker 3 REVAMPED
 
 Cookie Clicker 3 is a modern Cookie Clicker experience based on [Cookie Clicker 2.048](https://github.com/DiSCooooo/Cookie-Clicker-2.048) (itself a port of Orteil's [Cookie Clicker](http://orteil.dashnet.org/cookieclicker/)). It is an unofficial fan port — not affiliated with or endorsed by Orteil. The project preserves the original game's behavior in a strictly typed TypeScript ES-module web app, built with a zero-runtime-dependency Vite pipeline — no jQuery, no IE polyfills, no CDN requests, no ads, no trackers. See [docs/ROADMAP.md](docs/ROADMAP.md) for where the project is headed and
 [docs/CHANGELOG.md](docs/CHANGELOG.md) for what has shipped (mirroring the in-game Info > Version history).
